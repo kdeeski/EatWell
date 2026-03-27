@@ -49,7 +49,16 @@ export async function generateMealPlan(input: MealPlanInput): Promise<GeneratedM
   const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
     body: input,
   });
-  if (error) throw error;
+  if (error) {
+    // Try to surface the real error message from the edge function body
+    try {
+      const body = await (error as any).context?.json?.();
+      if (body?.error) throw new Error(`Edge function error: ${body.error}`);
+    } catch (inner) {
+      if ((inner as Error).message?.startsWith('Edge function error:')) throw inner;
+    }
+    throw error;
+  }
   return data as GeneratedMealPlan;
 }
 
