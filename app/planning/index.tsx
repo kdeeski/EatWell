@@ -9,13 +9,14 @@ import {
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
+import { saveMealPlan, saveShoppingList } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
 type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 'done';
 
 export default function PlanningFlow() {
   const router = useRouter();
-  const { fridgeItems, gardenPlants, setMealPlan } = useAppStore();
+  const { fridgeItems, gardenPlants, setMealPlan, setShoppingList, userId } = useAppStore();
 
   const [step, setStep] = useState<Step>('fridge');
   const [fridgeConfirmed, setFridgeConfirmed] = useState(false);
@@ -53,8 +54,20 @@ export default function PlanningFlow() {
         hollyHomeNights: [],
       });
 
-      // TODO: persist to Supabase and update store — wired in next sprint
-      console.log('Generated plan:', result);
+      // Get Monday of the current week as the week start date
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+      const weekStartDate = monday.toISOString().split('T')[0];
+
+      // Save to Supabase and update the app store
+      const { plan, meals } = await saveMealPlan(userId!, weekStartDate, result);
+      setMealPlan(plan, meals);
+
+      const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result);
+      setShoppingList(shoppingData.list, shoppingData.items);
+
       setStep('done');
     } catch (e) {
       console.error(e);
