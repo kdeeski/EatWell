@@ -1,50 +1,48 @@
-// Supabase Edge Function — generate-meal-plan
-// Receives MealPlanInput from the mobile app and calls Claude to produce
-// a structured 7-meal weekly plan.
-
 import Anthropic from 'npm:@anthropic-ai/sdk';
 
-const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! });
-
-const SYSTEM_PROMPT = `You are EatWell's meal planning engine. You help a home cook in Christchurch, New Zealand plan a week of inspiring, ingredient-efficient dinners.
-
-Your meal plans follow these rules:
-1. Use what's already in the fridge before anything new is bought — flag ingredients as from_fridge: true
-2. Fish meals are assigned to Friday, Saturday, or Sunday (weekend shop proximity). Never add fish to the weekend shopping list — it's always buy_timing: "day_of"
-3. Cluster ingredients across meals so nothing is wasted — no half-bunches of celery left over
-4. Mix quick weeknight meals (under 30 min) with one or two longer or hands-off meals
-5. Meals should be interesting and varied — not sausages and mash every night
-6. Garden produce available this week should be used (flag as from_garden: true)
-7. Skip days when the user is away (leave those as null or omit)
-8. Note if a meal needs a recipe (needs_recipe: true) vs is intuitive cooking
-9. Use New Zealand ingredient names and seasonal availability
-
-Respond ONLY with valid JSON matching the GeneratedMealPlan schema. No prose outside the JSON.`;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 Deno.serve(async (req) => {
-  const input = await req.json();
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
 
-  const fridgeSummary = input.fridgeItems
-    .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
-    .join(', ');
+  try {
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'ANTHROPIC_API_KEY secret not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-  const userMessage = `
+    const client = new Anthropic({ apiKey });
+    const input = await req.json();
+
+    const fridgeSummary = (input.fridgeItems ?? [])
+      .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
+      .join(', ');
+
+    const userMessage = `
 Plan a week of 7 dinners given the following context:
 
 FRIDGE (what I already have — use these up):
 ${fridgeSummary || 'Nothing noted this week'}
 
 GARDEN (available to harvest this week):
-${input.gardenAvailable.join(', ') || 'Nothing ready'}
+${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
 
 SPONTANEOUS ADDITIONS (unexpected items to incorporate):
-${input.spontaneousAdditions.join(', ') || 'None'}
+${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
 
 NIGHTS AWAY (skip meals for these days, 0=Monday):
-${input.nightsAway.join(', ') || 'None'}
+${(input.nightsAway ?? []).join(', ') || 'None'}
 
 HOLLY HOME (include her preferences on these nights, 0=Monday):
-${input.hollyHomeNights.join(', ') || 'None this week'}
+${(input.hollyHomeNights ?? []).join(', ') || 'None this week'}
 
 Return a JSON object with this exact shape:
 {
@@ -70,22 +68,36 @@ Return a JSON object with this exact shape:
       "holly_included": false
     }
   ],
-  "planning_notes": "string — brief explanation of ingredient logic and why these meals"
+  "planning_notes": "string"
 }`;
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userMessage }],
-  });
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: `You are EatWell's meal planning engine for a home cook in Christchurch, New Zealand.
+Rules:
+1. Use fridge items first (from_fridge: true)
+2. Fish meals go Friday/Saturday/Sunday only, always buy_timing: "day_of"
+3. Cluster ingredients across meals to avoid waste
+4. Mix quick meals with one or two longer ones
+5. Meals should be interesting and varied
+6. Use garden produce when available (from_garden: true)
+7. Omit days when user is away
+8. Set needs_recipe: true for dishes that need a recipe
+Respond ONLY with valid JSON. No prose outside the JSON.`,
+      messages: [{ role: 'user', content: userMessage }],
+    });
 
-  const raw = (response.content[0] as { type: string; text: string }).text;
+    const raw = (response.content[0] as { type: string; text: string }).text;
+    const json = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
 
-  // Strip markdown code fences if present
-  const json = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-
-  return new Response(json, {
-    headers: { 'Content-Type': 'application/json' },
-  });
+    return new Response(json, {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ error: err.message ?? 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 });
