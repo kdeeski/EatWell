@@ -289,9 +289,26 @@ export async function loadTodayCheckin(
   return data as CheckIn;
 }
 
+// ─── User Profile ─────────────────────────────────────────────────────────────
+// Supabase Auth creates a row in auth.users but NOT in our public users table.
+// This ensures a profile row exists every time the user signs in.
+
+export async function ensureUserProfile(userId: string, email: string): Promise<void> {
+  const { error } = await supabase
+    .from('users')
+    .upsert(
+      { id: userId, name: email.split('@')[0], email },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+  if (error) throw error;
+}
+
 // ─── Bootstrap — load all app data for the current user ──────────────────────
 
-export async function bootstrapUserData(userId: string) {
+export async function bootstrapUserData(userId: string, email: string) {
+  // Always ensure the user has a profile row first
+  await ensureUserProfile(userId, email);
+
   const [fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin] =
     await Promise.all([
       loadFridgeItems(userId),

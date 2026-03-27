@@ -12,13 +12,14 @@ import { generateMealPlan } from '../../lib/claude';
 import { saveMealPlan, saveShoppingList } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
-type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 'done';
+type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 'done' | 'error';
 
 export default function PlanningFlow() {
   const router = useRouter();
   const { fridgeItems, gardenPlants, setMealPlan, setShoppingList, userId } = useAppStore();
 
   const [step, setStep] = useState<Step>('fridge');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fridgeConfirmed, setFridgeConfirmed] = useState(false);
   const [fridgeExtras, setFridgeExtras] = useState('');
 
@@ -69,9 +70,10 @@ export default function PlanningFlow() {
       setShoppingList(shoppingData.list, shoppingData.items);
 
       setStep('done');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setStep('week_ahead');
+      setErrorMessage(e?.message ?? 'Something went wrong. Please try again.');
+      setStep('error');
     }
   };
 
@@ -200,6 +202,17 @@ export default function PlanningFlow() {
             <Text style={styles.generatingText}>
               Building your meal plan — picking meals around what needs using and what'll be inspiring...
             </Text>
+          </View>
+        )}
+
+        {/* Error */}
+        {step === 'error' && (
+          <View style={styles.centeredBlock}>
+            <Text style={styles.doneTitle}>Something went wrong</Text>
+            <Text style={styles.doneBody}>{errorMessage}</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('week_ahead')}>
+              <Text style={styles.primaryButtonText}>Try again</Text>
+            </TouchableOpacity>
           </View>
         )}
 

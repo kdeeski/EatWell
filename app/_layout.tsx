@@ -41,7 +41,7 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     } else if (session) {
       // Load all user data into the app store
-      bootstrapUserData(session.user.id).then(
+      bootstrapUserData(session.user.id, session.user.email ?? '').then(
         ({ fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
           setFridgeItems(fridgeItems);
           setGardenPlants(gardenPlants);
