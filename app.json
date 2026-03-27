@@ -29,6 +29,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "owner": "kdeeski",
+    "extra": {
+      "eas": {
+        "projectId": "ff9f32fa-6006-4a5f-94bd-7893fb84d066"
+      }
+    },
     "plugins": [
       "expo-router",
       [
