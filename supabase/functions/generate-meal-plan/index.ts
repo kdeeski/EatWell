@@ -96,7 +96,7 @@ Rules:
 5. Varied, interesting meals mixing quick and longer cooks
 6. NEVER use the same protein (chicken, fish, pork, beef, lamb, prawns) on consecutive nights
 7. NEVER use the same carbohydrate base (pasta, rice, potatoes, bread, polenta, noodles, couscous) on consecutive nights
-8. Use garden produce when available (from_garden: true)
+8. ONLY include a garden herb/produce item as an ingredient if that specific item is genuinely part of the recipe. Do NOT add garden herbs to a meal just because they are available — only include them if the dish actually calls for that herb. Mark as from_garden: true only for items the user has available from their garden that are legitimately used in the meal.
 9. Omit days the user is away
 10. Set needs_recipe: true for complex dishes
 11. Mark ALL of the following as is_pantry_staple: true — olive oil, all oils, salt, pepper, ALL dried herbs (oregano, thyme, rosemary, bay leaves, etc), ALL spices (cumin, paprika, turmeric, cinnamon, etc), flour, sugar, butter, soy sauce, fish sauce, stock/broth, vinegar, garlic, onions, shallots, eggs, pasta, rice, noodles, canned tomatoes, tomato paste, mustard, honey, capers, anchovies, chilli flakes, nuts, seeds
