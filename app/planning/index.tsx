@@ -242,7 +242,7 @@ export default function PlanningFlow() {
           <View style={styles.centeredBlock}>
             <Text style={styles.doneTitle}>Something went wrong</Text>
             <Text style={styles.doneBody}>{errorMessage}</Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('week_ahead')}>
+            <TouchableOpacity style={[styles.primaryButton, styles.centeredButton]} onPress={() => setStep('week_ahead')}>
               <Text style={styles.primaryButtonText}>Try again</Text>
             </TouchableOpacity>
           </View>
@@ -253,7 +253,7 @@ export default function PlanningFlow() {
           <View style={styles.centeredBlock}>
             <Text style={styles.doneTitle}>Plan ready</Text>
             <Text style={styles.doneBody}>Your week is planned. Check the shopping list — it's organised by store and timing.</Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)/plan')}>
+            <TouchableOpacity style={[styles.primaryButton, styles.centeredButton]} onPress={() => router.replace('/(tabs)/plan')}>
               <Text style={styles.primaryButtonText}>See the plan →</Text>
             </TouchableOpacity>
           </View>
@@ -343,8 +343,9 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
 
-  centeredBlock: { paddingTop: 60, gap: 20 },
+  centeredBlock: { paddingTop: 60, gap: 20, alignItems: 'center' },
   generatingText: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
   doneTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
   doneBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
+  centeredButton: { alignSelf: 'stretch' },
 });
