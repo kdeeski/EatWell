@@ -87,6 +87,7 @@ Rules:
 8. Omit days when user is away
 9. Set needs_recipe: true for dishes that need a recipe
 10. Mark common pantry staples as is_pantry_staple: true — things like olive oil, salt, pepper, dried herbs, spices, flour, sugar, butter, soy sauce, stock/broth, vinegar, garlic, onions, eggs, pasta, rice, canned tomatoes, mustard
+11. The "description" field must be a rich 3–5 sentence cooking paragraph — enough for the cook to make the dish without a separate recipe. Describe the actual technique, key steps, and what makes it good. Write in a warm, direct voice. Example: "Roast cherry tomatoes with garlic and olive oil until jammy. Toss with kalamata olives, fried capers, and a splash of red wine vinegar. Sear the snapper skin-side down until crisp, then flip briefly. The relish is essentially a warm punchy salsa — no sauce-making, just assembly. Done in 25 minutes."
 Respond ONLY with valid JSON. No prose outside the JSON.`,
       messages: [{ role: 'user', content: userMessage }],
     });

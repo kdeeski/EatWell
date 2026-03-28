@@ -1,15 +1,18 @@
 // This Week screen — shows the 7-meal plan, one card per day.
-// Tapping a day lets you swap meals or see ingredients.
+// Tap a meal card to expand and read the full cooking description.
 
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function PlanScreen() {
   const router = useRouter();
-  const { plannedMeals, currentMealPlan } = useAppStore();
+  const { plannedMeals } = useAppStore();
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const hasPlan = plannedMeals.length > 0;
 
@@ -33,35 +36,62 @@ export default function PlanScreen() {
         </View>
       ) : (
         <>
-          {DAY_LABELS.map((label, index) => {
+          {DAY_SHORT.map((short, index) => {
             const meal = plannedMeals.find((m) => m.day_of_week === index);
+            const isExpanded = expandedDay === index;
+
             return (
-              <View key={index} style={styles.dayRow}>
-                <Text style={styles.dayLabel}>{label}</Text>
-                {meal ? (
-                  <View style={styles.mealChip}>
-                    <Text style={styles.mealChipName}>{meal.meal_name}</Text>
-                    {meal.is_fish && (
-                      <Text style={styles.fishBadge}>Buy fresh</Text>
-                    )}
-                    {meal.estimated_prep_minutes ? (
-                      <Text style={styles.mealChipMeta}>~{meal.estimated_prep_minutes} min</Text>
-                    ) : null}
-                  </View>
-                ) : (
-                  <View style={[styles.mealChip, styles.mealChipEmpty]}>
-                    <Text style={styles.mealChipEmpty}>Night off</Text>
-                  </View>
-                )}
-              </View>
+              <TouchableOpacity
+                key={index}
+                activeOpacity={meal ? 0.7 : 1}
+                onPress={() => {
+                  if (!meal) return;
+                  setExpandedDay(isExpanded ? null : index);
+                }}
+              >
+                <View style={styles.dayRow}>
+                  <Text style={styles.dayLabel}>{short}</Text>
+
+                  {meal ? (
+                    <View style={[styles.mealCard, isExpanded && styles.mealCardExpanded]}>
+                      {/* Badges row */}
+                      <View style={styles.badgeRow}>
+                        {meal.is_fish && (
+                          <Text style={styles.fishBadge}>Buy fresh</Text>
+                        )}
+                        {meal.needs_recipe && (
+                          <Text style={styles.recipeBadge}>Recipe</Text>
+                        )}
+                      </View>
+
+                      <Text style={styles.mealName}>{meal.meal_name}</Text>
+
+                      <Text style={styles.mealMeta}>
+                        {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
+                        {meal.estimated_prep_minutes && !isExpanded ? '  ·  Tap for how to cook' : ''}
+                        {!meal.estimated_prep_minutes && !isExpanded ? 'Tap for how to cook' : ''}
+                      </Text>
+
+                      {/* Expanded cooking description */}
+                      {isExpanded && meal.description ? (
+                        <Text style={styles.description}>{meal.description}</Text>
+                      ) : null}
+                    </View>
+                  ) : (
+                    <View style={[styles.mealCard, styles.mealCardEmpty]}>
+                      <Text style={styles.nightOff}>Night off</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
             );
           })}
 
           <TouchableOpacity
-            style={styles.replannButton}
+            style={styles.replanButton}
             onPress={() => router.push('/planning')}
           >
-            <Text style={styles.replannButtonText}>Replan the week</Text>
+            <Text style={styles.replanButtonText}>Replan the week</Text>
           </TouchableOpacity>
         </>
       )}
@@ -88,7 +118,7 @@ const styles = StyleSheet.create({
   dayRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 12,
   },
   dayLabel: {
@@ -98,7 +128,8 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     paddingTop: 14,
   },
-  mealChip: {
+
+  mealCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
@@ -109,9 +140,21 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  mealChipName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 4 },
-  mealChipMeta: { fontSize: 12, color: '#9CA3AF' },
-  mealChipEmpty: { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
+  mealCardExpanded: {
+    borderColor: '#3B7A57',
+    borderWidth: 1.5,
+    shadowOpacity: 0.08,
+    elevation: 2,
+  },
+  mealCardEmpty: {
+    backgroundColor: '#F9FAFB',
+  },
+
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 4,
+  },
   fishBadge: {
     fontSize: 11,
     fontWeight: '600',
@@ -121,10 +164,31 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 4,
+  },
+  recipeBadge: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400E',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
 
-  replannButton: {
+  mealName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 4 },
+  mealMeta: { fontSize: 12, color: '#9CA3AF' },
+
+  description: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#374151',
+    lineHeight: 23,
+  },
+
+  nightOff: { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
+
+  replanButton: {
     marginTop: 16,
     padding: 14,
     borderRadius: 14,
@@ -132,5 +196,5 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     alignItems: 'center',
   },
-  replannButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
+  replanButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
 });
