@@ -242,7 +242,6 @@ export async function saveShoppingList(
           unit: ing.unit,
           store: normalizeStore(ing.store),
           buy_timing: normalizeBuyTiming(ing.buy_timing),
-          buy_timing: ing.buy_timing,
           checked: ing.from_fridge ?? false,
           is_pantry_staple: ing.is_pantry_staple ?? false,
           from_fridge: ing.from_fridge ?? false,
