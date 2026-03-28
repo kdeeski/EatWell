@@ -100,7 +100,7 @@ RULES:
 
 4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On Holly nights (holly_included: true), scale the full dish to serve 2–3.
 
-5. Varied, interesting meals — prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects.
+5. Varied, interesting meals — prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects. Keep meal names short (max 5 words).
 
 6. Avoid the same protein on consecutive nights where possible (guideline, not hard rule).
 
@@ -125,6 +125,8 @@ RULES:
 16. Seasonal awareness: suggest produce appropriate to the current NZ season (Southern Hemisphere). Today's date is provided in the prompt.
 
 17. ONLY include a garden item (from_garden: true) if it is genuinely used in the recipe and the user has flagged it as available. Do not pad meals with garden items just because they are available.
+
+18. Keep meal names short (max 5 words) — the cooking description carries the detail.
 
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
