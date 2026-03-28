@@ -12,11 +12,19 @@ const STORE_LABELS: Record<string, string> = {
 
 const STORE_ORDER = ['grocer', 'butcher', 'supermarket'];
 
-export default function ShoppingScreen() {
-  const { shoppingItems, toggleShoppingItem, shoppingList } = useAppStore();
+function itemLabel(item: ShoppingListItem) {
+  if (item.is_pantry_staple) return item.name;
+  return `${item.quantity} ${item.unit} ${item.name}`.trim();
+}
 
-  const weekendItems = shoppingItems.filter((i) => i.buy_timing === 'weekend');
-  const dayOfItems = shoppingItems.filter((i) => i.buy_timing === 'day_of');
+export default function ShoppingScreen() {
+  const { shoppingItems, toggleShoppingItem } = useAppStore();
+
+  const freshItems = shoppingItems.filter((i) => !i.is_pantry_staple);
+  const pantryItems = shoppingItems.filter((i) => i.is_pantry_staple);
+
+  const weekendItems = freshItems.filter((i) => i.buy_timing === 'weekend');
+  const dayOfItems = freshItems.filter((i) => i.buy_timing === 'day_of');
 
   const groupByStore = (items: ShoppingListItem[]) =>
     STORE_ORDER.reduce<Record<string, ShoppingListItem[]>>((acc, store) => {
@@ -58,7 +66,7 @@ export default function ShoppingScreen() {
                 >
                   <View style={[styles.checkbox, item.checked && styles.checkboxChecked]} />
                   <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
-                    {item.quantity} {item.unit} {item.name}
+                    {itemLabel(item)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -67,7 +75,7 @@ export default function ShoppingScreen() {
         </View>
       )}
 
-      {/* Buy on the day (fish / highly perishable) */}
+      {/* Buy on the day */}
       {Object.keys(dayOfByStore).length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Buy on the day</Text>
@@ -85,11 +93,36 @@ export default function ShoppingScreen() {
                 >
                   <View style={[styles.checkbox, item.checked && styles.checkboxChecked]} />
                   <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
-                    {item.quantity} {item.unit} {item.name}
+                    {itemLabel(item)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+          ))}
+        </View>
+      )}
+
+      {/* Pantry staples */}
+      {pantryItems.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pantry staples</Text>
+          <Text style={styles.sectionNote}>
+            Tap to mark ones you already have — the rest go on your list.
+          </Text>
+          {pantryItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.itemRow}
+              onPress={() => toggleShoppingItem(item.id)}
+            >
+              <View style={[styles.pantryBox, item.checked && styles.pantryBoxChecked]}>
+                {item.checked && <Text style={styles.pantryTick}>✓</Text>}
+              </View>
+              <Text style={[styles.itemName, item.checked && styles.pantryNameChecked]}>
+                {item.name}
+              </Text>
+              {item.checked && <Text style={styles.haveItBadge}>have it</Text>}
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -141,4 +174,29 @@ const styles = StyleSheet.create({
   },
   itemName: { fontSize: 15, color: '#1C1C1E', flex: 1 },
   itemNameChecked: { color: '#9CA3AF', textDecorationLine: 'line-through' },
+
+  pantryBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pantryBoxChecked: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#3B7A57',
+  },
+  pantryTick: { fontSize: 12, color: '#3B7A57', fontWeight: '700' },
+  pantryNameChecked: { color: '#9CA3AF' },
+  haveItBadge: {
+    fontSize: 11,
+    color: '#3B7A57',
+    fontWeight: '600',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
 });

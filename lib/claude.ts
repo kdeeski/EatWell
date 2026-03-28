@@ -39,6 +39,7 @@ export interface GeneratedMealPlan {
       buy_timing: 'weekend' | 'day_of';
       from_fridge: boolean;
       from_garden: boolean;
+      is_pantry_staple: boolean;
     }>;
     holly_included: boolean;
   }>;

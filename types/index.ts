@@ -91,6 +91,7 @@ export interface PlannedIngredient {
   buy_timing: BuyTiming;
   from_fridge: boolean; // already in inventory — don't add to shopping list
   from_garden: boolean;
+  is_pantry_staple: boolean;
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────
@@ -112,6 +113,7 @@ export interface ShoppingListItem {
   store: Store;
   buy_timing: BuyTiming;
   checked: boolean;
+  is_pantry_staple: boolean;
   meal_names: string[]; // which meals this is needed for
   created_at: string;
 }

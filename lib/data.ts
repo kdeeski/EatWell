@@ -205,7 +205,7 @@ export async function saveShoppingList(
     for (const ing of meal.ingredients) {
       if (ing.from_fridge || ing.from_garden) continue;
 
-      const key = `${ing.name}__${ing.store}__${ing.buy_timing}`;
+      const key = `${ing.name}__${ing.store}__${ing.buy_timing}__${ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;
         existing.quantity += ing.quantity;
@@ -220,6 +220,7 @@ export async function saveShoppingList(
           store: ing.store,
           buy_timing: ing.buy_timing,
           checked: false,
+          is_pantry_staple: ing.is_pantry_staple ?? false,
           meal_names: [meal.meal_name],
           created_at: '',
         });

@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
 
-  centeredBlock: { alignItems: 'center', paddingTop: 60, gap: 20 },
+  centeredBlock: { paddingTop: 60, gap: 20 },
   generatingText: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
-  doneTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E' },
+  doneTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
   doneBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
 });

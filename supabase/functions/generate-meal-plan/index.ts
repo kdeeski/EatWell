@@ -62,7 +62,8 @@ Return a JSON object with this exact shape:
           "store": "grocer|butcher|supermarket",
           "buy_timing": "weekend|day_of",
           "from_fridge": false,
-          "from_garden": false
+          "from_garden": false,
+          "is_pantry_staple": false
         }
       ],
       "holly_included": false
@@ -79,11 +80,13 @@ Rules:
 1. Use fridge items first (from_fridge: true)
 2. Fish meals go Friday/Saturday/Sunday only, always buy_timing: "day_of"
 3. Cluster ingredients across meals to avoid waste
-4. Mix quick meals with one or two longer ones
-5. Meals should be interesting and varied
-6. Use garden produce when available (from_garden: true)
-7. Omit days when user is away
-8. Set needs_recipe: true for dishes that need a recipe
+4. Plan for ONE person — dinner portions only, no more than 2 serves per dish
+5. Mix quick meals with one or two longer ones
+6. Meals should be interesting and varied
+7. Use garden produce when available (from_garden: true)
+8. Omit days when user is away
+9. Set needs_recipe: true for dishes that need a recipe
+10. Mark common pantry staples as is_pantry_staple: true — things like olive oil, salt, pepper, dried herbs, spices, flour, sugar, butter, soy sauce, stock/broth, vinegar, garlic, onions, eggs, pasta, rice, canned tomatoes, mustard
 Respond ONLY with valid JSON. No prose outside the JSON.`,
       messages: [{ role: 'user', content: userMessage }],
     });
