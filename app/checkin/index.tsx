@@ -37,6 +37,9 @@ export default function CheckinFlow() {
   // If already completed today, show summary
   if (todayCheckin?.completed_at) {
     const tonightMeal = plannedMeals.find((m) => m.id === todayCheckin.tonight_planned_meal_id);
+    const lastNight = todayCheckin.last_night_response;
+    const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
+    const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -47,21 +50,50 @@ export default function CheckinFlow() {
           <View style={{ width: 48 }} />
         </View>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.doneBlock}>
-            <Text style={styles.doneTitle}>Already done today ✓</Text>
-            {tonightMeal && (
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Tonight</Text>
-                <Text style={styles.summaryMeal}>{tonightMeal.meal_name}</Text>
-                {tonightMeal.is_fish && (
-                  <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
-                )}
-              </View>
-            )}
-            <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
-              <Text style={styles.primaryButtonText}>Back to today</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.stepTitle}>Today's check-in ✓</Text>
+
+          {/* Last night */}
+          {lastNight && (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Last night</Text>
+              {lastNight.type === 'planned' && lastNight.meal_name ? (
+                <>
+                  <Text style={styles.summaryMeal}>{lastNight.meal_name}</Text>
+                  {lastNight.rating != null && (
+                    <Text style={styles.summaryDetail}>
+                      {RATING_EMOJI[lastNight.rating]} {RATING_LABELS[lastNight.rating]}
+                      {lastNight.would_cook_again === true ? '  ·  Would cook again' : ''}
+                      {lastNight.would_cook_again === false ? '  ·  Wouldn\'t repeat' : ''}
+                    </Text>
+                  )}
+                  {lastNight.notes ? (
+                    <Text style={styles.summaryNotes}>{lastNight.notes}</Text>
+                  ) : null}
+                </>
+              ) : lastNight.type === 'ate_out' ? (
+                <Text style={styles.summaryMeal}>Ate out</Text>
+              ) : lastNight.type === 'something_else' ? (
+                <Text style={styles.summaryMeal}>Something else</Text>
+              ) : (
+                <Text style={styles.summaryMeal}>Didn't cook</Text>
+              )}
+            </View>
+          )}
+
+          {/* Tonight */}
+          {tonightMeal && (
+            <View style={[styles.summaryCard, styles.summaryCardGreen]}>
+              <Text style={[styles.summaryLabel, { color: '#3B7A57' }]}>Tonight</Text>
+              <Text style={styles.summaryMeal}>{tonightMeal.meal_name}</Text>
+              {tonightMeal.is_fish && (
+                <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
+              )}
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
+            <Text style={styles.primaryButtonText}>Back to today</Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
     );
@@ -123,6 +155,10 @@ export default function CheckinFlow() {
               : lastNightChoice === 'something_else' ? 'something_else'
               : lastNightChoice === 'ate_out' ? 'ate_out'
               : 'didnt_cook',
+            meal_name: lastNightChoice === lastNightsMeal?.id ? lastNightsMeal?.meal_name : undefined,
+            rating: lastNightChoice === lastNightsMeal?.id ? rating : null,
+            would_cook_again: lastNightChoice === lastNightsMeal?.id ? wouldCookAgain : null,
+            notes: lastNightChoice === lastNightsMeal?.id ? (notes.trim() || null) : null,
           } : null,
           tonight_planned_meal_id: mealId !== 'not_sure' ? mealId : null,
           holly_joining: false,
@@ -390,10 +426,14 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
-    borderColor: '#3B7A57',
-    borderWidth: 1.5,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  summaryLabel: { fontSize: 12, fontWeight: '700', color: '#3B7A57', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  summaryMeal: { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
+  summaryCardGreen: { borderColor: '#3B7A57' },
+  summaryLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  summaryMeal: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
+  summaryDetail: { fontSize: 14, color: '#6B7280', marginBottom: 4 },
+  summaryNotes: { fontSize: 14, color: '#374151', fontStyle: 'italic', marginTop: 4 },
 });

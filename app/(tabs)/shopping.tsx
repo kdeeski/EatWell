@@ -88,7 +88,15 @@ function SwipeableRow({ item, rightLabel, rightColor, onSwipeRight, onSwipeLeft,
 export default function ShoppingScreen() {
   const { shoppingItems, toggleShoppingItem, userId, pantryItems, addPantryItemToStore } = useAppStore();
   // Track herb "from garden" state locally
-  const [gardenHerbs, setGardenHerbs] = useState<Set<string>>(new Set());
+  const [gardenHerbs, setGardenHerbs] = useState<Set<string>>(() => {
+    const fromGarden = new Set<string>();
+    shoppingItems.forEach((item) => {
+      if (item.ingredient_category === 'fresh_herbs' && item.from_garden) {
+        fromGarden.add(item.id);
+      }
+    });
+    return fromGarden;
+  });
   // Pre-confirm any pantry/herb items whose names match saved pantry inventory
   const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(() => {
     const confirmed = new Set<string>();
@@ -162,6 +170,11 @@ export default function ShoppingScreen() {
                 Swipe right if growing in your garden · Swipe left if you need to buy it
               </Text>
             )}
+            {cat === 'dairy_eggs' && (
+              <Text style={styles.sectionNote}>
+                Swipe right if you already have it · Swipe left if you need to buy it
+              </Text>
+            )}
             {cat === 'pantry_dry_goods' && (
               <Text style={styles.sectionNote}>
                 Swipe right if you already have it · Swipe left if you need to buy it
@@ -170,7 +183,7 @@ export default function ShoppingScreen() {
 
             {items.map((item) => {
               const isHerb = cat === 'fresh_herbs';
-              const isPantry = cat === 'pantry_dry_goods' || item.is_pantry_staple;
+              const isPantry = cat === 'pantry_dry_goods' || cat === 'dairy_eggs' || item.is_pantry_staple;
               const isFromGarden = gardenHerbs.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id);
               const isHaveIt = isFromGarden || isPantryConfirmed;

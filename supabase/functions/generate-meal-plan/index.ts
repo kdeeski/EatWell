@@ -92,7 +92,7 @@ Rules:
 1. Use fridge items first (from_fridge: true). Mark garden items from_garden: true.
 2. Fish meals on Friday/Saturday/Sunday only — buy_timing: "day_of"
 3. Cluster ingredients across meals to reduce waste
-4. ONE person — portions: fish 1 fillet (150–180g), chicken max 2 thighs OR 1 breast (~300g), red meat/pork/lamb 150–200g, prawns 150g, other proteins 150–200g. Never double portions.
+4. ONE person, 58kg — small appetites. Portions: fish 1 small fillet (130–150g), chicken max 2 thighs OR 1 small breast (250g), red meat/pork/lamb 120–150g, prawns 120g, kumara/potato 1 medium or 2 small per person, pasta/rice 60–75g dry weight. On Holly nights, double the protein and carbs only.
 5. Varied, interesting meals mixing quick and longer cooks
 6. NEVER use the same protein (chicken, fish, pork, beef, lamb, prawns) on consecutive nights
 7. NEVER use the same carbohydrate base (pasta, rice, potatoes, bread, polenta, noodles, couscous) on consecutive nights

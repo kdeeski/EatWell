@@ -118,6 +118,7 @@ export interface ShoppingListItem {
   checked: boolean;
   is_pantry_staple: boolean;
   from_fridge: boolean;
+  from_garden: boolean;
   ingredient_category: IngredientCategory;
   herb_backup: string | null;
   meal_names: string[]; // which meals this is needed for
@@ -166,6 +167,9 @@ export interface LastNightResponse {
   type: 'planned' | 'something_else' | 'ate_out' | 'didnt_cook';
   meal_name?: string;
   cooked_meal_id?: string;
+  rating?: number | null;
+  would_cook_again?: boolean | null;
+  notes?: string | null;
 }
 
 // ─── Canterbury Garden Calendar ───────────────────────────────────────────────
