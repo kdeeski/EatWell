@@ -19,6 +19,7 @@ export default function PlanningFlow() {
   const { fridgeItems, gardenPlants, setMealPlan, setShoppingList, userId } = useAppStore();
 
   const [step, setStep] = useState<Step>('fridge');
+  const [generatingStage, setGeneratingStage] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fridgeConfirmed, setFridgeConfirmed] = useState(false);
   const [fridgeExtras, setFridgeExtras] = useState('');
@@ -51,6 +52,7 @@ export default function PlanningFlow() {
 
   const handleGenerate = async () => {
     setStep('generating');
+    setGeneratingStage(1);
     try {
       const result = await generateMealPlan({
         fridgeItems,
@@ -74,6 +76,7 @@ export default function PlanningFlow() {
       const weekStartDate = monday.toISOString().split('T')[0];
 
       // Save to Supabase and update the app store
+      setGeneratingStage(2);
       const { plan, meals } = await saveMealPlan(userId!, weekStartDate, result);
       setMealPlan(plan, meals);
 
@@ -232,8 +235,11 @@ export default function PlanningFlow() {
           <View style={styles.centeredBlock}>
             <ActivityIndicator size="large" color="#3B7A57" />
             <Text style={styles.generatingText}>
-              Building your meal plan — picking meals around what needs using and what'll be inspiring...
+              {generatingStage === 1
+                ? 'Choosing your meals for the week...'
+                : 'Writing up how to cook them...'}
             </Text>
+            <Text style={styles.generatingSubtext}>Step {generatingStage} of 2</Text>
           </View>
         )}
 
@@ -345,6 +351,7 @@ const styles = StyleSheet.create({
 
   centeredBlock: { paddingTop: 60, gap: 20, alignItems: 'center' },
   generatingText: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
+  generatingSubtext: { fontSize: 13, color: '#9CA3AF', textAlign: 'center' },
   doneTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
   doneBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
   centeredButton: { alignSelf: 'stretch' },
