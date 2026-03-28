@@ -30,6 +30,15 @@
       "favicon": "./assets/favicon.png"
     },
     "owner": "kdeacon",
+    "updates": {
+      "url": "https://u.expo.dev/ff9f32fa-6006-4a5f-94bd-7893fb84d066",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
       "eas": {
         "projectId": "ff9f32fa-6006-4a5f-94bd-7893fb84d066"
@@ -37,6 +46,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-updates",
       [
         "expo-notifications",
         {
