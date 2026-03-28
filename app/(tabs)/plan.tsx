@@ -1,9 +1,9 @@
 // This Week screen — shows the 7-meal plan with drag-to-reorder.
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, PanResponder, LayoutAnimation, Platform, UIManager,
+  PanResponder, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
@@ -15,76 +15,84 @@ if (Platform.OS === 'android') {
 }
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const CARD_HEIGHT = 96; // approximate card height + margin
+const CARD_HEIGHT = 106; // card height + margin
 
 export default function PlanScreen() {
   const router = useRouter();
   const { plannedMeals, currentMealPlan, setMealPlan } = useAppStore();
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
-
-  // Build ordered list of days (sorted by day_of_week)
-  const sortedMeals = [...plannedMeals].sort((a, b) => a.day_of_week - b.day_of_week);
-
-  // Local ordering state — array of day indices in display order
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
-    DAY_SHORT.map((_, i) => i)
+    Array.from({ length: 7 }, (_, i) => i)
   );
 
-  // Drag state
-  const draggingIndex = useRef<number | null>(null);
-  const dragAnim = useRef(new Animated.Value(0)).current;
-  const currentOrder = useRef(displayOrder);
-  currentOrder.current = displayOrder;
+  // Always-current refs for use inside PanResponder closures (avoid stale captures)
+  const orderRef = useRef(displayOrder);
+  orderRef.current = displayOrder;
+  const mealsRef = useRef(plannedMeals);
+  mealsRef.current = plannedMeals;
+  const planRef = useRef(currentMealPlan);
+  planRef.current = currentMealPlan;
 
-  const makePanResponder = useCallback((listIndex: number) => {
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        draggingIndex.current = listIndex;
-        dragAnim.setValue(0);
-        setExpandedSlot(null);
-      },
-      onPanResponderMove: (_, { dy }) => {
-        dragAnim.setValue(dy);
-        const rawTarget = listIndex + dy / CARD_HEIGHT;
-        const target = Math.max(0, Math.min(6, Math.round(rawTarget)));
-        if (target !== draggingIndex.current) {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          const newOrder = [...currentOrder.current];
-          const [moved] = newOrder.splice(draggingIndex.current!, 1);
-          newOrder.splice(target, 0, moved);
-          draggingIndex.current = target;
-          setDisplayOrder(newOrder);
-        }
-      },
-      onPanResponderRelease: async () => {
-        Animated.spring(dragAnim, { toValue: 0, useNativeDriver: true }).start();
-        draggingIndex.current = null;
-        // Save new day assignments to DB
-        if (!currentMealPlan) return;
-        const finalOrder = currentOrder.current;
-        const updates = finalOrder.map((originalDay, newPosition) => {
-          const meal = plannedMeals.find((m) => m.day_of_week === originalDay);
-          return meal ? { meal, newDay: newPosition } : null;
-        }).filter(Boolean) as { meal: PlannedMeal; newDay: number }[];
+  // Track drag state in refs (no re-renders during drag)
+  const draggingFrom = useRef<number | null>(null);   // original slot index
+  const draggingDay  = useRef<number | null>(null);   // dayIndex of dragged meal
 
-        // Optimistic update
-        setMealPlan(currentMealPlan, updates.map(({ meal, newDay }) => ({
-          ...meal,
-          day_of_week: newDay as PlannedMeal['day_of_week'],
-        })));
+  // PanResponders created ONCE per slot — must not be recreated on render
+  const panResponders = useRef<ReturnType<typeof PanResponder.create>[] | null>(null);
+  if (!panResponders.current) {
+    panResponders.current = Array.from({ length: 7 }, (_, slotIndex) =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          draggingFrom.current = slotIndex;
+          draggingDay.current  = orderRef.current[slotIndex];
+          setExpandedSlot(null);
+        },
+        onPanResponderMove: (_, { dy }) => {
+          if (draggingFrom.current === null || draggingDay.current === null) return;
+          const rawTarget = draggingFrom.current + dy / CARD_HEIGHT;
+          const target    = Math.max(0, Math.min(6, Math.round(rawTarget)));
+          const currentPos = orderRef.current.indexOf(draggingDay.current);
+          if (target !== currentPos) {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            const next = [...orderRef.current];
+            next.splice(currentPos, 1);
+            next.splice(target, 0, draggingDay.current);
+            orderRef.current = next;
+            setDisplayOrder(next);
+          }
+        },
+        onPanResponderRelease: async () => {
+          draggingFrom.current = null;
+          draggingDay.current  = null;
+          if (!planRef.current) return;
 
-        // Persist to DB
-        try {
-          await Promise.all(updates.map(({ meal, newDay }) =>
-            updateMealDayOfWeek(meal.id, newDay)
-          ));
-        } catch (e) {
-          console.error('Failed to save meal order', e);
-        }
-      },
-    });
-  }, [plannedMeals, currentMealPlan]);
+          const finalOrder = orderRef.current;
+          const updates = finalOrder
+            .map((originalDay, newPosition) => {
+              const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
+              return meal ? { meal, newDay: newPosition } : null;
+            })
+            .filter(Boolean) as { meal: PlannedMeal; newDay: number }[];
+
+          // Optimistic store update
+          setMealPlan(planRef.current, updates.map(({ meal, newDay }) => ({
+            ...meal,
+            day_of_week: newDay as PlannedMeal['day_of_week'],
+          })));
+
+          // Persist to DB
+          try {
+            await Promise.all(
+              updates.map(({ meal, newDay }) => updateMealDayOfWeek(meal.id, newDay))
+            );
+          } catch (e) {
+            console.error('Failed to save meal order', e);
+          }
+        },
+      })
+    );
+  }
 
   const hasPlan = plannedMeals.length > 0;
 
@@ -106,25 +114,29 @@ export default function PlanScreen() {
       ) : (
         <>
           <Text style={styles.dragHint}>Hold ≡ and drag to reorder</Text>
+
           {displayOrder.map((dayIndex, listIndex) => {
-            const meal = plannedMeals.find((m) => m.day_of_week === dayIndex);
+            const meal       = plannedMeals.find((m) => m.day_of_week === dayIndex);
             const isExpanded = expandedSlot === listIndex;
-            const isDragging = draggingIndex.current === listIndex;
-            const panResponder = makePanResponder(listIndex);
+            const pr         = panResponders.current![listIndex];
 
             return (
               <View key={listIndex} style={styles.dayRow}>
                 <Text style={styles.dayLabel}>{DAY_SHORT[listIndex]}</Text>
 
                 <TouchableOpacity
-                  style={[styles.mealCard, isExpanded && styles.mealCardExpanded, !meal && styles.mealCardEmpty]}
+                  style={[
+                    styles.mealCard,
+                    isExpanded && styles.mealCardExpanded,
+                    !meal && styles.mealCardEmpty,
+                  ]}
                   activeOpacity={meal ? 0.7 : 1}
                   onPress={() => meal && setExpandedSlot(isExpanded ? null : listIndex)}
                 >
                   {meal ? (
                     <>
                       <View style={styles.badgeRow}>
-                        {meal.is_fish && <Text style={styles.fishBadge}>Buy fresh</Text>}
+                        {meal.is_fish      && <Text style={styles.fishBadge}>Buy fresh</Text>}
                         {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
                       </View>
                       <Text style={styles.mealName}>{meal.meal_name}</Text>
@@ -132,9 +144,9 @@ export default function PlanScreen() {
                         {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
                         {!isExpanded ? '  ·  Tap for how to cook' : ''}
                       </Text>
-                      {isExpanded && meal.description ? (
+                      {isExpanded && meal.description && (
                         <Text style={styles.description}>{meal.description}</Text>
-                      ) : null}
+                      )}
                     </>
                   ) : (
                     <Text style={styles.nightOff}>Night off</Text>
@@ -142,12 +154,9 @@ export default function PlanScreen() {
                 </TouchableOpacity>
 
                 {meal && (
-                  <Animated.View
-                    style={[styles.dragHandle, isDragging && { transform: [{ translateY: dragAnim }] }]}
-                    {...panResponder.panHandlers}
-                  >
+                  <View style={styles.dragHandle} {...pr.panHandlers}>
                     <Text style={styles.dragIcon}>≡</Text>
-                  </Animated.View>
+                  </View>
                 )}
               </View>
             );
@@ -164,17 +173,17 @@ export default function PlanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  content: { padding: 20, paddingTop: 60 },
-  heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
-  dragHint: { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
+  content:   { padding: 20, paddingTop: 60 },
+  heading:   { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
+  dragHint:  { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
 
   emptyState: { alignItems: 'center', paddingTop: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },
-  emptyBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
-  planButton: { backgroundColor: '#3B7A57', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
+  emptyBody:  { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
+  planButton:     { backgroundColor: '#3B7A57', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
   planButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
 
-  dayRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 8 },
+  dayRow:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 8 },
   dayLabel: { width: 36, fontSize: 13, fontWeight: '600', color: '#9CA3AF', paddingTop: 14 },
 
   mealCard: {
@@ -183,10 +192,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   mealCardExpanded: { borderColor: '#3B7A57', borderWidth: 1.5, shadowOpacity: 0.08, elevation: 2 },
-  mealCardEmpty: { backgroundColor: '#F9FAFB' },
+  mealCardEmpty:    { backgroundColor: '#F9FAFB' },
 
-  badgeRow: { flexDirection: 'row', gap: 6, marginBottom: 4 },
-  fishBadge: {
+  badgeRow:    { flexDirection: 'row', gap: 6, marginBottom: 4 },
+  fishBadge:   {
     fontSize: 11, fontWeight: '600', color: '#3B7A57', backgroundColor: '#D1FAE5',
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
@@ -195,19 +204,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
 
-  mealName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 4 },
-  mealMeta: { fontSize: 12, color: '#9CA3AF' },
+  mealName:    { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 4 },
+  mealMeta:    { fontSize: 12, color: '#9CA3AF' },
   description: { marginTop: 12, fontSize: 15, color: '#374151', lineHeight: 23 },
-  nightOff: { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
+  nightOff:    { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
 
   dragHandle: {
     width: 32, paddingTop: 12, alignItems: 'center', justifyContent: 'flex-start',
   },
   dragIcon: { fontSize: 20, color: '#D1D5DB', lineHeight: 28 },
 
-  replanButton: {
-    marginTop: 16, padding: 14, borderRadius: 14,
-    borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center',
-  },
+  replanButton:     { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
   replanButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
 });
