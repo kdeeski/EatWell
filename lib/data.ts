@@ -192,6 +192,13 @@ export async function loadShoppingList(
   return { list: list as ShoppingList, items: items as ShoppingListItem[] };
 }
 
+function normalizeStore(raw: string): 'grocer' | 'butcher' | 'supermarket' {
+  const s = (raw ?? '').toLowerCase();
+  if (s === 'butcher' || s.includes('butch') || s.includes('meat')) return 'butcher';
+  if (s === 'grocer' || s.includes('grocer') || s.includes('market') || s.includes('farm') || s.includes('fish')) return 'grocer';
+  return 'supermarket';
+}
+
 export async function saveShoppingList(
   userId: string,
   mealPlanId: string,
@@ -226,7 +233,7 @@ export async function saveShoppingList(
           name: ing.name,
           quantity: ing.quantity,
           unit: ing.unit,
-          store: ing.store,
+          store: normalizeStore(ing.store),
           buy_timing: ing.buy_timing,
           checked: ing.from_fridge ?? false,
           is_pantry_staple: ing.is_pantry_staple ?? false,
