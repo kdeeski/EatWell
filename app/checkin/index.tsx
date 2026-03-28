@@ -1,21 +1,22 @@
-// Morning check-in modal — the daily 7am flow.
-// Part 1: What did you cook last night? (+ rating if they loved it)
-// Part 2: What are you cooking tonight?
+// Morning check-in modal — daily debrief and tonight planning.
+// Saves to DB. Shows summary if already completed today.
 
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
+import { saveCheckin, logCookedMeal } from '../../lib/data';
 
 type Step = 'debrief' | 'rating' | 'tonight' | 'done';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
+const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
 
 export default function CheckinFlow() {
   const router = useRouter();
-  const { plannedMeals, setTodayCheckin, todayCheckin } = useAppStore();
+  const { plannedMeals, setTodayCheckin, todayCheckin, userId } = useAppStore();
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
@@ -28,7 +29,43 @@ export default function CheckinFlow() {
   const [step, setStep] = useState<Step>('debrief');
   const [lastNightChoice, setLastNightChoice] = useState<string | null>(null);
   const [rating, setRating] = useState<number | null>(null);
+  const [wouldCookAgain, setWouldCookAgain] = useState<boolean | null>(null);
+  const [notes, setNotes] = useState('');
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // If already completed today, show summary
+  if (todayCheckin?.completed_at) {
+    const tonightMeal = plannedMeals.find((m) => m.id === todayCheckin.tonight_planned_meal_id);
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.cancel}>Close</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Morning check-in</Text>
+          <View style={{ width: 48 }} />
+        </View>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.doneBlock}>
+            <Text style={styles.doneTitle}>Already done today ✓</Text>
+            {tonightMeal && (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Tonight</Text>
+                <Text style={styles.summaryMeal}>{tonightMeal.meal_name}</Text>
+                {tonightMeal.is_fish && (
+                  <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
+                )}
+              </View>
+            )}
+            <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
+              <Text style={styles.primaryButtonText}>Back to today</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   const handleDebrief = (choice: string) => {
     setLastNightChoice(choice);
@@ -39,13 +76,64 @@ export default function CheckinFlow() {
     }
   };
 
-  const handleRating = (r: number) => {
-    setRating(r);
+  const handleRatingDone = () => {
     setStep('tonight');
   };
 
-  const handleTonightChoice = (mealId: string) => {
+  const handleTonightChoice = async (mealId: string) => {
     setTonightChoice(mealId);
+    setSaving(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Log cooked meal if they cooked the planned meal
+      if (lastNightChoice === lastNightsMeal?.id && userId) {
+        await logCookedMeal({
+          user_id: userId,
+          cooked_date: yesterday.toISOString().split('T')[0],
+          planned_meal_id: lastNightsMeal.id,
+          actual_meal_name: lastNightsMeal.meal_name,
+          rating: rating as 1 | 2 | 3 | 4 | 5 | null,
+          would_cook_again: wouldCookAgain,
+          notes: notes.trim() || null,
+          voice_note_url: null,
+          ate_out: false,
+        });
+      } else if ((lastNightChoice === 'ate_out') && userId) {
+        await logCookedMeal({
+          user_id: userId,
+          cooked_date: yesterday.toISOString().split('T')[0],
+          planned_meal_id: null,
+          actual_meal_name: 'Ate out',
+          rating: null,
+          would_cook_again: null,
+          notes: null,
+          voice_note_url: null,
+          ate_out: true,
+        });
+      }
+
+      // Save check-in
+      if (userId) {
+        const checkin = await saveCheckin({
+          user_id: userId,
+          checkin_date: today,
+          last_night_response: lastNightChoice ? {
+            type: lastNightChoice === lastNightsMeal?.id ? 'planned'
+              : lastNightChoice === 'something_else' ? 'something_else'
+              : lastNightChoice === 'ate_out' ? 'ate_out'
+              : 'didnt_cook',
+          } : null,
+          tonight_planned_meal_id: mealId !== 'not_sure' ? mealId : null,
+          holly_joining: false,
+          completed_at: new Date().toISOString(),
+        });
+        setTodayCheckin(checkin);
+      }
+    } catch (e) {
+      console.error('Failed to save check-in', e);
+    }
+    setSaving(false);
     setStep('done');
   };
 
@@ -61,14 +149,14 @@ export default function CheckinFlow() {
 
       <ScrollView contentContainerStyle={styles.content}>
 
-        {/* Part 1: Last night debrief */}
+        {/* Debrief */}
         {step === 'debrief' && (
           <View>
             <Text style={styles.stepTitle}>What did you end up cooking last night?</Text>
 
             {lastNightsMeal && (
               <TouchableOpacity
-                style={styles.mealOption}
+                style={[styles.mealOption, lastNightChoice === lastNightsMeal.id && styles.mealOptionSelected]}
                 onPress={() => handleDebrief(lastNightsMeal.id)}
               >
                 <Text style={styles.mealOptionName}>{lastNightsMeal.meal_name}</Text>
@@ -76,24 +164,13 @@ export default function CheckinFlow() {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={styles.mealOption}
-              onPress={() => handleDebrief('something_else')}
-            >
+            <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('something_else')}>
               <Text style={styles.mealOptionName}>Something else</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.mealOption}
-              onPress={() => handleDebrief('ate_out')}
-            >
+            <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('ate_out')}>
               <Text style={styles.mealOptionName}>Ate out / ordered in</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.mealOption}
-              onPress={() => handleDebrief('didnt_cook')}
-            >
+            <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('didnt_cook')}>
               <Text style={styles.mealOptionName}>Didn't cook</Text>
             </TouchableOpacity>
           </View>
@@ -102,29 +179,67 @@ export default function CheckinFlow() {
         {/* Rating */}
         {step === 'rating' && (
           <View>
-            <Text style={styles.stepTitle}>How was it?</Text>
+            <Text style={styles.stepTitle}>How was {lastNightsMeal?.meal_name}?</Text>
+
+            {/* Star rating */}
             <View style={styles.ratingRow}>
               {[1, 2, 3, 4, 5].map((r) => (
                 <TouchableOpacity
                   key={r}
                   style={[styles.ratingChip, rating === r && styles.ratingChipSelected]}
-                  onPress={() => handleRating(r)}
+                  onPress={() => setRating(r)}
                 >
+                  <Text style={styles.ratingEmoji}>{RATING_EMOJI[r]}</Text>
                   <Text style={[styles.ratingText, rating === r && styles.ratingTextSelected]}>
                     {RATING_LABELS[r]}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Would cook again */}
+            <Text style={styles.subLabel}>Would you cook it again?</Text>
+            <View style={styles.yesNoRow}>
+              <TouchableOpacity
+                style={[styles.yesNoChip, wouldCookAgain === true && styles.yesChipSelected]}
+                onPress={() => setWouldCookAgain(true)}
+              >
+                <Text style={[styles.yesNoText, wouldCookAgain === true && styles.yesNoTextSelected]}>
+                  Yes
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.yesNoChip, wouldCookAgain === false && styles.noChipSelected]}
+                onPress={() => setWouldCookAgain(false)}
+              >
+                <Text style={[styles.yesNoText, wouldCookAgain === false && styles.yesNoTextSelected]}>
+                  No
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Notes */}
+            <Text style={styles.subLabel}>Any notes? (optional)</Text>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="What worked, what didn't, any tweaks..."
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
+            <TouchableOpacity style={styles.primaryButton} onPress={handleRatingDone}>
+              <Text style={styles.primaryButtonText}>Next →</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Part 2: Tonight */}
+        {/* Tonight */}
         {step === 'tonight' && (
           <View>
             <Text style={styles.stepTitle}>What are you thinking for tonight?</Text>
             {tonightOptions.length === 0 ? (
-              <Text style={styles.mutedText}>Nothing planned for tonight — you're on your own!</Text>
+              <Text style={styles.mutedText}>Nothing planned — you're on your own tonight!</Text>
             ) : (
               tonightOptions.map((meal) => (
                 <TouchableOpacity
@@ -134,11 +249,9 @@ export default function CheckinFlow() {
                 >
                   <Text style={styles.mealOptionName}>{meal.meal_name}</Text>
                   {meal.description ? (
-                    <Text style={styles.mealOptionDesc}>{meal.description}</Text>
+                    <Text style={styles.mealOptionDesc} numberOfLines={2}>{meal.description}</Text>
                   ) : null}
-                  {meal.is_fish && (
-                    <Text style={styles.fishNote}>Buy fresh today</Text>
-                  )}
+                  {meal.is_fish && <Text style={styles.fishNote}>Buy fresh today</Text>}
                   {meal.estimated_prep_minutes ? (
                     <Text style={styles.mealOptionMeta}>~{meal.estimated_prep_minutes} min</Text>
                   ) : null}
@@ -159,12 +272,15 @@ export default function CheckinFlow() {
           <View style={styles.doneBlock}>
             <Text style={styles.doneTitle}>All set.</Text>
             {tonightChoice && tonightChoice !== 'not_sure' && (
-              <Text style={styles.doneBody}>
-                {plannedMeals.find((m) => m.id === tonightChoice)?.meal_name} it is tonight.
-                {plannedMeals.find((m) => m.id === tonightChoice)?.is_fish
-                  ? " Don't forget to pick up the fish today."
-                  : ''}
-              </Text>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Tonight</Text>
+                <Text style={styles.summaryMeal}>
+                  {plannedMeals.find((m) => m.id === tonightChoice)?.meal_name}
+                </Text>
+                {plannedMeals.find((m) => m.id === tonightChoice)?.is_fish && (
+                  <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
+                )}
+              </View>
             )}
             <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
               <Text style={styles.primaryButtonText}>Done</Text>
@@ -191,9 +307,10 @@ const styles = StyleSheet.create({
   },
   cancel: { fontSize: 16, color: '#6B7280' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
-
   content: { padding: 24, paddingTop: 28 },
+
   stepTitle: { fontSize: 22, fontWeight: '700', color: '#1C1C1E', marginBottom: 20 },
+  subLabel: { fontSize: 15, fontWeight: '600', color: '#374151', marginBottom: 10, marginTop: 20 },
   mutedText: { fontSize: 15, color: '#9CA3AF', fontStyle: 'italic' },
 
   mealOption: {
@@ -207,36 +324,76 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  mealOptionSelected: { borderColor: '#3B7A57', borderWidth: 2 },
   mealOptionMuted: { backgroundColor: '#F9FAFB' },
   mealOptionName: { fontSize: 17, fontWeight: '600', color: '#1C1C1E' },
   mealOptionDesc: { fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 18 },
   mealOptionMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
   fishNote: { fontSize: 12, fontWeight: '600', color: '#3B7A57', marginTop: 4 },
 
-  ratingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
+  ratingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   ratingChip: {
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    minWidth: 68,
   },
   ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
-  ratingText: { fontSize: 15, color: '#374151' },
+  ratingEmoji: { fontSize: 18, marginBottom: 2 },
+  ratingText: { fontSize: 12, color: '#374151' },
   ratingTextSelected: { color: '#FFFFFF', fontWeight: '600' },
 
-  doneBlock: { alignItems: 'center', paddingTop: 60, gap: 16 },
-  doneTitle: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
-  doneBody: { fontSize: 16, color: '#6B7280', textAlign: 'center', lineHeight: 24, maxWidth: 280 },
+  yesNoRow: { flexDirection: 'row', gap: 12, marginBottom: 8 },
+  yesNoChip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  yesChipSelected: { backgroundColor: '#D1FAE5', borderColor: '#3B7A57' },
+  noChipSelected: { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
+  yesNoText: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  yesNoTextSelected: { color: '#1C1C1E' },
+
+  notesInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 14,
+    fontSize: 15,
+    color: '#1C1C1E',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+  },
 
   primaryButton: {
     backgroundColor: '#3B7A57',
     borderRadius: 14,
     paddingVertical: 16,
-    paddingHorizontal: 40,
     alignItems: 'center',
     marginTop: 8,
   },
   primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
+
+  doneBlock: { paddingTop: 60, gap: 16 },
+  doneTitle: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
+
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderColor: '#3B7A57',
+    borderWidth: 1.5,
+  },
+  summaryLabel: { fontSize: 12, fontWeight: '700', color: '#3B7A57', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  summaryMeal: { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
 });

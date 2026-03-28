@@ -141,6 +141,8 @@ export interface CookedMeal {
   planned_meal_id: string | null; // null if something off-plan was cooked
   actual_meal_name: string;
   rating: 1 | 2 | 3 | 4 | 5 | null;
+  would_cook_again: boolean | null;
+  notes: string | null;
   voice_note_url: string | null;
   ate_out: boolean;
   created_at: string;

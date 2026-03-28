@@ -26,13 +26,21 @@ export default function PlanningFlow() {
   const [gardenHarvesting, setGardenHarvesting] = useState<string[]>([]);
   const plantsDue = getPlantsDueForHarvest(gardenPlants);
 
+  const [gardenExtras, setGardenExtras] = useState('');
+
   const [spontaneous, setSpontaneous] = useState('');
   const [nightsAway, setNightsAway] = useState<number[]>([]);
+  const [hollyHomeNights, setHollyHomeNights] = useState<number[]>([]);
 
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const toggleNightAway = (day: number) =>
     setNightsAway((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+
+  const toggleHollyNight = (day: number) =>
+    setHollyHomeNights((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
 
@@ -46,13 +54,16 @@ export default function PlanningFlow() {
     try {
       const result = await generateMealPlan({
         fridgeItems,
-        gardenAvailable: gardenHarvesting,
+        gardenAvailable: [
+          ...gardenHarvesting,
+          ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
+        ],
         spontaneousAdditions: spontaneous
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
         nightsAway,
-        hollyHomeNights: [],
+        hollyHomeNights,
       });
 
       // Get Monday of the current week as the week start date
@@ -144,6 +155,13 @@ export default function PlanningFlow() {
                 ))}
               </>
             )}
+            <TextInput
+              style={styles.input}
+              placeholder="Anything else ready that's not listed? e.g. basil, lemons, silverbeet..."
+              value={gardenExtras}
+              onChangeText={setGardenExtras}
+              multiline
+            />
             <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('spontaneous')}>
               <Text style={styles.primaryButtonText}>Next →</Text>
             </TouchableOpacity>
@@ -184,6 +202,20 @@ export default function PlanningFlow() {
                   onPress={() => toggleNightAway(index)}
                 >
                   <Text style={[styles.dayChipText, nightsAway.includes(index) && styles.dayChipTextSelected]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.stepBody}>Any nights Holly's joining you?</Text>
+            <View style={styles.dayGrid}>
+              {DAY_LABELS.map((label, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.dayChip, hollyHomeNights.includes(index) && styles.dayChipHolly]}
+                  onPress={() => toggleHollyNight(index)}
+                >
+                  <Text style={[styles.dayChipText, hollyHomeNights.includes(index) && styles.dayChipTextHolly]}>
                     {label}
                   </Text>
                 </TouchableOpacity>
@@ -297,8 +329,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   dayChipSelected: { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
+  dayChipHolly: { backgroundColor: '#EDE9FE', borderColor: '#7C3AED' },
   dayChipText: { fontSize: 14, color: '#374151' },
   dayChipTextSelected: { color: '#B91C1C', fontWeight: '600' },
+  dayChipTextHolly: { color: '#5B21B6', fontWeight: '600' },
 
   primaryButton: {
     backgroundColor: '#3B7A57',
