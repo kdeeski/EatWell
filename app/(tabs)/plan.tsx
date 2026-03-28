@@ -5,14 +5,35 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
+import { updateMealDayOfWeek } from '../../lib/data';
+import type { PlannedMeal } from '../../types';
 
 const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function PlanScreen() {
   const router = useRouter();
-  const { plannedMeals } = useAppStore();
+  const { plannedMeals, currentMealPlan, setMealPlan } = useAppStore();
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
+
+  const swapDays = async (dayA: number, dayB: number) => {
+    const mealA = plannedMeals.find((m) => m.day_of_week === dayA);
+    const mealB = plannedMeals.find((m) => m.day_of_week === dayB);
+    if (!mealA || !mealB || !currentMealPlan) return;
+    // Optimistic update
+    setMealPlan(currentMealPlan, plannedMeals.map((m) => {
+      if (m.id === mealA.id) return { ...m, day_of_week: dayB as PlannedMeal['day_of_week'] };
+      if (m.id === mealB.id) return { ...m, day_of_week: dayA as PlannedMeal['day_of_week'] };
+      return m;
+    }));
+    setExpandedDay(null);
+    try {
+      await updateMealDayOfWeek(mealA.id, dayB);
+      await updateMealDayOfWeek(mealB.id, dayA);
+    } catch (e) {
+      console.error('Failed to swap meals', e);
+    }
+  };
 
   const hasPlan = plannedMeals.length > 0;
 
@@ -39,51 +60,61 @@ export default function PlanScreen() {
           {DAY_SHORT.map((short, index) => {
             const meal = plannedMeals.find((m) => m.day_of_week === index);
             const isExpanded = expandedDay === index;
+            const prevMeal = plannedMeals.find((m) => m.day_of_week === index - 1);
+            const nextMeal = plannedMeals.find((m) => m.day_of_week === index + 1);
 
             return (
-              <TouchableOpacity
-                key={index}
-                activeOpacity={meal ? 0.7 : 1}
-                onPress={() => {
-                  if (!meal) return;
-                  setExpandedDay(isExpanded ? null : index);
-                }}
-              >
-                <View style={styles.dayRow}>
-                  <Text style={styles.dayLabel}>{short}</Text>
+              <View key={index} style={styles.dayRow}>
+                <Text style={styles.dayLabel}>{short}</Text>
 
+                <TouchableOpacity
+                  style={[styles.mealCard, isExpanded && styles.mealCardExpanded, !meal && styles.mealCardEmpty]}
+                  activeOpacity={meal ? 0.7 : 1}
+                  onPress={() => {
+                    if (!meal) return;
+                    setExpandedDay(isExpanded ? null : index);
+                  }}
+                >
                   {meal ? (
-                    <View style={[styles.mealCard, isExpanded && styles.mealCardExpanded]}>
-                      {/* Badges row */}
+                    <>
                       <View style={styles.badgeRow}>
-                        {meal.is_fish && (
-                          <Text style={styles.fishBadge}>Buy fresh</Text>
-                        )}
-                        {meal.needs_recipe && (
-                          <Text style={styles.recipeBadge}>Recipe</Text>
-                        )}
+                        {meal.is_fish && <Text style={styles.fishBadge}>Buy fresh</Text>}
+                        {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
                       </View>
-
                       <Text style={styles.mealName}>{meal.meal_name}</Text>
-
                       <Text style={styles.mealMeta}>
                         {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
-                        {meal.estimated_prep_minutes && !isExpanded ? '  ·  Tap for how to cook' : ''}
-                        {!meal.estimated_prep_minutes && !isExpanded ? 'Tap for how to cook' : ''}
+                        {!isExpanded ? '  ·  Tap for how to cook' : ''}
                       </Text>
-
-                      {/* Expanded cooking description */}
                       {isExpanded && meal.description ? (
                         <Text style={styles.description}>{meal.description}</Text>
                       ) : null}
-                    </View>
+                    </>
                   ) : (
-                    <View style={[styles.mealCard, styles.mealCardEmpty]}>
-                      <Text style={styles.nightOff}>Night off</Text>
-                    </View>
+                    <Text style={styles.nightOff}>Night off</Text>
                   )}
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+
+                {/* Reorder arrows */}
+                {meal && (
+                  <View style={styles.arrowCol}>
+                    <TouchableOpacity
+                      style={[styles.arrowBtn, !prevMeal && styles.arrowBtnDisabled]}
+                      onPress={() => prevMeal && swapDays(index, index - 1)}
+                      disabled={!prevMeal}
+                    >
+                      <Text style={styles.arrowText}>▲</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.arrowBtn, !nextMeal && styles.arrowBtnDisabled]}
+                      onPress={() => nextMeal && swapDays(index, index + 1)}
+                      disabled={!nextMeal}
+                    >
+                      <Text style={styles.arrowText}>▼</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             );
           })}
 
@@ -187,6 +218,14 @@ const styles = StyleSheet.create({
   },
 
   nightOff: { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
+
+  arrowCol: { justifyContent: 'center', gap: 4 },
+  arrowBtn: {
+    width: 28, height: 28, borderRadius: 8,
+    backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center',
+  },
+  arrowBtnDisabled: { opacity: 0.25 },
+  arrowText: { fontSize: 10, color: '#6B7280' },
 
   replanButton: {
     marginTop: 16,

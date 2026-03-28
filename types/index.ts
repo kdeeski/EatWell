@@ -117,6 +117,7 @@ export interface ShoppingListItem {
   buy_timing: BuyTiming;
   checked: boolean;
   is_pantry_staple: boolean;
+  from_fridge: boolean;
   ingredient_category: IngredientCategory;
   herb_backup: string | null;
   meal_names: string[]; // which meals this is needed for

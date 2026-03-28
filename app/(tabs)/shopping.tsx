@@ -214,6 +214,21 @@ export default function ShoppingScreen() {
                 );
               }
 
+              // Fridge item — shown greyed with "In fridge" badge, no tap needed
+              if (item.from_fridge) {
+                return (
+                  <View key={item.id} style={[styles.itemRow, styles.itemRowFridge]}>
+                    <View style={styles.fridgeBox}>
+                      <Text style={styles.fridgeTick}>✓</Text>
+                    </View>
+                    <Text style={[styles.itemName, styles.itemNameMuted]}>
+                      {itemQuantityLabel(item)}
+                    </Text>
+                    <Text style={styles.fridgeBadge}>In fridge</Text>
+                  </View>
+                );
+              }
+
               // Regular item — just a checkbox
               return (
                 <TouchableOpacity
@@ -299,6 +314,19 @@ const styles = StyleSheet.create({
   dayOfBadge: {
     fontSize: 11, fontWeight: '600', color: '#92400E',
     backgroundColor: '#FEF3C7', paddingHorizontal: 8,
+    paddingVertical: 2, borderRadius: 6,
+  },
+
+  itemRowFridge: { backgroundColor: '#F9FAFB' },
+  fridgeBox: {
+    width: 22, height: 22, borderRadius: 6,
+    backgroundColor: '#E5E7EB', borderWidth: 0,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  fridgeTick: { fontSize: 12, color: '#9CA3AF', fontWeight: '700' },
+  fridgeBadge: {
+    fontSize: 11, fontWeight: '600', color: '#6B7280',
+    backgroundColor: '#E5E7EB', paddingHorizontal: 8,
     paddingVertical: 2, borderRadius: 6,
   },
 

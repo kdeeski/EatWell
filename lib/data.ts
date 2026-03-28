@@ -157,6 +157,14 @@ export async function saveMealPlan(
   return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
 }
 
+export async function updateMealDayOfWeek(mealId: string, dayOfWeek: number): Promise<void> {
+  const { error } = await supabase
+    .from('planned_meals')
+    .update({ day_of_week: dayOfWeek })
+    .eq('id', mealId);
+  if (error) throw error;
+}
+
 // ─── Shopping List ────────────────────────────────────────────────────────────
 
 export async function loadShoppingList(
@@ -198,14 +206,15 @@ export async function saveShoppingList(
     .single();
   if (listError) throw listError;
 
-  // Aggregate ingredients across all meals, excluding from_fridge and from_garden items
+  // Aggregate ingredients across all meals.
+  // from_garden items are excluded. from_fridge items are included but flagged.
   const itemMap = new Map<string, ShoppingListItem>();
 
   for (const meal of generated.meals) {
     for (const ing of meal.ingredients) {
-      if (ing.from_fridge || ing.from_garden) continue;
+      if (ing.from_garden) continue;
 
-      const key = `${ing.name}__${ing.ingredient_category}__${ing.buy_timing}__${ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
+      const key = `${ing.name}__${ing.ingredient_category}__${ing.buy_timing}__${ing.from_fridge ? 'fridge' : ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;
         existing.quantity += ing.quantity;
@@ -219,8 +228,9 @@ export async function saveShoppingList(
           unit: ing.unit,
           store: ing.store,
           buy_timing: ing.buy_timing,
-          checked: false,
+          checked: ing.from_fridge ?? false,
           is_pantry_staple: ing.is_pantry_staple ?? false,
+          from_fridge: ing.from_fridge ?? false,
           ingredient_category: ing.ingredient_category ?? 'produce',
           herb_backup: ing.herb_backup ?? null,
           meal_names: [meal.meal_name],

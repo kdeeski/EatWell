@@ -89,18 +89,20 @@ Return ONLY a JSON object with this exact shape — no prose:
       max_tokens: 6000,
       system: `You are EatWell's meal planning engine for Christchurch, New Zealand.
 Rules:
-1. Use fridge items first (from_fridge: true)
+1. Use fridge items first (from_fridge: true). Mark garden items from_garden: true.
 2. Fish meals on Friday/Saturday/Sunday only — buy_timing: "day_of"
 3. Cluster ingredients across meals to reduce waste
-4. ONE person — max 2 serves per dish (dinner + lunch leftovers)
+4. ONE person — portions: fish 1 fillet (150–180g), chicken max 2 thighs OR 1 breast (~300g), red meat/pork/lamb 150–200g, prawns 150g, other proteins 150–200g. Never double portions.
 5. Varied, interesting meals mixing quick and longer cooks
-6. Use garden produce when available (from_garden: true)
-7. Omit days the user is away
-8. Set needs_recipe: true for complex dishes
-9. Mark pantry staples as is_pantry_staple: true — olive oil, salt, pepper, spices, flour, sugar, butter, soy sauce, stock, vinegar, garlic, onions, eggs, pasta, rice, canned tomatoes
-10. ingredient_category values: meat_fish, produce, fresh_herbs, dairy_eggs, pantry_dry_goods, bread
-11. For fresh_herbs set herb_backup to a short fallback suggestion; all others herb_backup: null
-12. Max 7 ingredients per meal — be concise
+6. NEVER use the same protein (chicken, fish, pork, beef, lamb, prawns) on consecutive nights
+7. NEVER use the same carbohydrate base (pasta, rice, potatoes, bread, polenta, noodles, couscous) on consecutive nights
+8. Use garden produce when available (from_garden: true)
+9. Omit days the user is away
+10. Set needs_recipe: true for complex dishes
+11. Mark ALL of the following as is_pantry_staple: true — olive oil, all oils, salt, pepper, ALL dried herbs (oregano, thyme, rosemary, bay leaves, etc), ALL spices (cumin, paprika, turmeric, cinnamon, etc), flour, sugar, butter, soy sauce, fish sauce, stock/broth, vinegar, garlic, onions, shallots, eggs, pasta, rice, noodles, canned tomatoes, tomato paste, mustard, honey, capers, anchovies, chilli flakes, nuts, seeds
+12. ingredient_category values: meat_fish, produce, fresh_herbs (fresh leafy herbs only — basil, parsley, coriander, mint, dill, tarragon, chives), dairy_eggs, pantry_dry_goods, bread
+13. For fresh_herbs set herb_backup to a short fallback suggestion; all others herb_backup: null
+14. Max 7 ingredients per meal — be concise
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
     });
