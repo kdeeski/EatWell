@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/useAppStore';
 import { bootstrapUserData } from '../lib/data';
@@ -15,6 +17,23 @@ export default function RootLayout() {
     setMealPlan, setShoppingList, setTodayCheckin, setPantryItems,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    async function checkForUpdate() {
+      try {
+        const result = await Updates.checkForUpdateAsync();
+        if (result.isAvailable) {
+          setUpdating(true);
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch {
+        // Not in an EAS build environment — skip silently
+      }
+    }
+    checkForUpdate();
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -40,7 +59,6 @@ export default function RootLayout() {
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)');
     } else if (session) {
-      // Load all user data into the app store
       bootstrapUserData(session.user.id, session.user.email ?? '').then(
         ({ fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems }) => {
           setFridgeItems(fridgeItems);
@@ -54,12 +72,16 @@ export default function RootLayout() {
     }
   }, [session, segments]);
 
-  // Don't render anything until auth state is known
   if (session === undefined) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
+      {updating && (
+        <View style={styles.updateBanner}>
+          <Text style={styles.updateText}>✦ Updating EatWell…</Text>
+        </View>
+      )}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -69,3 +91,12 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  updateBanner: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 999,
+    backgroundColor: '#3B7A57', paddingTop: 52, paddingBottom: 12,
+    alignItems: 'center',
+  },
+  updateText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
+});
