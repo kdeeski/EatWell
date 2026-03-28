@@ -12,7 +12,7 @@ export default function RootLayout() {
   const segments = useSegments();
   const {
     setUserId, setFridgeItems, setGardenPlants,
-    setMealPlan, setShoppingList, setTodayCheckin,
+    setMealPlan, setShoppingList, setTodayCheckin, setPantryItems,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
@@ -42,12 +42,13 @@ export default function RootLayout() {
     } else if (session) {
       // Load all user data into the app store
       bootstrapUserData(session.user.id, session.user.email ?? '').then(
-        ({ fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
+        ({ fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems }) => {
           setFridgeItems(fridgeItems);
           setGardenPlants(gardenPlants);
           if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
           if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
           setTodayCheckin(todayCheckin);
+          setPantryItems(pantryItems);
         }
       );
     }

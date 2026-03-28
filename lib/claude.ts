@@ -40,6 +40,8 @@ export interface GeneratedMealPlan {
       from_fridge: boolean;
       from_garden: boolean;
       is_pantry_staple: boolean;
+      ingredient_category: 'meat_fish' | 'produce' | 'fresh_herbs' | 'dairy_eggs' | 'pantry_dry_goods' | 'bread';
+      herb_backup: string | null;
     }>;
     holly_included: boolean;
   }>;

@@ -59,6 +59,7 @@ export interface GardenHarvest {
 
 export type Store = 'grocer' | 'butcher' | 'supermarket';
 export type BuyTiming = 'weekend' | 'day_of';
+export type IngredientCategory = 'meat_fish' | 'produce' | 'fresh_herbs' | 'dairy_eggs' | 'pantry_dry_goods' | 'bread';
 
 export interface MealPlan {
   id: string;
@@ -92,6 +93,8 @@ export interface PlannedIngredient {
   from_fridge: boolean; // already in inventory — don't add to shopping list
   from_garden: boolean;
   is_pantry_staple: boolean;
+  ingredient_category: IngredientCategory;
+  herb_backup: string | null;
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────
@@ -114,7 +117,18 @@ export interface ShoppingListItem {
   buy_timing: BuyTiming;
   checked: boolean;
   is_pantry_staple: boolean;
+  ingredient_category: IngredientCategory;
+  herb_backup: string | null;
   meal_names: string[]; // which meals this is needed for
+  created_at: string;
+}
+
+export interface PantryItem {
+  id: string;
+  user_id: string;
+  name: string;
+  added_date: string;
+  depleted: boolean;
   created_at: string;
 }
 

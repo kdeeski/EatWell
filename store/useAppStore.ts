@@ -7,6 +7,7 @@ import type {
   ShoppingListItem,
   GardenPlant,
   CheckIn,
+  PantryItem,
 } from '../types';
 
 interface AppState {
@@ -38,6 +39,11 @@ interface AppState {
   // ── Today's check-in ──────────────────────────────────────────────────────
   todayCheckin: CheckIn | null;
   setTodayCheckin: (checkin: CheckIn | null) => void;
+
+  // ── Pantry ────────────────────────────────────────────────────────────────
+  pantryItems: PantryItem[];
+  setPantryItems: (items: PantryItem[]) => void;
+  addPantryItemToStore: (item: PantryItem) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -82,4 +88,12 @@ export const useAppStore = create<AppState>((set) => ({
   // Check-in
   todayCheckin: null,
   setTodayCheckin: (checkin) => set({ todayCheckin: checkin }),
+
+  // Pantry
+  pantryItems: [],
+  setPantryItems: (items) => set({ pantryItems: items }),
+  addPantryItemToStore: (item) =>
+    set((state) => ({
+      pantryItems: [...state.pantryItems.filter((i) => i.name !== item.name), item],
+    })),
 }));

@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import type {
   FridgeItem, GardenPlant, GardenHarvest,
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
-  CookedMeal, CheckIn,
+  CookedMeal, CheckIn, PantryItem,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
@@ -205,7 +205,7 @@ export async function saveShoppingList(
     for (const ing of meal.ingredients) {
       if (ing.from_fridge || ing.from_garden) continue;
 
-      const key = `${ing.name}__${ing.store}__${ing.buy_timing}__${ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
+      const key = `${ing.name}__${ing.ingredient_category}__${ing.buy_timing}__${ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;
         existing.quantity += ing.quantity;
@@ -221,6 +221,8 @@ export async function saveShoppingList(
           buy_timing: ing.buy_timing,
           checked: false,
           is_pantry_staple: ing.is_pantry_staple ?? false,
+          ingredient_category: ing.ingredient_category ?? 'produce',
+          herb_backup: ing.herb_backup ?? null,
           meal_names: [meal.meal_name],
           created_at: '',
         });
@@ -310,14 +312,49 @@ export async function bootstrapUserData(userId: string, email: string) {
   // Always ensure the user has a profile row first
   await ensureUserProfile(userId, email);
 
-  const [fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin] =
+  const [fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems] =
     await Promise.all([
       loadFridgeItems(userId),
       loadGardenPlants(userId),
       loadCurrentMealPlan(userId),
       loadShoppingList(userId),
       loadTodayCheckin(userId),
+      loadPantryItems(userId),
     ]);
 
-  return { fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin };
+  return { fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems };
+}
+
+// ─── Pantry Items ─────────────────────────────────────────────────────────────
+
+export async function loadPantryItems(userId: string): Promise<PantryItem[]> {
+  const { data, error } = await supabase
+    .from('pantry_items')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('depleted', false)
+    .order('name');
+  if (error) throw error;
+  return data as PantryItem[];
+}
+
+export async function addPantryItem(userId: string, name: string): Promise<PantryItem> {
+  const { data, error } = await supabase
+    .from('pantry_items')
+    .upsert(
+      { user_id: userId, name: name.toLowerCase().trim(), added_date: new Date().toISOString().split('T')[0], depleted: false },
+      { onConflict: 'user_id,name' }
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data as PantryItem;
+}
+
+export async function markPantryItemDepleted(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('pantry_items')
+    .update({ depleted: true })
+    .eq('id', id);
+  if (error) throw error;
 }
