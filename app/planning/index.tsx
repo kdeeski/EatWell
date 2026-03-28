@@ -69,16 +69,16 @@ export default function PlanningFlow() {
       });
 
       // Get Monday of the current week as the week start date
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
       const weekStartDate = monday.toISOString().split('T')[0];
+      const todayStr = now.toISOString().split('T')[0];
 
       // Save garden extras to garden_plants if not already tracked
       const extraNames = gardenExtras.split(',').map((s) => s.trim()).filter(Boolean);
       const existingNames = gardenPlants.map((p) => p.plant_name.toLowerCase());
-      const today = new Date().toISOString().split('T')[0];
       const newPlants = await Promise.all(
         extraNames
           .filter((name) => !existingNames.includes(name.toLowerCase()))
@@ -86,8 +86,8 @@ export default function PlanningFlow() {
             addGardenPlant({
               user_id: userId!,
               plant_name: name,
-              planted_date: today,
-              expected_ready_date: today,
+              planted_date: todayStr,
+              expected_ready_date: todayStr,
               status: 'ready',
               quantity_planted: null,
               notes: 'Added during meal planning',
