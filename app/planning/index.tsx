@@ -9,14 +9,14 @@ import {
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
-import { saveMealPlan, saveShoppingList } from '../../lib/data';
+import { saveMealPlan, saveShoppingList, addGardenPlant } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
 type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 'done' | 'error';
 
 export default function PlanningFlow() {
   const router = useRouter();
-  const { fridgeItems, gardenPlants, setMealPlan, setShoppingList, userId } = useAppStore();
+  const { fridgeItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, userId } = useAppStore();
 
   const [step, setStep] = useState<Step>('fridge');
   const [generatingStage, setGeneratingStage] = useState(1);
@@ -74,6 +74,29 @@ export default function PlanningFlow() {
       const monday = new Date(today);
       monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
       const weekStartDate = monday.toISOString().split('T')[0];
+
+      // Save garden extras to garden_plants if not already tracked
+      const extraNames = gardenExtras.split(',').map((s) => s.trim()).filter(Boolean);
+      const existingNames = gardenPlants.map((p) => p.plant_name.toLowerCase());
+      const today = new Date().toISOString().split('T')[0];
+      const newPlants = await Promise.all(
+        extraNames
+          .filter((name) => !existingNames.includes(name.toLowerCase()))
+          .map((name) =>
+            addGardenPlant({
+              user_id: userId!,
+              plant_name: name,
+              planted_date: today,
+              expected_ready_date: today,
+              status: 'ready',
+              quantity_planted: null,
+              notes: 'Added during meal planning',
+            })
+          )
+      );
+      if (newPlants.length > 0) {
+        setGardenPlants([...gardenPlants, ...newPlants]);
+      }
 
       // Save to Supabase and update the app store
       setGeneratingStage(2);

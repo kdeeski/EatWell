@@ -87,9 +87,18 @@ function SwipeableRow({ item, rightLabel, rightColor, onSwipeRight, onSwipeLeft,
 
 export default function ShoppingScreen() {
   const { shoppingItems, toggleShoppingItem, userId, pantryItems, addPantryItemToStore } = useAppStore();
-  // Track herb "from garden" state and pantry "have it" state locally
+  // Track herb "from garden" state locally
   const [gardenHerbs, setGardenHerbs] = useState<Set<string>>(new Set());
-  const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(new Set());
+  // Pre-confirm any pantry/herb items whose names match saved pantry inventory
+  const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(() => {
+    const confirmed = new Set<string>();
+    shoppingItems.forEach((item) => {
+      if (pantryItems.some((p) => p.name === item.name.toLowerCase().trim())) {
+        confirmed.add(item.id);
+      }
+    });
+    return confirmed;
+  });
 
   const handleHerbFromGarden = (id: string) => {
     setGardenHerbs((prev) => new Set([...prev, id]));
