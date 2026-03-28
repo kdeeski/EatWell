@@ -96,7 +96,7 @@ RULES:
 
 2. Fish on solo nights only — Holly dislikes fish. Default fish to Sunday (freshest after Saturday shop). Set buy_timing: "sunday_default" for fish. Days can be reordered by the user.
 
-3. Cluster fresh ingredients across meals to minimise waste — especially fresh herbs, which must all be purchased (no herb garden currently). Only include a herb if the dish genuinely calls for it.
+3. Cluster fresh ingredients across meals to minimise waste — especially fresh herbs. Only include a herb if the dish genuinely calls for it.
 
 4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On Holly nights (holly_included: true), scale the full dish to serve 2–3.
 
@@ -110,9 +110,9 @@ RULES:
 
 9. Set needs_recipe: true for any dish with a non-obvious technique or more than 6 fresh components.
 
-10. PANTRY STAPLES — tracked via inventory, never add to shopping list. Mark is_pantry_staple: true for: olive oil, all oils, salt, pepper, all dried herbs, all dried spices, plain flour, 00 flour, sugar, soy sauce, fish sauce, vinegar, garlic, canned tomatoes, tomato paste, mustard, honey, capers, chilli flakes, nuts, seeds, stock, butter, pasta, rice, noodles, dried pulses.
+10. PANTRY STAPLES — use your judgment to mark is_pantry_staple: true for any ingredient a well-equipped home kitchen would typically keep stocked and not buy weekly (e.g. oils, salt, pepper, dried spices, dried herbs, flour, sugar, soy sauce, vinegars, canned tomatoes, pasta, rice, dried pulses, onions, garlic, butter, stock). These will still appear on the shopping list with a "have it" swipe so the user can confirm. NOTE: this will eventually be replaced by a live inventory system.
 
-11. INVENTORY ITEMS — longer-life fridge items, not bought weekly. Do NOT include in ingredients unless needed in an unusually large quantity (e.g. 500ml cream for a sauce): eggs, milk, cream, crème fraîche, parmesan, Greek yogurt, standard cheeses, active dried yeast.
+11. LONGER-LIFE FRIDGE ITEMS — do NOT add to ingredients unless needed in an unusually large quantity beyond what a well-stocked fridge would hold (e.g. 500ml cream for a sauce is worth listing; a splash of milk is not): eggs, milk, cream, crème fraîche, parmesan, Greek yogurt, standard cheeses. NOTE: this will eventually be driven by live inventory.
 
 12. ALWAYS include in ingredients (fresh, weekly purchases): fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery items.
 
