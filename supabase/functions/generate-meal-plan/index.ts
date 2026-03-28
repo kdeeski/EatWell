@@ -73,7 +73,7 @@ Return a JSON object with this exact shape:
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: `You are EatWell's meal planning engine for a home cook in Christchurch, New Zealand.
 Rules:
 1. Use fridge items first (from_fridge: true)
@@ -90,6 +90,16 @@ Respond ONLY with valid JSON. No prose outside the JSON.`,
 
     const raw = (response.content[0] as { type: string; text: string }).text;
     const json = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+
+    // Validate JSON before returning so we get a clear error if Claude truncated
+    try {
+      JSON.parse(json);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: `Claude returned invalid JSON (likely truncated). Raw start: ${json.slice(0, 200)}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(json, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
