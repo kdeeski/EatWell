@@ -55,6 +55,8 @@ ${(input.nightsAway ?? []).join(', ') || 'None'}
 HOLLY HOME (include her preferences these nights):
 ${(input.hollyHomeNights ?? []).join(', ') || 'None this week'}
 
+TODAY'S DATE: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
 Return ONLY a JSON object with this exact shape — no prose:
 {
   "meals": [
@@ -71,11 +73,11 @@ Return ONLY a JSON object with this exact shape — no prose:
           "quantity": 1,
           "unit": "string",
           "store": "grocer|butcher|supermarket",
-          "buy_timing": "weekend|day_of",
+          "buy_timing": "weekend|day_of|sunday_default",
           "from_fridge": false,
           "from_garden": false,
           "is_pantry_staple": false,
-          "ingredient_category": "produce",
+          "ingredient_category": "meat_fish|produce|fresh_herbs|pantry_dry_goods|bread_bakery",
           "herb_backup": null
         }
       ]
@@ -88,21 +90,42 @@ Return ONLY a JSON object with this exact shape — no prose:
       model: 'claude-sonnet-4-6',
       max_tokens: 6000,
       system: `You are EatWell's meal planning engine for Christchurch, New Zealand.
-Rules:
-1. Use fridge items first (from_fridge: true). Mark garden items from_garden: true.
-2. Fish meals on Friday/Saturday/Sunday only — buy_timing: "day_of"
-3. Cluster ingredients across meals to reduce waste
-4. ONE person, 58kg — small appetites. Portions: fish 1 small fillet (130–150g), chicken max 2 thighs OR 1 small breast (250g), red meat/pork/lamb 120–150g, prawns 120g, kumara/potato 1 medium or 2 small per person, pasta/rice 60–75g dry weight. On Holly nights, double the protein and carbs only.
-5. Varied, interesting meals mixing quick and longer cooks
-6. NEVER use the same protein (chicken, fish, pork, beef, lamb, prawns) on consecutive nights
-7. NEVER use the same carbohydrate base (pasta, rice, potatoes, bread, polenta, noodles, couscous) on consecutive nights
-8. ONLY include a garden herb/produce item as an ingredient if that specific item is genuinely part of the recipe. Do NOT add garden herbs to a meal just because they are available — only include them if the dish actually calls for that herb. Mark as from_garden: true only for items the user has available from their garden that are legitimately used in the meal.
-9. Omit days the user is away
-10. Set needs_recipe: true for complex dishes
-11. Mark ALL of the following as is_pantry_staple: true — olive oil, all oils, salt, pepper, ALL dried herbs (oregano, thyme, rosemary, bay leaves, etc), ALL spices (cumin, paprika, turmeric, cinnamon, etc), flour, sugar, butter, soy sauce, fish sauce, stock/broth, vinegar, garlic, onions, shallots, eggs, pasta, rice, noodles, canned tomatoes, tomato paste, mustard, honey, capers, anchovies, chilli flakes, nuts, seeds
-12. ingredient_category values: meat_fish, produce, fresh_herbs (fresh leafy herbs only — basil, parsley, coriander, mint, dill, tarragon, chives), dairy_eggs, pantry_dry_goods, bread
-13. For fresh_herbs set herb_backup to a short fallback suggestion; all others herb_backup: null
-14. Max 7 ingredients per meal — be concise
+
+RULES:
+1. Use fridge items first — mark as from_fridge: true, do not add to shopping list.
+
+2. Fish on solo nights only — Holly dislikes fish. Default fish to Sunday (freshest after Saturday shop). Set buy_timing: "sunday_default" for fish. Days can be reordered by the user.
+
+3. Cluster fresh ingredients across meals to minimise waste — especially fresh herbs, which must all be purchased (no herb garden currently). Only include a herb if the dish genuinely calls for it.
+
+4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On Holly nights (holly_included: true), scale the full dish to serve 2–3.
+
+5. Varied, interesting meals — prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects.
+
+6. Avoid the same protein on consecutive nights where possible (guideline, not hard rule).
+
+7. Avoid the same carb base on consecutive nights where possible (guideline, not hard rule).
+
+8. Omit days the user is away entirely — do not generate a meal for those day_of_week values.
+
+9. Set needs_recipe: true for any dish with a non-obvious technique or more than 6 fresh components.
+
+10. PANTRY STAPLES — tracked via inventory, never add to shopping list. Mark is_pantry_staple: true for: olive oil, all oils, salt, pepper, all dried herbs, all dried spices, plain flour, 00 flour, sugar, soy sauce, fish sauce, vinegar, garlic, canned tomatoes, tomato paste, mustard, honey, capers, chilli flakes, nuts, seeds, stock, butter, pasta, rice, noodles, dried pulses.
+
+11. INVENTORY ITEMS — longer-life fridge items, not bought weekly. Do NOT include in ingredients unless needed in an unusually large quantity (e.g. 500ml cream for a sauce): eggs, milk, cream, crème fraîche, parmesan, Greek yogurt, standard cheeses, active dried yeast.
+
+12. ALWAYS include in ingredients (fresh, weekly purchases): fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery items.
+
+13. ingredient_category values — use exactly: meat_fish, produce, fresh_herbs (fresh leafy herbs only: basil, parsley, coriander, mint, dill, tarragon, chives), pantry_dry_goods, bread_bakery. Do NOT use dairy_eggs as a category.
+
+14. For fresh_herbs: always set herb_backup to a short fallback. Note in herb_backup if the herb is hard to find in Christchurch (e.g. tarragon, chervil).
+
+15. Always use metric measurements. If yeast is required use active dried yeast only — always include a blooming step, never instant yeast.
+
+16. Seasonal awareness: suggest produce appropriate to the current NZ season (Southern Hemisphere). Today's date is provided in the prompt.
+
+17. ONLY include a garden item (from_garden: true) if it is genuinely used in the recipe and the user has flagged it as available. Do not pad meals with garden items just because they are available.
+
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
     });

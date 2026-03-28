@@ -12,16 +12,15 @@ import type { ShoppingListItem } from '../../types';
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
 const CATEGORY_ORDER: IngredientCategory[] = [
-  'meat_fish', 'produce', 'fresh_herbs', 'dairy_eggs', 'pantry_dry_goods', 'bread',
+  'meat_fish', 'produce', 'fresh_herbs', 'pantry_dry_goods', 'bread_bakery',
 ];
 
 const CATEGORY_LABELS: Record<IngredientCategory, string> = {
   meat_fish: 'Meat & Fish',
   produce: 'Produce',
   fresh_herbs: 'Fresh Herbs',
-  dairy_eggs: 'Dairy & Eggs',
   pantry_dry_goods: 'Pantry & Dry Goods',
-  bread: 'Bread',
+  bread_bakery: 'Bread & Bakery',
 };
 
 function itemQuantityLabel(item: ShoppingListItem): string {
@@ -170,12 +169,7 @@ export default function ShoppingScreen() {
                 Swipe right if growing in your garden · Swipe left if you need to buy it
               </Text>
             )}
-            {cat === 'dairy_eggs' && (
-              <Text style={styles.sectionNote}>
-                Swipe right if you already have it · Swipe left if you need to buy it
-              </Text>
-            )}
-            {cat === 'pantry_dry_goods' && (
+{cat === 'pantry_dry_goods' && (
               <Text style={styles.sectionNote}>
                 Swipe right if you already have it · Swipe left if you need to buy it
               </Text>
@@ -183,7 +177,7 @@ export default function ShoppingScreen() {
 
             {items.map((item) => {
               const isHerb = cat === 'fresh_herbs';
-              const isPantry = cat === 'pantry_dry_goods' || cat === 'dairy_eggs' || item.is_pantry_staple;
+              const isPantry = cat === 'pantry_dry_goods' || item.is_pantry_staple;
               const isFromGarden = gardenHerbs.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id);
               const isHaveIt = isFromGarden || isPantryConfirmed;

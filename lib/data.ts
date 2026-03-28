@@ -199,6 +199,11 @@ function normalizeStore(raw: string): 'grocer' | 'butcher' | 'supermarket' {
   return 'supermarket';
 }
 
+function normalizeBuyTiming(raw: string): 'weekend' | 'day_of' {
+  if (raw === 'weekend') return 'weekend';
+  return 'day_of'; // covers 'day_of' and 'sunday_default'
+}
+
 export async function saveShoppingList(
   userId: string,
   mealPlanId: string,
@@ -220,6 +225,8 @@ export async function saveShoppingList(
   for (const meal of generated.meals) {
     for (const ing of meal.ingredients) {
       if (ing.from_garden && ing.ingredient_category !== 'fresh_herbs') continue;
+      // dairy_eggs are inventory items — not added to shopping list
+      if (ing.ingredient_category === 'dairy_eggs' as any) continue;
 
       const key = `${ing.name}__${ing.ingredient_category}__${ing.from_fridge ? 'fridge' : ing.from_garden ? 'garden' : ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
       if (itemMap.has(key)) {
@@ -234,6 +241,7 @@ export async function saveShoppingList(
           quantity: ing.quantity,
           unit: ing.unit,
           store: normalizeStore(ing.store),
+          buy_timing: normalizeBuyTiming(ing.buy_timing),
           buy_timing: ing.buy_timing,
           checked: ing.from_fridge ?? false,
           is_pantry_staple: ing.is_pantry_staple ?? false,

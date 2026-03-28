@@ -59,7 +59,8 @@ export interface GardenHarvest {
 
 export type Store = 'grocer' | 'butcher' | 'supermarket';
 export type BuyTiming = 'weekend' | 'day_of';
-export type IngredientCategory = 'meat_fish' | 'produce' | 'fresh_herbs' | 'dairy_eggs' | 'pantry_dry_goods' | 'bread';
+// dairy_eggs moved to inventory — not a standard shopping category
+export type IngredientCategory = 'meat_fish' | 'produce' | 'fresh_herbs' | 'pantry_dry_goods' | 'bread_bakery';
 
 export interface MealPlan {
   id: string;
