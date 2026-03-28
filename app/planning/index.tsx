@@ -54,7 +54,7 @@ export default function PlanningFlow() {
     setStep('generating');
     setGeneratingStage(1);
     try {
-      const result = await generateMealPlan({
+      const rawResult = await generateMealPlan({
         fridgeItems,
         gardenAvailable: [
           ...gardenHarvesting,
@@ -67,6 +67,11 @@ export default function PlanningFlow() {
         nightsAway,
         hollyHomeNights,
       });
+      // Safety net: remove any meals Claude planned on nights-away days
+      const result = {
+        ...rawResult,
+        meals: rawResult.meals.filter((m) => !nightsAway.includes(m.day_of_week)),
+      };
 
       // Get Monday of the current week as the week start date
       const now = new Date();

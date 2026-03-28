@@ -20,7 +20,7 @@ const CARD_HEIGHT = 96; // approximate card height + margin
 export default function PlanScreen() {
   const router = useRouter();
   const { plannedMeals, currentMealPlan, setMealPlan } = useAppStore();
-  const [expandedDay, setExpandedDay] = useState<number | null>(null);
+  const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
 
   // Build ordered list of days (sorted by day_of_week)
   const sortedMeals = [...plannedMeals].sort((a, b) => a.day_of_week - b.day_of_week);
@@ -42,7 +42,7 @@ export default function PlanScreen() {
       onPanResponderGrant: () => {
         draggingIndex.current = listIndex;
         dragAnim.setValue(0);
-        setExpandedDay(null);
+        setExpandedSlot(null);
       },
       onPanResponderMove: (_, { dy }) => {
         dragAnim.setValue(dy);
@@ -108,18 +108,18 @@ export default function PlanScreen() {
           <Text style={styles.dragHint}>Hold ≡ and drag to reorder</Text>
           {displayOrder.map((dayIndex, listIndex) => {
             const meal = plannedMeals.find((m) => m.day_of_week === dayIndex);
-            const isExpanded = expandedDay === dayIndex;
+            const isExpanded = expandedSlot === listIndex;
             const isDragging = draggingIndex.current === listIndex;
             const panResponder = makePanResponder(listIndex);
 
             return (
-              <View key={dayIndex} style={styles.dayRow}>
-                <Text style={styles.dayLabel}>{DAY_SHORT[dayIndex]}</Text>
+              <View key={listIndex} style={styles.dayRow}>
+                <Text style={styles.dayLabel}>{DAY_SHORT[listIndex]}</Text>
 
                 <TouchableOpacity
                   style={[styles.mealCard, isExpanded && styles.mealCardExpanded, !meal && styles.mealCardEmpty]}
                   activeOpacity={meal ? 0.7 : 1}
-                  onPress={() => meal && setExpandedDay(isExpanded ? null : dayIndex)}
+                  onPress={() => meal && setExpandedSlot(isExpanded ? null : listIndex)}
                 >
                   {meal ? (
                     <>
