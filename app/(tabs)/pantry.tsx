@@ -6,8 +6,7 @@ import {
   Modal, ActivityIndicator, TextInput, Alert,
   KeyboardAvoidingView, Platform, FlatList, SafeAreaView,
 } from 'react-native';
-// expo-image-picker is added back when doing a full build — not installed yet
-const ImagePicker: null = null;
+import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../../store/useAppStore';
 import { analysePantryPhotos } from '../../lib/claude';
 import { addPantryItem, saveStocktakeItems, markPantryItemDepleted } from '../../lib/data';
@@ -233,13 +232,6 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
   };
 
   const pickImages = async (useCamera: boolean) => {
-    if (!ImagePicker) {
-      Alert.alert(
-        'Update required',
-        'Camera access needs a full app build. Tap the build button in GitHub Actions (Run workflow → Full build) then install the new APK.'
-      );
-      return;
-    }
     const result = useCamera
       ? await ImagePicker.launchCameraAsync({
           mediaTypes: ['images'] as any,
