@@ -6,7 +6,9 @@ import {
   Modal, ActivityIndicator, TextInput, Alert,
   KeyboardAvoidingView, Platform, FlatList,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+// expo-image-picker requires a native build — imported lazily so OTA still works
+let ImagePicker: typeof import('expo-image-picker') | null = null;
+try { ImagePicker = require('expo-image-picker'); } catch { ImagePicker = null; }
 import { useAppStore } from '../../store/useAppStore';
 import { analysePantryPhotos } from '../../lib/claude';
 import { saveStocktakeItems, markPantryItemDepleted } from '../../lib/data';
@@ -148,14 +150,21 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
   };
 
   const pickImages = async (useCamera: boolean) => {
+    if (!ImagePicker) {
+      Alert.alert(
+        'Update required',
+        'Camera access needs a full app build. Tap the build button in GitHub Actions (Run workflow → Full build) then install the new APK.'
+      );
+      return;
+    }
     const result = useCamera
       ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
+          mediaTypes: ['images'] as any,
           quality: 0.7,
           base64: true,
         })
       : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
+          mediaTypes: ['images'] as any,
           allowsMultipleSelection: true,
           quality: 0.7,
           base64: true,
@@ -164,8 +173,8 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
     if (result.canceled) return;
 
     const uris = result.assets
-      .filter((a) => a.base64)
-      .map((a) => `data:image/jpeg;base64,${a.base64}`);
+      .filter((a: any) => a.base64)
+      .map((a: any) => `data:image/jpeg;base64,${a.base64}`);
 
     if (uris.length === 0) return;
 
