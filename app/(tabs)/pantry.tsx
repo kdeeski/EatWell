@@ -235,14 +235,16 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
     const result = useCamera
       ? await ImagePicker.launchCameraAsync({
           mediaTypes: ['images'] as any,
-          quality: 0.7,
+          quality: 0.3,
           base64: true,
+          exif: false,
         })
       : await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'] as any,
-          allowsMultipleSelection: true,
-          quality: 0.7,
+          allowsMultipleSelection: false,
+          quality: 0.3,
           base64: true,
+          exif: false,
         });
 
     if (result.canceled) return;
@@ -265,7 +267,7 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
     setError(null);
     setStep('analysing');
     try {
-      const found = await analysePantryPhotos(selectedImages);
+      const found = await analysePantryPhotos(selectedImages.slice(-1)); // send one at a time
       const items: PendingItem[] = found.map((f, i) => ({
         id: `${i}-${Date.now()}`,
         name: f.name,
@@ -275,7 +277,8 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
       setPendingItems(items);
       setStep('review');
     } catch (e: any) {
-      setError(e.message ?? 'Analysis failed. Try again.');
+      const msg = e?.message ?? e?.error ?? 'Analysis failed. Try again.';
+      setError(msg);
       setStep('pick');
     }
   };
@@ -340,7 +343,7 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
           {step === 'pick' && (
             <View style={styles.pickStep}>
               <Text style={styles.pickHint}>
-                Take photos of your pantry, spice rack, and shelves. You can add multiple photos — one area at a time works best.
+                Take a photo of one shelf or area at a time — spice rack, pantry shelf, etc. Claude will read the labels and build a list to review.
               </Text>
 
               <View style={styles.pickButtons}>
