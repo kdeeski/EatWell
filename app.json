@@ -54,6 +54,13 @@
           "color": "#3B7A57",
           "sounds": []
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EatWell needs access to your photos to analyse your pantry.",
+          "cameraPermission": "EatWell needs camera access to photograph your pantry."
+        }
       ]
     ]
   }

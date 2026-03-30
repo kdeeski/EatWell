@@ -126,10 +126,23 @@ export interface ShoppingListItem {
   created_at: string;
 }
 
+export type PantrySource = 'stocktake' | 'manual' | 'shopping';
+export type PantryCategory =
+  | 'spices_herbs'
+  | 'oils_vinegars'
+  | 'canned_jarred'
+  | 'dry_goods'
+  | 'condiments'
+  | 'baking'
+  | 'other';
+
 export interface PantryItem {
   id: string;
   user_id: string;
   name: string;
+  category: PantryCategory;
+  source: PantrySource;
+  notes: string | null;
   added_date: string;
   depleted: boolean;
   created_at: string;

@@ -58,6 +58,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="pantry"
+        options={{
+          title: 'Pantry',
+          tabBarLabel: 'Pantry',
+          tabBarIcon: ({ color }) => <TabIcon name="grid-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="garden"
         options={{
           title: 'Garden',

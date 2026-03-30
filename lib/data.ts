@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import type {
   FridgeItem, GardenPlant, GardenHarvest,
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
-  CookedMeal, CheckIn, PantryItem,
+  CookedMeal, CheckIn, PantryItem, PantryCategory, PantrySource,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
@@ -363,17 +363,53 @@ export async function loadPantryItems(userId: string): Promise<PantryItem[]> {
   return data as PantryItem[];
 }
 
-export async function addPantryItem(userId: string, name: string): Promise<PantryItem> {
+export async function addPantryItem(
+  userId: string,
+  name: string,
+  category: PantryCategory = 'other',
+  source: PantrySource = 'manual',
+  notes: string | null = null
+): Promise<PantryItem> {
   const { data, error } = await supabase
     .from('pantry_items')
     .upsert(
-      { user_id: userId, name: name.toLowerCase().trim(), added_date: new Date().toISOString().split('T')[0], depleted: false },
+      {
+        user_id: userId,
+        name: name.toLowerCase().trim(),
+        category,
+        source,
+        notes,
+        added_date: new Date().toISOString().split('T')[0],
+        depleted: false,
+      },
       { onConflict: 'user_id,name' }
     )
     .select()
     .single();
   if (error) throw error;
   return data as PantryItem;
+}
+
+export async function saveStocktakeItems(
+  userId: string,
+  items: { name: string; category: PantryCategory; notes: string | null }[]
+): Promise<PantryItem[]> {
+  const date = new Date().toISOString().split('T')[0];
+  const rows = items.map((i) => ({
+    user_id: userId,
+    name: i.name.toLowerCase().trim(),
+    category: i.category,
+    source: 'stocktake' as PantrySource,
+    notes: i.notes,
+    added_date: date,
+    depleted: false,
+  }));
+  const { data, error } = await supabase
+    .from('pantry_items')
+    .upsert(rows, { onConflict: 'user_id,name' })
+    .select();
+  if (error) throw error;
+  return data as PantryItem[];
 }
 
 export async function markPantryItemDepleted(id: string): Promise<void> {

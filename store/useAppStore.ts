@@ -44,6 +44,7 @@ interface AppState {
   pantryItems: PantryItem[];
   setPantryItems: (items: PantryItem[]) => void;
   addPantryItemToStore: (item: PantryItem) => void;
+  removePantryItemFromStore: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -96,4 +97,6 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       pantryItems: [...state.pantryItems.filter((i) => i.name !== item.name), item],
     })),
+  removePantryItemFromStore: (id) =>
+    set((state) => ({ pantryItems: state.pantryItems.filter((i) => i.id !== id) })),
 }));
