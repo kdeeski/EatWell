@@ -108,7 +108,7 @@ export default function PlanScreen() {
             what's in the garden, and build 7 meals around it.
           </Text>
           <TouchableOpacity style={styles.planButton} onPress={() => router.push('/planning')}>
-            <Text style={styles.planButtonText}>Plan this week</Text>
+            <Text style={styles.planButtonText}>Plan This Week</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -136,13 +136,13 @@ export default function PlanScreen() {
                   {meal ? (
                     <>
                       <View style={styles.badgeRow}>
-                        {meal.is_fish      && <Text style={styles.fishBadge}>Buy fresh</Text>}
+                        {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
                         {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
                       </View>
                       <Text style={styles.mealName}>{meal.meal_name}</Text>
                       <Text style={styles.mealMeta}>
                         {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
-                        {!isExpanded ? '  ·  Tap for how to cook' : ''}
+                        {!isExpanded ? '  ·  Tap for How to Cook' : ''}
                       </Text>
                       {isExpanded && meal.description && (
                         <Text style={styles.description}>{meal.description}</Text>
@@ -163,7 +163,7 @@ export default function PlanScreen() {
           })}
 
           <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
-            <Text style={styles.replanButtonText}>Replan the week</Text>
+            <Text style={styles.replanButtonText}>Replan the Week</Text>
           </TouchableOpacity>
         </>
       )}

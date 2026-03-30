@@ -31,6 +31,7 @@ interface AppState {
   shoppingItems: ShoppingListItem[];
   setShoppingList: (list: ShoppingList, items: ShoppingListItem[]) => void;
   toggleShoppingItem: (id: string) => void;
+  addShoppingItem: (item: ShoppingListItem) => void;
 
   // ── Garden ────────────────────────────────────────────────────────────────
   gardenPlants: GardenPlant[];
@@ -81,6 +82,8 @@ export const useAppStore = create<AppState>((set) => ({
         i.id === id ? { ...i, checked: !i.checked } : i
       ),
     })),
+  addShoppingItem: (item) =>
+    set((state) => ({ shoppingItems: [...state.shoppingItems, item] })),
 
   // Garden
   gardenPlants: [],

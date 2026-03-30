@@ -24,7 +24,7 @@ export default function TodayScreen() {
           style={styles.checkinCard}
           onPress={() => router.push('/checkin')}
         >
-          <Text style={styles.checkinTitle}>Morning check-in</Text>
+          <Text style={styles.checkinTitle}>Morning Check-In</Text>
           <Text style={styles.checkinSub}>
             What did you cook last night? What are you thinking for tonight?
           </Text>
@@ -58,9 +58,9 @@ export default function TodayScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>This week</Text>
+        <Text style={styles.sectionLabel}>This Week</Text>
         <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/(tabs)/plan')}>
-          <Text style={styles.linkText}>See the full week →</Text>
+          <Text style={styles.linkText}>See the Full Week →</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

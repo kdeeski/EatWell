@@ -73,7 +73,7 @@ function SwipeableRow({ item, rightLabel, rightColor, onSwipeRight, onSwipeLeft,
       </Animated.View>
       {/* Left action background */}
       <Animated.View style={[styles.swipeAction, styles.swipeActionLeft, { opacity: leftOpacity, backgroundColor: '#3B82F6' }]}>
-        <Text style={styles.swipeActionText}>Need to buy</Text>
+        <Text style={styles.swipeActionText}>Need to Buy</Text>
       </Animated.View>
       <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
         {children}
@@ -167,12 +167,12 @@ export default function ShoppingScreen() {
 
             {cat === 'fresh_herbs' && (
               <Text style={styles.sectionNote}>
-                Swipe right if growing in your garden · Swipe left if you need to buy it
+                Swipe right if growing in your garden · Swipe left to buy
               </Text>
             )}
 {cat === 'pantry_dry_goods' && (
               <Text style={styles.sectionNote}>
-                Swipe right if you already have it · Swipe left if you need to buy it
+                Swipe right if you already have it · Swipe left to buy
               </Text>
             )}
 
@@ -188,7 +188,7 @@ export default function ShoppingScreen() {
                   <SwipeableRow
                     key={item.id}
                     item={item}
-                    rightLabel={isHerb ? '🌿 From garden' : '✓ Have it'}
+                    rightLabel={isHerb ? '🌿 From Garden' : '✓ Have It'}
                     rightColor={isHerb ? '#059669' : '#3B7A57'}
                     onSwipeRight={() => isHerb ? handleHerbFromGarden(item.id) : handlePantryHaveIt(item)}
                     onSwipeLeft={() => isHerb ? handleHerbNeedToBuy(item.id) : handlePantryNeedToBuy(item.id)}
@@ -205,17 +205,17 @@ export default function ShoppingScreen() {
                           {item.name}
                         </Text>
                         {isHerb && item.herb_backup && !isFromGarden && (
-                          <Text style={styles.herbBackup}>If unavailable: {item.herb_backup}</Text>
+                          <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
                         )}
                         {isHerb && isFromGarden && (
-                          <Text style={styles.herbGardenNote}>From your garden</Text>
+                          <Text style={styles.herbGardenNote}>From Your Garden</Text>
                         )}
                         {isPantry && isPantryConfirmed && (
-                          <Text style={styles.pantryNote}>In your pantry</Text>
+                          <Text style={styles.pantryNote}>In Your Pantry</Text>
                         )}
                       </View>
                       {item.buy_timing === 'day_of' && !isHaveIt && (
-                        <Text style={styles.dayOfBadge}>Buy fresh</Text>
+                        <Text style={styles.dayOfBadge}>Buy Fresh</Text>
                       )}
                     </View>
                   </SwipeableRow>
@@ -232,7 +232,7 @@ export default function ShoppingScreen() {
                     <Text style={[styles.itemName, styles.itemNameMuted]}>
                       {itemQuantityLabel(item)}
                     </Text>
-                    <Text style={styles.fridgeBadge}>In fridge</Text>
+                    <Text style={styles.fridgeBadge}>In Fridge</Text>
                   </View>
                 );
               }

@@ -1,15 +1,16 @@
 // Pantry screen — stocktake via camera/photos + manual management of in-stock items.
 
-import { useState, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, ActivityIndicator, TextInput, Alert,
-  KeyboardAvoidingView, Platform, FlatList, SafeAreaView,
+  KeyboardAvoidingView, Platform, FlatList,
+  Animated, PanResponder,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../../store/useAppStore';
 import { analysePantryPhotos } from '../../lib/claude';
-import { addPantryItem, saveStocktakeItems, markPantryItemDepleted } from '../../lib/data';
+import { addPantryItem, saveStocktakeItems, markPantryItemDepleted, addAdHocShoppingItem } from '../../lib/data';
 import type { PantryCategory, PantryItem } from '../../types';
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -40,8 +41,10 @@ interface PendingItem {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function PantryScreen() {
-  const { userId, pantryItems, setPantryItems, addPantryItemToStore, removePantryItemFromStore } =
-    useAppStore();
+  const {
+    userId, pantryItems, addPantryItemToStore, removePantryItemFromStore,
+    shoppingList, addShoppingItem,
+  } = useAppStore();
 
   const [stocktakeVisible, setStocktakeVisible] = useState(false);
   const [addVisible, setAddVisible] = useState(false);
@@ -57,12 +60,26 @@ export default function PantryScreen() {
     items: pantryItems.filter((i) => i.category === key && !i.depleted),
   })).filter((g) => g.items.length > 0);
 
-  const handleDepleted = async (item: PantryItem) => {
+  const handleRemove = async (item: PantryItem) => {
     try {
       await markPantryItemDepleted(item.id);
       removePantryItemFromStore(item.id);
     } catch {
-      Alert.alert('Error', 'Could not mark item as depleted.');
+      Alert.alert('Error', 'Could not remove item.');
+    }
+  };
+
+  const handleReplenish = async (item: PantryItem) => {
+    if (!shoppingList) {
+      Alert.alert('No Shopping List', 'Plan the week first to create a shopping list, then replenish from here.');
+      return;
+    }
+    try {
+      const saved = await addAdHocShoppingItem(shoppingList.id, item.name);
+      addShoppingItem(saved);
+      Alert.alert('Added to Shopping List', `${item.name} has been added to your list.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not add to shopping list.');
     }
   };
 
@@ -106,22 +123,17 @@ export default function PantryScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          <Text style={styles.swipeHint}>Swipe right to replenish · Swipe left to remove</Text>
           {grouped.map(({ key, label, items }) => (
             <View key={key} style={styles.section}>
               <Text style={styles.sectionHeader}>{label}</Text>
               {items.map((item) => (
-                <View key={item.id} style={styles.itemRow}>
-                  <View style={styles.itemLeft}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    {item.notes ? <Text style={styles.itemNotes}>{item.notes}</Text> : null}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.depletedButton}
-                    onPress={() => handleDepleted(item)}
-                  >
-                    <Text style={styles.depletedButtonText}>Used up</Text>
-                  </TouchableOpacity>
-                </View>
+                <PantryItemRow
+                  key={item.id}
+                  item={item}
+                  onReplenish={() => handleReplenish(item)}
+                  onRemove={() => handleRemove(item)}
+                />
               ))}
             </View>
           ))}
@@ -136,7 +148,7 @@ export default function PantryScreen() {
               <TouchableOpacity onPress={() => setAddVisible(false)}>
                 <Text style={styles.modalCancel}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Add item</Text>
+              <Text style={styles.modalTitle}>Add Item</Text>
               <View style={{ width: 60 }} />
             </View>
 
@@ -178,7 +190,7 @@ export default function PantryScreen() {
               >
                 {addSaving
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.saveButtonText}>Add to pantry</Text>
+                  : <Text style={styles.saveButtonText}>Add to Pantry</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -196,6 +208,56 @@ export default function PantryScreen() {
           setStocktakeVisible(false);
         }}
       />
+    </View>
+  );
+}
+
+// ─── Swipeable pantry item row ────────────────────────────────────────────────
+
+function PantryItemRow({
+  item,
+  onReplenish,
+  onRemove,
+}: {
+  item: PantryItem;
+  onReplenish: () => void;
+  onRemove: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const THRESHOLD = 80;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+        Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8,
+      onPanResponderMove: (_, { dx }) => translateX.setValue(dx),
+      onPanResponderRelease: (_, { dx }) => {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+        if (dx > THRESHOLD) onReplenish();
+        else if (dx < -THRESHOLD) onRemove();
+      },
+    })
+  ).current;
+
+  const rightOpacity = translateX.interpolate({ inputRange: [0, THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
+  const leftOpacity  = translateX.interpolate({ inputRange: [-THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
+
+  return (
+    <View style={{ overflow: 'hidden', marginBottom: 6 }}>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { opacity: rightOpacity }]}>
+        <Text style={styles.swipeBgText}>Replenish</Text>
+      </Animated.View>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { opacity: leftOpacity }]}>
+        <Text style={styles.swipeBgText}>Remove</Text>
+      </Animated.View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+        <View style={styles.itemRow}>
+          <View style={styles.itemLeft}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            {item.notes ? <Text style={styles.itemNotes}>{item.notes}</Text> : null}
+          </View>
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -400,7 +462,7 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
                 )}
                 ListFooterComponent={
                   <TouchableOpacity style={styles.addManualButton} onPress={addManual}>
-                    <Text style={styles.addManualText}>+ Add item manually</Text>
+                    <Text style={styles.addManualText}>+ Add Item Manually</Text>
                   </TouchableOpacity>
                 }
               />
@@ -414,7 +476,7 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: StocktakeModalPro
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={styles.saveButtonText}>
-                      Save {pendingItems.filter((i) => i.name.trim().length > 0).length} items to pantry
+                      Save {pendingItems.filter((i) => i.name.trim().length > 0).length} Items to Pantry
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -552,13 +614,15 @@ const styles = StyleSheet.create({
   itemLeft: { flex: 1 },
   itemName: { fontSize: 15, color: '#111827', fontWeight: '500', textTransform: 'capitalize' },
   itemNotes: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-  depletedButton: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+  swipeHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingVertical: 8 },
+  swipeBg: {
+    position: 'absolute', top: 0, bottom: 0,
+    width: 120, justifyContent: 'center', alignItems: 'center',
+    borderRadius: 10,
   },
-  depletedButtonText: { fontSize: 12, color: '#92400E', fontWeight: '600' },
+  swipeBgRight: { left: 0, backgroundColor: '#3B7A57' },
+  swipeBgLeft:  { right: 0, backgroundColor: '#DC2626' },
+  swipeBgText:  { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: '#F9FAFB' },

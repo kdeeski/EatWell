@@ -266,6 +266,33 @@ export async function saveShoppingList(
   return { list: list as ShoppingList, items: items as ShoppingListItem[] };
 }
 
+export async function addAdHocShoppingItem(
+  shoppingListId: string,
+  name: string
+): Promise<ShoppingListItem> {
+  const { data, error } = await supabase
+    .from('shopping_list_items')
+    .insert({
+      shopping_list_id: shoppingListId,
+      name: name.toLowerCase().trim(),
+      quantity: 1,
+      unit: 'item',
+      store: 'supermarket',
+      buy_timing: 'weekend',
+      checked: false,
+      is_pantry_staple: true,
+      from_fridge: false,
+      from_garden: false,
+      ingredient_category: 'pantry_dry_goods',
+      herb_backup: null,
+      meal_names: [],
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ShoppingListItem;
+}
+
 export async function toggleShoppingItemChecked(
   id: string,
   checked: boolean
