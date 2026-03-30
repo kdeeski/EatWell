@@ -138,7 +138,7 @@ export async function saveMealPlan(
   // Insert the new meals
   const mealsToInsert = generated.meals.map((m) => ({
     meal_plan_id: plan.id,
-    day_of_week: m.day_of_week,
+    day_of_week: Math.max(0, Math.min(6, Math.round(Number(m.day_of_week)))),
     meal_name: m.meal_name,
     description: m.description,
     is_fish: m.is_fish,
