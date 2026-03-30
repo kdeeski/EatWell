@@ -6,7 +6,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, ActivityIndicator, TextInput, Alert,
   KeyboardAvoidingView, Platform, FlatList,
-  Animated, PanResponder,
+  Animated, PanResponder, StatusBar,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../../store/useAppStore';
@@ -695,7 +695,9 @@ const styles = StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: '#F9FAFB' },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 12 : 16,
+    paddingBottom: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   modalCancel: { fontSize: 16, color: '#6B7280', width: 60 },
