@@ -6,9 +6,8 @@ import {
   Modal, ActivityIndicator, TextInput, Alert,
   KeyboardAvoidingView, Platform, FlatList, SafeAreaView,
 } from 'react-native';
-// expo-image-picker requires a native build — imported lazily so OTA still works
-let ImagePicker: typeof import('expo-image-picker') | null = null;
-try { ImagePicker = require('expo-image-picker'); } catch { ImagePicker = null; }
+// expo-image-picker is added back when doing a full build — not installed yet
+const ImagePicker: null = null;
 import { useAppStore } from '../../store/useAppStore';
 import { analysePantryPhotos } from '../../lib/claude';
 import { addPantryItem, saveStocktakeItems, markPantryItemDepleted } from '../../lib/data';
