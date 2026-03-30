@@ -4,14 +4,14 @@ import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, ActivityIndicator, TextInput, Alert,
-  KeyboardAvoidingView, Platform, FlatList,
+  KeyboardAvoidingView, Platform, FlatList, SafeAreaView,
 } from 'react-native';
 // expo-image-picker requires a native build — imported lazily so OTA still works
 let ImagePicker: typeof import('expo-image-picker') | null = null;
 try { ImagePicker = require('expo-image-picker'); } catch { ImagePicker = null; }
 import { useAppStore } from '../../store/useAppStore';
 import { analysePantryPhotos } from '../../lib/claude';
-import { saveStocktakeItems, markPantryItemDepleted } from '../../lib/data';
+import { addPantryItem, saveStocktakeItems, markPantryItemDepleted } from '../../lib/data';
 import type { PantryCategory, PantryItem } from '../../types';
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -46,6 +46,11 @@ export default function PantryScreen() {
     useAppStore();
 
   const [stocktakeVisible, setStocktakeVisible] = useState(false);
+  const [addVisible, setAddVisible] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addCategory, setAddCategory] = useState<PantryCategory>('other');
+  const [addCatOpen, setAddCatOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
 
   // Group in-stock items by category
   const grouped = CATEGORIES.map(({ key, label }) => ({
@@ -63,14 +68,35 @@ export default function PantryScreen() {
     }
   };
 
+  const handleManualAdd = async () => {
+    if (!addName.trim() || !userId) return;
+    setAddSaving(true);
+    try {
+      const saved = await addPantryItem(userId, addName.trim(), addCategory, 'manual');
+      addPantryItemToStore(saved);
+      setAddName('');
+      setAddCategory('other');
+      setAddVisible(false);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not add item.');
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Pantry</Text>
-        <TouchableOpacity style={styles.stocktakeButton} onPress={() => setStocktakeVisible(true)}>
-          <Text style={styles.stocktakeButtonText}>+ Stocktake</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity style={styles.addButton} onPress={() => setAddVisible(true)}>
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.stocktakeButton} onPress={() => setStocktakeVisible(true)}>
+            <Text style={styles.stocktakeButtonText}>Stocktake</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {pantryItems.length === 0 ? (
@@ -103,6 +129,64 @@ export default function PantryScreen() {
           ))}
         </ScrollView>
       )}
+
+      {/* Manual add modal */}
+      <Modal visible={addVisible} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setAddVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setAddVisible(false)}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Add item</Text>
+              <View style={{ width: 60 }} />
+            </View>
+
+            <View style={{ padding: 20, gap: 16 }}>
+              <TextInput
+                style={styles.manualInput}
+                value={addName}
+                onChangeText={setAddName}
+                placeholder="Item name (e.g. cumin, olive oil)"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="none"
+                autoFocus
+              />
+
+              <TouchableOpacity style={styles.catPill} onPress={() => setAddCatOpen(!addCatOpen)}>
+                <Text style={styles.catPillText}>{CATEGORY_LABEL[addCategory]} ▾</Text>
+              </TouchableOpacity>
+
+              {addCatOpen && (
+                <View style={styles.catDropdown}>
+                  {CATEGORIES.map((c) => (
+                    <TouchableOpacity
+                      key={c.key}
+                      style={[styles.catOption, addCategory === c.key && styles.catOptionActive]}
+                      onPress={() => { setAddCategory(c.key); setAddCatOpen(false); }}
+                    >
+                      <Text style={[styles.catOptionText, addCategory === c.key && styles.catOptionTextActive]}>
+                        {c.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveButton, (!addName.trim() || addSaving) && { opacity: 0.5 }]}
+                onPress={handleManualAdd}
+                disabled={!addName.trim() || addSaving}
+              >
+                {addSaving
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.saveButtonText}>Add to pantry</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Stocktake modal */}
       <StocktakeModal
@@ -418,6 +502,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F3F4F6',
   },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },
+  addButton: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  addButtonText: { color: '#374151', fontWeight: '600', fontSize: 14 },
   stocktakeButton: {
     backgroundColor: '#3B7A57',
     paddingHorizontal: 16,
@@ -425,6 +516,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   stocktakeButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  manualInput: {
+    fontSize: 16,
+    color: '#111827',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 8, textAlign: 'center' },

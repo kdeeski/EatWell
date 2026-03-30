@@ -121,9 +121,10 @@ export default function ShoppingScreen() {
 
   const handlePantryHaveIt = async (item: ShoppingListItem) => {
     setPantryConfirmed((prev) => new Set([...prev, item.id]));
+    toggleShoppingItemChecked(item.id, true).catch(console.error);
     if (userId) {
       try {
-        const saved = await addPantryItem(userId, item.name);
+        const saved = await addPantryItem(userId, item.name, 'dry_goods', 'shopping');
         addPantryItemToStore(saved);
       } catch (e) {
         console.error('Failed to save pantry item', e);
