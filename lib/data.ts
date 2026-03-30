@@ -1,43 +1,103 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // EatWell — Supabase data service
-// All database reads and writes go through here.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
 import type {
-  FridgeItem, GardenPlant, GardenHarvest,
+  GardenPlant, GardenHarvest,
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
-  CookedMeal, CheckIn, PantryItem, PantryCategory, PantrySource,
+  CookedMeal, CheckIn,
+  InventoryItem, ItemCategory, ItemLocation,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
-// ─── Fridge ───────────────────────────────────────────────────────────────────
+// ─── Inventory ────────────────────────────────────────────────────────────────
 
-export async function loadFridgeItems(userId: string): Promise<FridgeItem[]> {
+export async function loadInventoryItems(userId: string): Promise<InventoryItem[]> {
   const { data, error } = await supabase
-    .from('fridge_items')
+    .from('inventory_items')
     .select('*')
     .eq('user_id', userId)
-    .order('expected_expiry_date', { ascending: true, nullsFirst: false });
+    .eq('depleted', false)
+    .order('name');
   if (error) throw error;
-  return data as FridgeItem[];
+  return data as InventoryItem[];
 }
 
-export async function addFridgeItem(
-  item: Omit<FridgeItem, 'id' | 'created_at'>
-): Promise<FridgeItem> {
+export async function upsertInventoryItem(
+  item: Omit<InventoryItem, 'id' | 'created_at'> & { id?: string }
+): Promise<InventoryItem> {
   const { data, error } = await supabase
-    .from('fridge_items')
-    .insert(item)
+    .from('inventory_items')
+    .upsert(item, { onConflict: 'user_id,name,location' })
     .select()
     .single();
   if (error) throw error;
-  return data as FridgeItem;
+  return data as InventoryItem;
 }
 
-export async function removeFridgeItem(id: string): Promise<void> {
-  const { error } = await supabase.from('fridge_items').delete().eq('id', id);
+export async function updateInventoryItem(
+  id: string,
+  updates: Partial<Pick<InventoryItem, 'quantity' | 'unit' | 'min_quantity' | 'notes' | 'depleted' | 'category' | 'location'>>
+): Promise<InventoryItem> {
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
   if (error) throw error;
+  return data as InventoryItem;
+}
+
+export async function removeInventoryItem(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('inventory_items')
+    .update({ depleted: true })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function saveStocktakeItems(
+  userId: string,
+  items: { name: string; category: ItemCategory; location: ItemLocation; notes: string | null }[]
+): Promise<InventoryItem[]> {
+  const date = new Date().toISOString().split('T')[0];
+  const rows = items.map((i) => ({
+    user_id: userId,
+    name: i.name.toLowerCase().trim(),
+    category: i.category,
+    location: i.location,
+    quantity: 1,
+    unit: 'piece',
+    min_quantity: 0,
+    notes: i.notes,
+    added_date: date,
+    depleted: false,
+  }));
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .upsert(rows, { onConflict: 'user_id,name,location' })
+    .select();
+  if (error) throw error;
+  return data as InventoryItem[];
+}
+
+// ─── getMissingIngredients — compare recipe needs against current inventory ───
+
+export function getMissingIngredients(
+  recipeIngredients: { name: string; quantity: number; unit: string }[],
+  inventoryItems: InventoryItem[]
+): { name: string; quantity: number; unit: string }[] {
+  return recipeIngredients.filter((ingredient) => {
+    const matches = inventoryItems.filter(
+      (item) =>
+        item.name.toLowerCase().trim() === ingredient.name.toLowerCase().trim() &&
+        !item.depleted
+    );
+    const totalQty = matches.reduce((sum, item) => sum + item.quantity, 0);
+    return totalQty < ingredient.quantity;
+  });
 }
 
 // ─── Garden ───────────────────────────────────────────────────────────────────
@@ -67,12 +127,15 @@ export async function addGardenPlant(
 export async function updateGardenPlantStatus(
   id: string,
   status: GardenPlant['status']
-): Promise<void> {
-  const { error } = await supabase
+): Promise<GardenPlant> {
+  const { data, error } = await supabase
     .from('garden_plants')
     .update({ status })
-    .eq('id', id);
+    .eq('id', id)
+    .select()
+    .single();
   if (error) throw error;
+  return data as GardenPlant;
 }
 
 export async function recordHarvest(
@@ -92,7 +155,6 @@ export async function recordHarvest(
 export async function loadCurrentMealPlan(
   userId: string
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] } | null> {
-  // Get the most recent confirmed plan
   const { data: plan, error: planError } = await supabase
     .from('meal_plans')
     .select('*')
@@ -111,17 +173,14 @@ export async function loadCurrentMealPlan(
     .order('day_of_week');
 
   if (mealsError) throw mealsError;
-
   return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
 }
 
-// Saves a Claude-generated meal plan to Supabase and returns the saved records
 export async function saveMealPlan(
   userId: string,
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] }> {
-  // Upsert the meal plan row
   const { data: plan, error: planError } = await supabase
     .from('meal_plans')
     .upsert(
@@ -132,10 +191,8 @@ export async function saveMealPlan(
     .single();
   if (planError) throw planError;
 
-  // Delete any existing planned meals for this plan (in case of replan)
   await supabase.from('planned_meals').delete().eq('meal_plan_id', plan.id);
 
-  // Insert the new meals
   const mealsToInsert = generated.meals.map((m) => ({
     meal_plan_id: plan.id,
     day_of_week: Math.max(0, Math.min(6, Math.round(Number(m.day_of_week)))),
@@ -188,7 +245,6 @@ export async function loadShoppingList(
     .order('buy_timing');
 
   if (itemsError) throw itemsError;
-
   return { list: list as ShoppingList, items: items as ShoppingListItem[] };
 }
 
@@ -201,7 +257,21 @@ function normalizeStore(raw: string): 'grocer' | 'butcher' | 'supermarket' {
 
 function normalizeBuyTiming(raw: string): 'weekend' | 'day_of' {
   if (raw === 'weekend') return 'weekend';
-  return 'day_of'; // covers 'day_of' and 'sunday_default'
+  return 'day_of';
+}
+
+function normalizeCategory(raw: string): ItemCategory {
+  const s = (raw ?? '').toLowerCase().replace(/-/g, '_');
+  const valid = [
+    'meat_fish','dairy_eggs','produce','bread_bakery',
+    'pantry_dry_goods','herbs_spices','cans_preserves',
+    'oils_vinegars','condiments_sauces',
+  ];
+  // Legacy mapping
+  if (s === 'fresh_herbs') return 'herbs_spices';
+  if (s === 'meat_and_fish' || s === 'meat & fish') return 'meat_fish';
+  if (valid.includes(s)) return s as ItemCategory;
+  return 'pantry_dry_goods';
 }
 
 export async function saveShoppingList(
@@ -210,7 +280,6 @@ export async function saveShoppingList(
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ list: ShoppingList; items: ShoppingListItem[] }> {
-  // Create the shopping list
   const { data: list, error: listError } = await supabase
     .from('shopping_lists')
     .insert({ user_id: userId, meal_plan_id: mealPlanId, week_start_date: weekStartDate })
@@ -218,15 +287,13 @@ export async function saveShoppingList(
     .single();
   if (listError) throw listError;
 
-  // Aggregate ingredients across all meals.
-  // from_garden items are excluded. from_fridge items are included but flagged.
   const itemMap = new Map<string, ShoppingListItem>();
 
   for (const meal of generated.meals) {
     for (const ing of meal.ingredients) {
-      if (ing.from_garden && ing.ingredient_category !== 'fresh_herbs') continue;
-      // dairy_eggs are inventory items — not added to shopping list
-      if (ing.ingredient_category === 'dairy_eggs' as any) continue;
+      if (ing.from_garden && ing.ingredient_category !== 'herbs_spices') continue;
+      // dairy_eggs are tracked via inventory, not shopping list
+      if (ing.ingredient_category === 'dairy_eggs') continue;
 
       const key = `${ing.name}__${ing.ingredient_category}__${ing.from_fridge ? 'fridge' : ing.from_garden ? 'garden' : ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
       if (itemMap.has(key)) {
@@ -246,7 +313,7 @@ export async function saveShoppingList(
           is_pantry_staple: ing.is_pantry_staple ?? false,
           from_fridge: ing.from_fridge ?? false,
           from_garden: ing.from_garden ?? false,
-          ingredient_category: ing.ingredient_category ?? 'produce',
+          ingredient_category: normalizeCategory(ing.ingredient_category ?? 'produce'),
           herb_backup: ing.herb_backup ?? null,
           meal_names: [meal.meal_name],
           created_at: '',
@@ -264,6 +331,17 @@ export async function saveShoppingList(
   if (itemsError) throw itemsError;
 
   return { list: list as ShoppingList, items: items as ShoppingListItem[] };
+}
+
+export async function toggleShoppingItemChecked(
+  id: string,
+  checked: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('shopping_list_items')
+    .update({ checked })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function addAdHocShoppingItem(
@@ -291,17 +369,6 @@ export async function addAdHocShoppingItem(
     .single();
   if (error) throw error;
   return data as ShoppingListItem;
-}
-
-export async function toggleShoppingItemChecked(
-  id: string,
-  checked: boolean
-): Promise<void> {
-  const { error } = await supabase
-    .from('shopping_list_items')
-    .update({ checked })
-    .eq('id', id);
-  if (error) throw error;
 }
 
 // ─── Cooked Meals & Check-ins ─────────────────────────────────────────────────
@@ -345,8 +412,6 @@ export async function loadTodayCheckin(
 }
 
 // ─── User Profile ─────────────────────────────────────────────────────────────
-// Supabase Auth creates a row in auth.users but NOT in our public users table.
-// This ensures a profile row exists every time the user signs in.
 
 export async function ensureUserProfile(userId: string, email: string): Promise<void> {
   const { error } = await supabase
@@ -358,91 +423,19 @@ export async function ensureUserProfile(userId: string, email: string): Promise<
   if (error) throw error;
 }
 
-// ─── Bootstrap — load all app data for the current user ──────────────────────
+// ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 export async function bootstrapUserData(userId: string, email: string) {
-  // Always ensure the user has a profile row first
   await ensureUserProfile(userId, email);
 
-  const [fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems] =
+  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin] =
     await Promise.all([
-      loadFridgeItems(userId),
+      loadInventoryItems(userId),
       loadGardenPlants(userId),
       loadCurrentMealPlan(userId),
       loadShoppingList(userId),
       loadTodayCheckin(userId),
-      loadPantryItems(userId),
     ]);
 
-  return { fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems };
-}
-
-// ─── Pantry Items ─────────────────────────────────────────────────────────────
-
-export async function loadPantryItems(userId: string): Promise<PantryItem[]> {
-  const { data, error } = await supabase
-    .from('pantry_items')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('depleted', false)
-    .order('name');
-  if (error) throw error;
-  return data as PantryItem[];
-}
-
-export async function addPantryItem(
-  userId: string,
-  name: string,
-  category: PantryCategory = 'other',
-  source: PantrySource = 'manual',
-  notes: string | null = null
-): Promise<PantryItem> {
-  const { data, error } = await supabase
-    .from('pantry_items')
-    .upsert(
-      {
-        user_id: userId,
-        name: name.toLowerCase().trim(),
-        category,
-        source,
-        notes,
-        added_date: new Date().toISOString().split('T')[0],
-        depleted: false,
-      },
-      { onConflict: 'user_id,name' }
-    )
-    .select()
-    .single();
-  if (error) throw error;
-  return data as PantryItem;
-}
-
-export async function saveStocktakeItems(
-  userId: string,
-  items: { name: string; category: PantryCategory; notes: string | null }[]
-): Promise<PantryItem[]> {
-  const date = new Date().toISOString().split('T')[0];
-  const rows = items.map((i) => ({
-    user_id: userId,
-    name: i.name.toLowerCase().trim(),
-    category: i.category,
-    source: 'stocktake' as PantrySource,
-    notes: i.notes,
-    added_date: date,
-    depleted: false,
-  }));
-  const { data, error } = await supabase
-    .from('pantry_items')
-    .upsert(rows, { onConflict: 'user_id,name' })
-    .select();
-  if (error) throw error;
-  return data as PantryItem[];
-}
-
-export async function markPantryItemDepleted(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('pantry_items')
-    .update({ depleted: true })
-    .eq('id', id);
-  if (error) throw error;
+  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin };
 }

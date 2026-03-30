@@ -11,12 +11,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
-import type { FridgeItem, GardenPlant, GardenHarvest, PlannedMeal } from '../types';
+import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, PlannedMeal } from '../types';
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
 
 export interface MealPlanInput {
-  fridgeItems: FridgeItem[];
+  fridgeItems: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[];
   gardenAvailable: string[];       // plant names available to harvest this week
   spontaneousAdditions: string[];  // market finds, neighbour gifts, etc.
   nightsAway: number[];            // day_of_week values (0=Mon) user is away
@@ -40,7 +40,7 @@ export interface GeneratedMealPlan {
       from_fridge: boolean;
       from_garden: boolean;
       is_pantry_staple: boolean;
-      ingredient_category: 'meat_fish' | 'produce' | 'fresh_herbs' | 'pantry_dry_goods' | 'bread_bakery';
+      ingredient_category: ItemCategory;
       herb_backup: string | null;
     }>;
     holly_included: boolean;
@@ -96,7 +96,7 @@ export async function getMorningCheckinMessages(
 //       half a bag of spinach — does that sound right?"
 
 export async function getFridgeConfirmationNarrative(
-  items: FridgeItem[]
+  items: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[]
 ): Promise<string> {
   const { data, error } = await supabase.functions.invoke('fridge-narrative', {
     body: { items },

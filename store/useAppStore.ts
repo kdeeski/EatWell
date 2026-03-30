@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import type {
-  FridgeItem,
+  InventoryItem,
   MealPlan,
   PlannedMeal,
   ShoppingList,
   ShoppingListItem,
   GardenPlant,
   CheckIn,
-  PantryItem,
 } from '../types';
 
 interface AppState {
@@ -20,11 +19,11 @@ interface AppState {
   plannedMeals: PlannedMeal[];
   setMealPlan: (plan: MealPlan, meals: PlannedMeal[]) => void;
 
-  // ── Fridge ────────────────────────────────────────────────────────────────
-  fridgeItems: FridgeItem[];
-  setFridgeItems: (items: FridgeItem[]) => void;
-  upsertFridgeItem: (item: FridgeItem) => void;
-  removeFridgeItem: (id: string) => void;
+  // ── Inventory ─────────────────────────────────────────────────────────────
+  inventoryItems: InventoryItem[];
+  setInventoryItems: (items: InventoryItem[]) => void;
+  upsertInventoryItem: (item: InventoryItem) => void;
+  removeInventoryItem: (id: string) => void;
 
   // ── Shopping ──────────────────────────────────────────────────────────────
   shoppingList: ShoppingList | null;
@@ -36,16 +35,11 @@ interface AppState {
   // ── Garden ────────────────────────────────────────────────────────────────
   gardenPlants: GardenPlant[];
   setGardenPlants: (plants: GardenPlant[]) => void;
+  updateGardenPlant: (id: string, updates: Partial<GardenPlant>) => void;
 
   // ── Today's check-in ──────────────────────────────────────────────────────
   todayCheckin: CheckIn | null;
   setTodayCheckin: (checkin: CheckIn | null) => void;
-
-  // ── Pantry ────────────────────────────────────────────────────────────────
-  pantryItems: PantryItem[];
-  setPantryItems: (items: PantryItem[]) => void;
-  addPantryItemToStore: (item: PantryItem) => void;
-  removePantryItemFromStore: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -58,19 +52,19 @@ export const useAppStore = create<AppState>((set) => ({
   plannedMeals: [],
   setMealPlan: (plan, meals) => set({ currentMealPlan: plan, plannedMeals: meals }),
 
-  // Fridge
-  fridgeItems: [],
-  setFridgeItems: (items) => set({ fridgeItems: items }),
-  upsertFridgeItem: (item) =>
+  // Inventory
+  inventoryItems: [],
+  setInventoryItems: (items) => set({ inventoryItems: items }),
+  upsertInventoryItem: (item) =>
     set((state) => {
-      const idx = state.fridgeItems.findIndex((i) => i.id === item.id);
-      if (idx === -1) return { fridgeItems: [...state.fridgeItems, item] };
-      const updated = [...state.fridgeItems];
+      const idx = state.inventoryItems.findIndex((i) => i.id === item.id);
+      if (idx === -1) return { inventoryItems: [...state.inventoryItems, item] };
+      const updated = [...state.inventoryItems];
       updated[idx] = item;
-      return { fridgeItems: updated };
+      return { inventoryItems: updated };
     }),
-  removeFridgeItem: (id) =>
-    set((state) => ({ fridgeItems: state.fridgeItems.filter((i) => i.id !== id) })),
+  removeInventoryItem: (id) =>
+    set((state) => ({ inventoryItems: state.inventoryItems.filter((i) => i.id !== id) })),
 
   // Shopping
   shoppingList: null,
@@ -88,18 +82,12 @@ export const useAppStore = create<AppState>((set) => ({
   // Garden
   gardenPlants: [],
   setGardenPlants: (plants) => set({ gardenPlants: plants }),
+  updateGardenPlant: (id, updates) =>
+    set((state) => ({
+      gardenPlants: state.gardenPlants.map((p) => p.id === id ? { ...p, ...updates } : p),
+    })),
 
   // Check-in
   todayCheckin: null,
   setTodayCheckin: (checkin) => set({ todayCheckin: checkin }),
-
-  // Pantry
-  pantryItems: [],
-  setPantryItems: (items) => set({ pantryItems: items }),
-  addPantryItemToStore: (item) =>
-    set((state) => ({
-      pantryItems: [...state.pantryItems.filter((i) => i.name !== item.name), item],
-    })),
-  removePantryItemFromStore: (id) =>
-    set((state) => ({ pantryItems: state.pantryItems.filter((i) => i.id !== id) })),
 }));

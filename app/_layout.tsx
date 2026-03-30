@@ -13,8 +13,8 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const {
-    setUserId, setFridgeItems, setGardenPlants,
-    setMealPlan, setShoppingList, setTodayCheckin, setPantryItems,
+    setUserId, setInventoryItems, setGardenPlants,
+    setMealPlan, setShoppingList, setTodayCheckin,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [updating, setUpdating] = useState(false);
@@ -60,13 +60,12 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     } else if (session) {
       bootstrapUserData(session.user.id, session.user.email ?? '').then(
-        ({ fridgeItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, pantryItems }) => {
-          setFridgeItems(fridgeItems);
+        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
+          setInventoryItems(inventoryItems);
           setGardenPlants(gardenPlants);
           if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
           if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
           setTodayCheckin(todayCheckin);
-          setPantryItems(pantryItems);
         }
       );
     }

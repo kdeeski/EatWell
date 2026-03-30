@@ -9,20 +9,35 @@ export interface User {
   created_at: string;
 }
 
-// ─── Fridge / Inventory ───────────────────────────────────────────────────────
+// ─── Inventory ────────────────────────────────────────────────────────────────
+// Unified table replaces fridge_items + pantry_items.
+// Location separates WHERE something is stored from WHAT it is.
 
-export type InventorySource = 'shopping' | 'garden' | 'manual' | 'market';
+export type ItemCategory =
+  | 'meat_fish'
+  | 'dairy_eggs'
+  | 'produce'
+  | 'bread_bakery'
+  | 'pantry_dry_goods'
+  | 'herbs_spices'
+  | 'cans_preserves'
+  | 'oils_vinegars'
+  | 'condiments_sauces';
 
-export interface FridgeItem {
+export type ItemLocation = 'fridge' | 'freezer' | 'pantry' | 'garden';
+
+export interface InventoryItem {
   id: string;
   user_id: string;
   name: string;
+  category: ItemCategory;
+  location: ItemLocation;
   quantity: number;
-  unit: string; // 'g', 'bunch', 'piece', 'kg', etc.
-  source: InventorySource;
-  purchased_date: string; // ISO date
-  expected_expiry_date: string | null; // ISO date
+  unit: string;
+  min_quantity: number; // low-stock threshold — 0 = no alert
   notes: string | null;
+  added_date: string; // ISO date
+  depleted: boolean;
   created_at: string;
 }
 
@@ -59,8 +74,10 @@ export interface GardenHarvest {
 
 export type Store = 'grocer' | 'butcher' | 'supermarket';
 export type BuyTiming = 'weekend' | 'day_of';
-// dairy_eggs moved to inventory — not a standard shopping category
-export type IngredientCategory = 'meat_fish' | 'produce' | 'fresh_herbs' | 'pantry_dry_goods' | 'bread_bakery';
+
+// Unified category set — matches ItemCategory and inventory_items.category.
+// dairy_eggs intentionally excluded from shopping list generation (handled via inventory).
+export type IngredientCategory = ItemCategory;
 
 export interface MealPlan {
   id: string;
@@ -91,7 +108,7 @@ export interface PlannedIngredient {
   unit: string;
   store: Store;
   buy_timing: BuyTiming;
-  from_fridge: boolean; // already in inventory — don't add to shopping list
+  from_fridge: boolean;
   from_garden: boolean;
   is_pantry_staple: boolean;
   ingredient_category: IngredientCategory;
@@ -122,29 +139,7 @@ export interface ShoppingListItem {
   from_garden: boolean;
   ingredient_category: IngredientCategory;
   herb_backup: string | null;
-  meal_names: string[]; // which meals this is needed for
-  created_at: string;
-}
-
-export type PantrySource = 'stocktake' | 'manual' | 'shopping';
-export type PantryCategory =
-  | 'spices_herbs'
-  | 'oils_vinegars'
-  | 'canned_jarred'
-  | 'dry_goods'
-  | 'condiments'
-  | 'baking'
-  | 'other';
-
-export interface PantryItem {
-  id: string;
-  user_id: string;
-  name: string;
-  category: PantryCategory;
-  source: PantrySource;
-  notes: string | null;
-  added_date: string;
-  depleted: boolean;
+  meal_names: string[];
   created_at: string;
 }
 
@@ -154,7 +149,7 @@ export interface CookedMeal {
   id: string;
   user_id: string;
   cooked_date: string; // ISO date
-  planned_meal_id: string | null; // null if something off-plan was cooked
+  planned_meal_id: string | null;
   actual_meal_name: string;
   rating: 1 | 2 | 3 | 4 | 5 | null;
   would_cook_again: boolean | null;
@@ -194,5 +189,5 @@ export interface PlantWindow {
   plantMonths: number[]; // 1–12, Canterbury NZ (Southern Hemisphere)
   harvestWeeksAfterPlanting: [number, number]; // [min, max]
   harvestType: 'daily' | 'once' | 'windfall';
-  storagePrompt: string | null; // null if harvest-on-day type
+  storagePrompt: string | null;
 }

@@ -16,7 +16,8 @@ type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 
 
 export default function PlanningFlow() {
   const router = useRouter();
-  const { fridgeItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, userId } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, userId } = useAppStore();
+  const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   const [step, setStep] = useState<Step>('fridge');
   const [generatingStage, setGeneratingStage] = useState(1);

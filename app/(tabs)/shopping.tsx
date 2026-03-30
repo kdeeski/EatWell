@@ -6,25 +6,30 @@ import {
   Animated, PanResponder,
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
-import { addPantryItem, toggleShoppingItemChecked } from '../../lib/data';
+import { upsertInventoryItem, toggleShoppingItemChecked } from '../../lib/data';
 import type { ShoppingListItem } from '../../types';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
 const CATEGORY_ORDER: IngredientCategory[] = [
-  'meat_fish', 'produce', 'fresh_herbs', 'pantry_dry_goods', 'bread_bakery',
+  'meat_fish', 'produce', 'herbs_spices', 'bread_bakery',
+  'pantry_dry_goods', 'cans_preserves', 'oils_vinegars', 'condiments_sauces',
 ];
 
 const CATEGORY_LABELS: Record<IngredientCategory, string> = {
-  meat_fish: 'Meat & Fish',
-  produce: 'Produce',
-  fresh_herbs: 'Fresh Herbs',
-  pantry_dry_goods: 'Pantry & Dry Goods',
-  bread_bakery: 'Bread & Bakery',
+  meat_fish:          'Meat & Fish',
+  dairy_eggs:         'Dairy & Eggs',
+  produce:            'Produce',
+  bread_bakery:       'Bread & Bakery',
+  pantry_dry_goods:   'Pantry & Dry Goods',
+  herbs_spices:       'Herbs & Spices',
+  cans_preserves:     'Cans & Preserves',
+  oils_vinegars:      'Oils & Vinegars',
+  condiments_sauces:  'Condiments & Sauces',
 };
 
 function itemQuantityLabel(item: ShoppingListItem): string {
-  if (item.ingredient_category === 'fresh_herbs' || item.is_pantry_staple) return item.name;
+  if (item.ingredient_category === 'herbs_spices' || item.is_pantry_staple) return item.name;
   return `${item.name} × ${item.quantity} ${item.unit}`.trim();
 }
 
@@ -85,22 +90,22 @@ function SwipeableRow({ item, rightLabel, rightColor, onSwipeRight, onSwipeLeft,
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function ShoppingScreen() {
-  const { shoppingItems, toggleShoppingItem, userId, pantryItems, addPantryItemToStore } = useAppStore();
+  const { shoppingItems, toggleShoppingItem, userId, inventoryItems, upsertInventoryItem: upsertStore } = useAppStore();
   // Track herb "from garden" state locally
   const [gardenHerbs, setGardenHerbs] = useState<Set<string>>(() => {
     const fromGarden = new Set<string>();
     shoppingItems.forEach((item) => {
-      if (item.ingredient_category === 'fresh_herbs' && item.from_garden) {
+      if (item.ingredient_category === 'herbs_spices' && item.from_garden) {
         fromGarden.add(item.id);
       }
     });
     return fromGarden;
   });
-  // Pre-confirm any pantry/herb items whose names match saved pantry inventory
+  // Pre-confirm items whose names match existing inventory
   const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(() => {
     const confirmed = new Set<string>();
     shoppingItems.forEach((item) => {
-      if (pantryItems.some((p) => p.name === item.name.toLowerCase().trim())) {
+      if (inventoryItems.some((p) => p.name === item.name.toLowerCase().trim() && !p.depleted)) {
         confirmed.add(item.id);
       }
     });
@@ -124,10 +129,21 @@ export default function ShoppingScreen() {
     toggleShoppingItemChecked(item.id, true).catch(console.error);
     if (userId) {
       try {
-        const saved = await addPantryItem(userId, item.name, 'dry_goods', 'shopping');
-        addPantryItemToStore(saved);
+        const saved = await upsertInventoryItem({
+          user_id: userId,
+          name: item.name.toLowerCase().trim(),
+          category: item.ingredient_category === 'herbs_spices' ? 'herbs_spices' : 'pantry_dry_goods',
+          location: 'pantry',
+          quantity: item.quantity,
+          unit: item.unit,
+          min_quantity: 0,
+          notes: null,
+          added_date: new Date().toISOString().split('T')[0],
+          depleted: false,
+        });
+        upsertStore(saved);
       } catch (e) {
-        console.error('Failed to save pantry item', e);
+        console.error('Failed to save to inventory', e);
       }
     }
   };
@@ -165,7 +181,7 @@ export default function ShoppingScreen() {
           <View key={cat} style={styles.section}>
             <Text style={styles.sectionTitle}>{CATEGORY_LABELS[cat]}</Text>
 
-            {cat === 'fresh_herbs' && (
+            {cat === 'herbs_spices' && (
               <Text style={styles.sectionNote}>
                 Swipe right if growing in your garden · Swipe left to buy
               </Text>
@@ -177,8 +193,8 @@ export default function ShoppingScreen() {
             )}
 
             {items.map((item) => {
-              const isHerb = cat === 'fresh_herbs';
-              const isPantry = cat === 'pantry_dry_goods' || item.is_pantry_staple;
+              const isHerb = cat === 'herbs_spices';
+              const isPantry = cat === 'pantry_dry_goods' || cat === 'cans_preserves' || cat === 'oils_vinegars' || cat === 'condiments_sauces' || item.is_pantry_staple;
               const isFromGarden = gardenHerbs.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id);
               const isHaveIt = isFromGarden || isPantryConfirmed;

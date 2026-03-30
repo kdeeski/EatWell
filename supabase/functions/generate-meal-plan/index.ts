@@ -77,7 +77,7 @@ Return ONLY a JSON object with this exact shape — no prose:
           "from_fridge": false,
           "from_garden": false,
           "is_pantry_staple": false,
-          "ingredient_category": "meat_fish|produce|fresh_herbs|pantry_dry_goods|bread_bakery",
+          "ingredient_category": "meat_fish|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces",
           "herb_backup": null
         }
       ]
@@ -116,7 +116,7 @@ RULES:
 
 12. ALWAYS include in ingredients (fresh, weekly purchases): fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery items.
 
-13. ingredient_category values — use exactly: meat_fish, produce, fresh_herbs (fresh leafy herbs only: basil, parsley, coriander, mint, dill, tarragon, chives), pantry_dry_goods, bread_bakery. Do NOT use dairy_eggs as a category.
+13. ingredient_category values — use exactly one of: meat_fish, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces. Use herbs_spices for ALL herbs (fresh or dried) and spices. Do NOT use dairy_eggs — eggs/dairy are handled by the inventory system.
 
 14. For fresh_herbs: always set herb_backup to a short fallback. Note in herb_backup if the herb is hard to find in Christchurch (e.g. tarragon, chervil).
 
