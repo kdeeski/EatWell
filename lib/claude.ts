@@ -50,7 +50,8 @@ export interface GeneratedMealPlan {
 
 export async function generateMealPlan(input: MealPlanInput): Promise<GeneratedMealPlan> {
   const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
-    body: input,
+    body: JSON.stringify(input),
+    headers: { 'Content-Type': 'application/json' },
   });
   if (error) {
     // "Failed to send a request to the Edge Function" = function not deployed

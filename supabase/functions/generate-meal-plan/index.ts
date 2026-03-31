@@ -29,7 +29,13 @@ Deno.serve(async (req) => {
     }
 
     const client = new Anthropic({ apiKey });
-    const input = await req.json();
+    const rawBody = await req.text();
+    if (!rawBody) {
+      return new Response(JSON.stringify({ error: 'Request body is empty' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const input = JSON.parse(rawBody);
 
     const fridgeSummary = (input.fridgeItems ?? [])
       .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
