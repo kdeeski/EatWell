@@ -346,7 +346,8 @@ export async function toggleShoppingItemChecked(
 
 export async function addAdHocShoppingItem(
   shoppingListId: string,
-  name: string
+  name: string,
+  category: ItemCategory = 'pantry_dry_goods'
 ): Promise<ShoppingListItem> {
   const { data, error } = await supabase
     .from('shopping_list_items')
@@ -355,13 +356,13 @@ export async function addAdHocShoppingItem(
       name: name.toLowerCase().trim(),
       quantity: 1,
       unit: 'item',
-      store: 'supermarket',
+      store: category === 'meat_fish' ? 'butcher' : 'supermarket',
       buy_timing: 'weekend',
       checked: false,
-      is_pantry_staple: true,
+      is_pantry_staple: false,
       from_fridge: false,
       from_garden: false,
-      ingredient_category: 'pantry_dry_goods',
+      ingredient_category: category,
       herb_backup: null,
       meal_names: [],
     })

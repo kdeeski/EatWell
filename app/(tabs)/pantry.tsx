@@ -91,11 +91,11 @@ export default function PantryScreen() {
       return;
     }
     try {
-      const saved = await addAdHocShoppingItem(shoppingList.id, item.name);
+      const saved = await addAdHocShoppingItem(shoppingList.id, item.name, item.category);
       addShoppingItem(saved);
-      Alert.alert('Added', `${item.name} added to your shopping list.`);
+      Alert.alert('Added to Shopping List', `${item.name} added.`);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Could not add to shopping list.');
+      Alert.alert('Could Not Add', e.message ?? 'Please try again.');
     }
   };
 
@@ -168,6 +168,7 @@ export default function PantryScreen() {
 
       {/* Add / Edit modal */}
       <AddEditModal
+        key={editItem?.id ?? 'new'}
         visible={addVisible}
         userId={userId!}
         existingItem={editItem}
@@ -251,9 +252,16 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (item: InventoryItem) => void;
 }) {
+  const defaultLocation = (cat: ItemCategory): ItemLocation => {
+    if (cat === 'meat_fish' || cat === 'dairy_eggs' || cat === 'produce') return 'fridge';
+    return 'pantry';
+  };
+
   const [name, setName]           = useState(existingItem?.name ?? '');
   const [category, setCategory]   = useState<ItemCategory>(existingItem?.category ?? 'pantry_dry_goods');
-  const [location, setLocation]   = useState<ItemLocation>(existingItem?.location ?? 'pantry');
+  const [location, setLocation]   = useState<ItemLocation>(
+    existingItem?.location ?? defaultLocation(existingItem?.category ?? 'pantry_dry_goods')
+  );
   const [quantity, setQuantity]   = useState(String(existingItem?.quantity ?? '1'));
   const [unit, setUnit]           = useState(existingItem?.unit ?? 'piece');
   const [minQty, setMinQty]       = useState(String(existingItem?.min_quantity ?? '0'));
@@ -262,13 +270,6 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
   const [catOpen, setCatOpen]     = useState(false);
   const [locOpen, setLocOpen]     = useState(false);
   const [unitOpen, setUnitOpen]   = useState(false);
-
-  // Sync fields when existingItem changes
-  const prevId = useRef<string | null>(null);
-  if (existingItem?.id !== prevId.current) {
-    prevId.current = existingItem?.id ?? null;
-    // Reset fields (useState doesn't re-init on prop change — use key on modal instead)
-  }
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -296,7 +297,6 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
 
   return (
     <Modal
-      key={existingItem?.id ?? 'new'}
       visible={visible}
       animationType="slide"
       presentationStyle="formSheet"
@@ -336,7 +336,12 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
               <View style={styles.dropdown}>
                 {CATEGORIES.map((c) => (
                   <TouchableOpacity key={c.key} style={[styles.dropdownOption, category === c.key && styles.dropdownOptionActive]}
-                    onPress={() => { setCategory(c.key); setCatOpen(false); }}>
+                    onPress={() => {
+                      setCategory(c.key);
+                      // Only auto-update location if user hasn't manually changed it
+                      if (!existingItem) setLocation(defaultLocation(c.key));
+                      setCatOpen(false);
+                    }}>
                     <Text style={[styles.dropdownText, category === c.key && styles.dropdownTextActive]}>
                       {c.emoji}  {c.label}
                     </Text>
