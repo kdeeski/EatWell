@@ -53,12 +53,16 @@ export async function generateMealPlan(input: MealPlanInput): Promise<GeneratedM
     body: input,
   });
   if (error) {
-    // Try to surface the real error message from the edge function body
+    // "Failed to send a request to the Edge Function" = function not deployed
+    if ((error as any).message?.includes('Failed to send a request')) {
+      throw new Error('Edge function unreachable — make sure generate-meal-plan is deployed in your Supabase project.');
+    }
+    // Try to surface the real error message from the edge function response body
     try {
       const body = await (error as any).context?.json?.();
-      if (body?.error) throw new Error(`Edge function error: ${body.error}`);
+      if (body?.error) throw new Error(`Edge function: ${body.error}`);
     } catch (inner) {
-      if ((inner as Error).message?.startsWith('Edge function error:')) throw inner;
+      if ((inner as Error).message?.startsWith('Edge function:')) throw inner;
     }
     throw error;
   }
