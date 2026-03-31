@@ -10,7 +10,7 @@
 //   2. Client-side functions that call the edge function endpoints
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { supabase } from './supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from './supabase';
 import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, PlannedMeal } from '../types';
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
@@ -49,23 +49,19 @@ export interface GeneratedMealPlan {
 }
 
 export async function generateMealPlan(input: MealPlanInput): Promise<GeneratedMealPlan> {
-  const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
+  const url = `${supabaseUrl}/functions/v1/generate-meal-plan`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'apikey': supabaseAnonKey,
+    },
     body: JSON.stringify(input),
-    headers: { 'Content-Type': 'application/json' },
   });
-  if (error) {
-    // "Failed to send a request to the Edge Function" = function not deployed
-    if ((error as any).message?.includes('Failed to send a request')) {
-      throw new Error('Edge function unreachable — make sure generate-meal-plan is deployed in your Supabase project.');
-    }
-    // Try to surface the real error message from the edge function response body
-    try {
-      const body = await (error as any).context?.json?.();
-      if (body?.error) throw new Error(`Edge function: ${body.error}`);
-    } catch (inner) {
-      if ((inner as Error).message?.startsWith('Edge function:')) throw inner;
-    }
-    throw error;
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.error ?? `Edge function error (${response.status})`);
   }
   return data as GeneratedMealPlan;
 }
