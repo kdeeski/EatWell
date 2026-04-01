@@ -51,30 +51,42 @@ export interface GeneratedMealPlan {
 export async function generateMealPlan(input: MealPlanInput): Promise<GeneratedMealPlan> {
   const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/generate-meal-plan';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${anonKey}`,
-        'apikey': anonKey,
-      },
-      body: JSON.stringify(input),
-      signal: controller.signal,
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data?.error ?? `Edge function error (${response.status})`);
+
+  const attempt = async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'apikey': anonKey,
+        },
+        body: JSON.stringify(input),
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+      return data as GeneratedMealPlan;
+    } finally {
+      clearTimeout(timeout);
     }
-    return data as GeneratedMealPlan;
-  } catch (e: any) {
-    if (e?.name === 'AbortError') throw new Error('Meal plan timed out — please try again.');
-    throw e;
-  } finally {
-    clearTimeout(timeout);
+  };
+
+  // Retry up to 3 times on network failures
+  let lastError: any;
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await attempt();
+    } catch (e: any) {
+      lastError = e;
+      if (e?.name === 'AbortError') throw new Error('Meal plan timed out — please try again.');
+      // Only retry on network errors, not function errors
+      if (e?.message?.includes('Edge function error')) throw e;
+    }
   }
+  throw lastError;
 }
 
 // ─── Morning Check-in Message ─────────────────────────────────────────────────
