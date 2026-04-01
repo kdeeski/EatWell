@@ -134,7 +134,6 @@ export default function PlanningFlow() {
       }
 
       // Save to Supabase and update the app store
-      setGeneratingStage(2);
       const { plan, meals } = await saveMealPlan(userId!, weekStartDate, result);
       setMealPlan(plan, meals);
 
