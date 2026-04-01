@@ -1,7 +1,7 @@
 // Weekly planning flow — modal presented from the plan tab or Today screen.
 // Steps: fridge confirmation → garden → spontaneous additions → week ahead → generate plan.
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator,
@@ -20,8 +20,38 @@ export default function PlanningFlow() {
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   const [step, setStep] = useState<Step>('fridge');
-  const [generatingStage, setGeneratingStage] = useState(1);
+  const [generatingMessage, setGeneratingMessage] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const GENERATING_MESSAGES = [
+    "Looking at what's in your fridge...",
+    "Thinking about the week ahead...",
+    "Choosing interesting meals for you...",
+    "Considering what's in season...",
+    "Clustering ingredients to cut waste...",
+    "Planning around your nights away...",
+    "Putting together your shopping list...",
+    "Almost there...",
+  ];
+
+  const generatingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (step === 'generating') {
+      setGeneratingMessage(0);
+      generatingIntervalRef.current = setInterval(() => {
+        setGeneratingMessage((prev) => Math.min(prev + 1, GENERATING_MESSAGES.length - 1));
+      }, 4000);
+    } else {
+      if (generatingIntervalRef.current) {
+        clearInterval(generatingIntervalRef.current);
+        generatingIntervalRef.current = null;
+      }
+    }
+    return () => {
+      if (generatingIntervalRef.current) clearInterval(generatingIntervalRef.current);
+    };
+  }, [step]);
   const [fridgeConfirmed, setFridgeConfirmed] = useState(false);
   const [fridgeExtras, setFridgeExtras] = useState('');
 
@@ -53,7 +83,6 @@ export default function PlanningFlow() {
 
   const handleGenerate = async () => {
     setStep('generating');
-    setGeneratingStage(1);
     try {
       const rawResult = await generateMealPlan({
         fridgeItems,
@@ -263,12 +292,8 @@ export default function PlanningFlow() {
         {step === 'generating' && (
           <View style={styles.centeredBlock}>
             <ActivityIndicator size="large" color="#3B7A57" />
-            <Text style={styles.generatingText}>
-              {generatingStage === 1
-                ? 'Choosing your meals for the week...'
-                : 'Writing up how to cook them...'}
-            </Text>
-            <Text style={styles.generatingSubtext}>Step {generatingStage} of 2</Text>
+            <Text style={styles.generatingText}>{GENERATING_MESSAGES[generatingMessage]}</Text>
+            <Text style={styles.generatingSubtext}>This usually takes 20–40 seconds</Text>
           </View>
         )}
 

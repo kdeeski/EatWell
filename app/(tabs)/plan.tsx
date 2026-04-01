@@ -21,6 +21,7 @@ export default function PlanScreen() {
   const router = useRouter();
   const { plannedMeals, currentMealPlan, setMealPlan } = useAppStore();
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
     Array.from({ length: 7 }, (_, i) => i)
   );
@@ -47,6 +48,7 @@ export default function PlanScreen() {
           draggingFrom.current = slotIndex;
           draggingDay.current  = orderRef.current[slotIndex];
           setExpandedSlot(null);
+          setIsDragging(true);
         },
         onPanResponderMove: (_, { dy }) => {
           if (draggingFrom.current === null || draggingDay.current === null) return;
@@ -65,6 +67,7 @@ export default function PlanScreen() {
         onPanResponderRelease: async () => {
           draggingFrom.current = null;
           draggingDay.current  = null;
+          setIsDragging(false);
           if (!planRef.current) return;
 
           const finalOrder = orderRef.current;
@@ -97,7 +100,7 @@ export default function PlanScreen() {
   const hasPlan = plannedMeals.length > 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} scrollEnabled={!isDragging}>
       <Text style={styles.heading}>This Week</Text>
 
       {!hasPlan ? (
