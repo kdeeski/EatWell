@@ -49,27 +49,24 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (session === undefined) return;
-
-    setUserId(session?.user?.id ?? null);
-
     const inAuthGroup = segments[0] === '(auth)';
-
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      router.replace('/(tabs)');
-    } else if (session) {
-      bootstrapUserData(session.user.id, session.user.email ?? '').then(
-        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
-          setInventoryItems(inventoryItems);
-          setGardenPlants(gardenPlants);
-          if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
-          if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
-          setTodayCheckin(todayCheckin);
-        }
-      );
-    }
+    if (!session && !inAuthGroup) router.replace('/(auth)/login');
+    else if (session && inAuthGroup) router.replace('/(tabs)');
   }, [session, segments]);
+
+  useEffect(() => {
+    if (!session) return;
+    setUserId(session.user.id);
+    bootstrapUserData(session.user.id, session.user.email ?? '').then(
+      ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
+        setInventoryItems(inventoryItems);
+        setGardenPlants(gardenPlants);
+        if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
+        if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
+        setTodayCheckin(todayCheckin);
+      }
+    );
+  }, [session?.user?.id]);
 
   if (session === undefined) return null;
 
