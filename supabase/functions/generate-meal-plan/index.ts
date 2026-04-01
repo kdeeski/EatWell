@@ -69,6 +69,7 @@ Return ONLY a JSON object with this exact shape — no prose:
     {
       "day_of_week": 0,
       "meal_name": "string",
+      "description": "2-3 sentence cooking description — key technique and what makes it good",
       "is_fish": false,
       "needs_recipe": false,
       "estimated_prep_minutes": 25,
@@ -145,32 +146,6 @@ Respond ONLY with valid JSON.`,
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // ── Step 2: Generate cooking descriptions for all meals ───────────────────
-
-    const mealList = plan.meals
-      .map((m: any) => `- ${m.meal_name}`)
-      .join('\n');
-
-    const descResponse = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 3000,
-      system: `You write brief, warm cooking descriptions for a home cook. Each description is 2–3 sentences covering the key technique and what makes the dish good. Direct, confident voice. No fluff.`,
-      messages: [{
-        role: 'user',
-        content: `Write a 2–3 sentence cooking description for each of these meals. Return ONLY a JSON object like {"descriptions": {"Meal Name": "description text"}}:\n\n${mealList}`,
-      }],
-    });
-
-    const descRaw = (descResponse.content[0] as { type: string; text: string }).text;
-    const { parsed: descData, error: descError } = jsonOrError(descRaw, 'Descriptions');
-
-    // Merge descriptions into meals (non-fatal if it fails)
-    const descriptions = descError ? {} : (descData?.descriptions ?? {});
-    plan.meals = plan.meals.map((m: any) => ({
-      ...m,
-      description: descriptions[m.meal_name] ?? '',
-    }));
 
     return new Response(JSON.stringify(plan), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
