@@ -9,8 +9,8 @@
     "scheme": "eatwell",
     "splash": {
       "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "resizeMode": "cover",
+      "backgroundColor": "#2D6A4F"
     },
     "ios": {
       "supportsTablet": false,
@@ -19,7 +19,7 @@
     "android": {
       "package": "com.eatwell.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#2D6A4F",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
