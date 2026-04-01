@@ -93,7 +93,7 @@ Return ONLY a JSON object with this exact shape — no prose:
 }`;
 
     const structureResponse = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 16000,
       system: `You are EatWell's meal planning engine for Christchurch, New Zealand.
 
