@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,20 +16,21 @@ export default function RootLayout() {
     setMealPlan, setShoppingList, setTodayCheckin,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
-  const [updating, setUpdating] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
 
   useEffect(() => {
     async function checkForUpdate() {
       try {
         const result = await Updates.checkForUpdateAsync();
         if (result.isAvailable) {
-          setUpdating(true);
           await Updates.fetchUpdateAsync();
           await Updates.reloadAsync();
+          return; // reloadAsync restarts — code below never runs
         }
       } catch {
         // Not in an EAS build environment — skip silently
       }
+      setUpdateReady(true);
     }
     checkForUpdate();
   }, []);
@@ -68,16 +68,11 @@ export default function RootLayout() {
     );
   }, [session?.user?.id]);
 
-  if (session === undefined) return null;
+  if (!updateReady || session === undefined) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      {updating && (
-        <View style={styles.updateBanner}>
-          <Text style={styles.updateText}>✦ Updating EatWell…</Text>
-        </View>
-      )}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -88,11 +83,3 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  updateBanner: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 999,
-    backgroundColor: '#3B7A57', paddingTop: 52, paddingBottom: 12,
-    alignItems: 'center',
-  },
-  updateText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
-});
