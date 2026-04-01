@@ -10,7 +10,7 @@
 //   2. Client-side functions that call the edge function endpoints
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { supabase, supabaseUrl, supabaseAnonKey } from './supabase';
+import { supabase } from './supabase';
 import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, PlannedMeal } from '../types';
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
@@ -49,13 +49,14 @@ export interface GeneratedMealPlan {
 }
 
 export async function generateMealPlan(input: MealPlanInput): Promise<GeneratedMealPlan> {
-  const url = `${supabaseUrl}/functions/v1/generate-meal-plan`;
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/generate-meal-plan';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${anonKey}`,
+      'apikey': anonKey,
     },
     body: JSON.stringify(input),
   });
