@@ -1,12 +1,14 @@
-// Shopping screen — category-based grocery list with swipe-to-confirm for herbs and pantry items.
+// Shopping screen — category-based grocery list.
+// Garden items are pre-confirmed from the garden tracker (source of truth).
+// Dried spices/herbs not from the garden use the pantry "Have it" flow.
 
 import { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, PanResponder,
+  Animated, PanResponder, ActivityIndicator,
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
-import { upsertInventoryItem, toggleShoppingItemChecked } from '../../lib/data';
+import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants } from '../../lib/data';
 import type { ShoppingListItem } from '../../types';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
@@ -90,38 +92,60 @@ function SwipeableRow({ item, rightLabel, rightColor, onSwipeRight, onSwipeLeft,
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function ShoppingScreen() {
-  const { shoppingItems, toggleShoppingItem, userId, inventoryItems, upsertInventoryItem: upsertStore } = useAppStore();
-  // Track herb "from garden" state locally
-  const [gardenHerbs, setGardenHerbs] = useState<Set<string>>(() => {
-    const fromGarden = new Set<string>();
-    shoppingItems.forEach((item) => {
-      if (item.ingredient_category === 'herbs_spices' && item.from_garden) {
-        fromGarden.add(item.id);
-      }
-    });
-    return fromGarden;
-  });
-  // Pre-confirm items whose names match existing inventory
-  const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(() => {
+  const {
+    shoppingItems, toggleShoppingItem, userId,
+    inventoryItems, setInventoryItems,
+    gardenPlants, setGardenPlants,
+    upsertInventoryItem: upsertStore,
+  } = useAppStore();
+
+  const buildConfirmed = (items: typeof shoppingItems, inv: typeof inventoryItems) => {
     const confirmed = new Set<string>();
-    shoppingItems.forEach((item) => {
-      if (inventoryItems.some((p) => p.name === item.name.toLowerCase().trim() && !p.depleted)) {
+    items.forEach((item) => {
+      if (inv.some((p) => p.name === item.name.toLowerCase().trim() && !p.depleted)) {
         confirmed.add(item.id);
       }
     });
     return confirmed;
-  });
-
-  const handleHerbFromGarden = (id: string) => {
-    setGardenHerbs((prev) => new Set([...prev, id]));
-    // Mark as checked in DB
-    toggleShoppingItemChecked(id, true).catch(console.error);
-    toggleShoppingItem(id);
   };
 
-  const handleHerbNeedToBuy = (id: string) => {
-    setGardenHerbs((prev) => { const s = new Set(prev); s.delete(id); return s; });
-    toggleShoppingItemChecked(id, false).catch(console.error);
+  const buildGardenConfirmed = (items: typeof shoppingItems, plants: typeof gardenPlants) => {
+    const readyNames = new Set(
+      plants.filter((p) => p.status === 'ready').map((p) => p.plant_name.toLowerCase().trim())
+    );
+    const confirmed = new Set<string>();
+    items.forEach((item) => {
+      if (item.from_garden || readyNames.has(item.name.toLowerCase().trim())) {
+        confirmed.add(item.id);
+      }
+    });
+    return confirmed;
+  };
+
+  const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(() =>
+    buildConfirmed(shoppingItems, inventoryItems)
+  );
+  const [gardenConfirmed, setGardenConfirmed] = useState<Set<string>>(() =>
+    buildGardenConfirmed(shoppingItems, gardenPlants)
+  );
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (!userId) return;
+    setRefreshing(true);
+    try {
+      const [freshInv, freshPlants] = await Promise.all([
+        loadInventoryItems(userId),
+        loadGardenPlants(userId),
+      ]);
+      setInventoryItems(freshInv);
+      setGardenPlants(freshPlants);
+      setPantryConfirmed(buildConfirmed(shoppingItems, freshInv));
+      setGardenConfirmed(buildGardenConfirmed(shoppingItems, freshPlants));
+    } catch (e) {
+      console.error('Refresh failed', e);
+    }
+    setRefreshing(false);
   };
 
   const handlePantryHaveIt = async (item: ShoppingListItem) => {
@@ -171,74 +195,58 @@ export default function ShoppingScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Shopping</Text>
+      <View style={styles.headingRow}>
+        <Text style={styles.heading}>Shopping</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
+          {refreshing
+            ? <ActivityIndicator size="small" color="#3B7A57" />
+            : <Text style={styles.refreshText}>Refresh</Text>
+          }
+        </TouchableOpacity>
+      </View>
 
       {CATEGORY_ORDER.map((cat) => {
         const items = itemsByCategory[cat];
         if (!items) return null;
 
+        const hasPantrySwipe = cat === 'pantry_dry_goods' || cat === 'cans_preserves' || cat === 'oils_vinegars' || cat === 'condiments_sauces';
+
         return (
           <View key={cat} style={styles.section}>
             <Text style={styles.sectionTitle}>{CATEGORY_LABELS[cat]}</Text>
 
-            {cat === 'herbs_spices' && (
+            {hasPantrySwipe && (
               <Text style={styles.sectionNote}>
-                Swipe right if growing in your garden · Swipe left to buy
+                Swipe right if you already have it · Swipe left to buy
               </Text>
             )}
-{cat === 'pantry_dry_goods' && (
+            {cat === 'herbs_spices' && items.some((i) => !gardenConfirmed.has(i.id) && !i.from_fridge) && (
               <Text style={styles.sectionNote}>
                 Swipe right if you already have it · Swipe left to buy
               </Text>
             )}
 
             {items.map((item) => {
-              const isHerb = cat === 'herbs_spices';
-              const isPantry = cat === 'pantry_dry_goods' || cat === 'cans_preserves' || cat === 'oils_vinegars' || cat === 'condiments_sauces' || item.is_pantry_staple;
-              const isFromGarden = gardenHerbs.has(item.id);
+              const isGardenConfirmed = gardenConfirmed.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id);
-              const isHaveIt = isFromGarden || isPantryConfirmed;
+              const isPantrySwipeable = hasPantrySwipe || (cat === 'herbs_spices' && !isGardenConfirmed) || item.is_pantry_staple;
 
-              if (isHerb || isPantry) {
+              // Garden-confirmed herb — static badge, no swipe (garden is source of truth)
+              if (isGardenConfirmed) {
                 return (
-                  <SwipeableRow
-                    key={item.id}
-                    item={item}
-                    rightLabel={isHerb ? '🌿 From Garden' : '✓ Have It'}
-                    rightColor={isHerb ? '#059669' : '#3B7A57'}
-                    onSwipeRight={() => isHerb ? handleHerbFromGarden(item.id) : handlePantryHaveIt(item)}
-                    onSwipeLeft={() => isHerb ? handleHerbNeedToBuy(item.id) : handlePantryNeedToBuy(item.id)}
-                  >
-                    <View style={[styles.itemRow, isHaveIt && styles.itemRowConfirmed]}>
-                      <View style={[
-                        isHerb ? styles.leafBox : styles.pantryBox,
-                        isHaveIt && (isHerb ? styles.leafBoxConfirmed : styles.pantryBoxConfirmed),
-                      ]}>
-                        {isHaveIt && <Text style={styles.confirmTick}>{isHerb ? '🌿' : '✓'}</Text>}
-                      </View>
-                      <View style={styles.itemTextBlock}>
-                        <Text style={[styles.itemName, isHaveIt && styles.itemNameMuted]}>
-                          {item.name}
-                        </Text>
-                        {isHerb && item.herb_backup && !isFromGarden && (
-                          <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
-                        )}
-                        {isHerb && isFromGarden && (
-                          <Text style={styles.herbGardenNote}>From Your Garden</Text>
-                        )}
-                        {isPantry && isPantryConfirmed && (
-                          <Text style={styles.pantryNote}>In Your Pantry</Text>
-                        )}
-                      </View>
-                      {item.buy_timing === 'day_of' && !isHaveIt && (
-                        <Text style={styles.dayOfBadge}>Buy Fresh</Text>
-                      )}
+                  <View key={item.id} style={[styles.itemRow, styles.itemRowConfirmed]}>
+                    <View style={[styles.leafBox, styles.leafBoxConfirmed]}>
+                      <Text style={styles.confirmTick}>✓</Text>
                     </View>
-                  </SwipeableRow>
+                    <View style={styles.itemTextBlock}>
+                      <Text style={[styles.itemName, styles.itemNameMuted]}>{item.name}</Text>
+                      <Text style={styles.herbGardenNote}>From Your Garden</Text>
+                    </View>
+                  </View>
                 );
               }
 
-              // Fridge item — shown greyed with "In fridge" badge, no tap needed
+              // Fridge item — static badge, no interaction
               if (item.from_fridge) {
                 return (
                   <View key={item.id} style={[styles.itemRow, styles.itemRowFridge]}>
@@ -253,7 +261,41 @@ export default function ShoppingScreen() {
                 );
               }
 
-              // Regular item — just a checkbox
+              // Pantry-style swipeable (including dried herbs/spices not from garden)
+              if (isPantrySwipeable) {
+                return (
+                  <SwipeableRow
+                    key={item.id}
+                    item={item}
+                    rightLabel="✓ Have It"
+                    rightColor="#3B7A57"
+                    onSwipeRight={() => handlePantryHaveIt(item)}
+                    onSwipeLeft={() => handlePantryNeedToBuy(item.id)}
+                  >
+                    <View style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}>
+                      <View style={[styles.pantryBox, isPantryConfirmed && styles.pantryBoxConfirmed]}>
+                        {isPantryConfirmed && <Text style={styles.confirmTick}>✓</Text>}
+                      </View>
+                      <View style={styles.itemTextBlock}>
+                        <Text style={[styles.itemName, isPantryConfirmed && styles.itemNameMuted]}>
+                          {item.name}
+                        </Text>
+                        {isPantryConfirmed && (
+                          <Text style={styles.pantryNote}>In Your Pantry</Text>
+                        )}
+                        {cat === 'herbs_spices' && item.herb_backup && !isPantryConfirmed && (
+                          <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
+                        )}
+                      </View>
+                      {item.buy_timing === 'day_of' && !isPantryConfirmed && (
+                        <Text style={styles.dayOfBadge}>Buy Fresh</Text>
+                      )}
+                    </View>
+                  </SwipeableRow>
+                );
+              }
+
+              // Regular item — checkbox
               return (
                 <TouchableOpacity
                   key={item.id}
@@ -283,7 +325,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   centered: { justifyContent: 'center', alignItems: 'center', padding: 32 },
   content: { padding: 20, paddingTop: 60 },
-  heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 24 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+  heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
+  refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
+  refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10, textAlign: 'center' },
   emptyBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22 },
