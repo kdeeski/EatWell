@@ -56,17 +56,6 @@ export default function PlanScreen() {
     setDisplayOrder(next);
     setSelectedSlot(toIndex);
     setDirty(true);
-
-    // Optimistic store update so Today screen reflects new order immediately
-    if (planRef.current) {
-      const reordered = next
-        .map((originalDay, newPosition) => {
-          const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
-          return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
-        })
-        .filter(Boolean) as PlannedMeal[];
-      if (reordered.length > 0) setMealPlan(planRef.current, reordered);
-    }
   };
 
   const handleDone = async () => {
