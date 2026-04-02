@@ -219,8 +219,6 @@ export async function reorderPlannedMeals(
   mealPlanId: string,
   meals: PlannedMeal[]
 ): Promise<void> {
-  // Delete all current meals for this plan and reinsert with new day_of_week values.
-  // Uses DELETE + INSERT (same path as saveMealPlan) to avoid relying on UPDATE RLS.
   const { error: delError } = await supabase
     .from('planned_meals')
     .delete()
@@ -229,7 +227,17 @@ export async function reorderPlannedMeals(
 
   const { error: insError } = await supabase
     .from('planned_meals')
-    .insert(meals.map(({ id: _id, ...m }) => m));
+    .insert(meals.map((m) => ({
+      meal_plan_id: mealPlanId,
+      day_of_week: m.day_of_week,
+      meal_name: m.meal_name,
+      description: m.description,
+      is_fish: m.is_fish,
+      needs_recipe: m.needs_recipe,
+      estimated_prep_minutes: m.estimated_prep_minutes,
+      ingredients: m.ingredients,
+      holly_included: m.holly_included,
+    })));
   if (insError) throw insError;
 }
 
