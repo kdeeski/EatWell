@@ -135,7 +135,7 @@ RULES:
 
 10. PANTRY STAPLES — use your judgment to mark is_pantry_staple: true for any ingredient a well-equipped home kitchen would typically keep stocked and not buy weekly (e.g. oils, salt, pepper, dried spices, dried herbs, flour, sugar, soy sauce, vinegars, canned tomatoes, pasta, rice, dried pulses, onions, garlic, butter, stock). These will still appear on the shopping list with a "have it" swipe so the user can confirm. NOTE: this will eventually be replaced by a live inventory system.
 
-11. LONGER-LIFE FRIDGE ITEMS — do NOT add to ingredients unless needed in an unusually large quantity beyond what a well-stocked fridge would hold (e.g. 500ml cream for a sauce is worth listing; a splash of milk is not): eggs, milk, cream, crème fraîche, parmesan, Greek yogurt, standard cheeses. NOTE: this will eventually be driven by live inventory.
+11. LONGER-LIFE FRIDGE ITEMS — do NOT add to ingredients unless needed in an unusually large quantity beyond what a well-stocked fridge would hold (e.g. 500ml cream for a sauce is worth listing; a splash of milk is not): eggs, milk, cream, crème fraîche, parmesan, Greek yogurt, standard cheeses. NOTE: this will eventually be driven by live inventory. When eggs are listed (e.g. a recipe needs 6), always use name "eggs" — never "egg yolks", "egg whites", or any other split form. An egg is an egg.
 
 12. ALWAYS include in ingredients (fresh, weekly purchases): fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery items.
 
