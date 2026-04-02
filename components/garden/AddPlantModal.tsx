@@ -3,7 +3,6 @@ import {
   Modal, View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addGardenPlant } from '../../lib/data';
 import type { GardenPlant } from '../../types';
@@ -20,12 +19,6 @@ function toISODate(d: Date) {
   return d.toISOString().split('T')[0];
 }
 
-function formatDisplay(iso: string) {
-  return new Date(iso + 'T12:00:00').toLocaleDateString('en-NZ', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  });
-}
-
 export default function AddPlantModal({ visible, initialName, userId, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const today = toISODate(new Date());
@@ -40,10 +33,6 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
   const [notes, setNotes]                 = useState('');
   const [saving, setSaving]               = useState(false);
 
-  // Date picker state
-  const [showPlantedPicker, setShowPlantedPicker]   = useState(false);
-  const [showReadyPicker, setShowReadyPicker]       = useState(false);
-
   const handleOpen = () => {
     setPlantName(initialName ?? '');
     setVariety('');
@@ -53,8 +42,6 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
     setIsCutAndComeAgain(false);
     setQuantityPlanted('');
     setNotes('');
-    setShowPlantedPicker(false);
-    setShowReadyPicker(false);
   };
 
   const handleSave = async () => {
@@ -70,7 +57,7 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
         variety: variety.trim() || null,
         location_note: locationNote.trim() || null,
         planted_date: plantedDate || today,
-        expected_ready_date: expectedReady || null,
+        expected_ready_date: expectedReady.trim() || null,
         status: 'planted',
         quantity_planted: quantityPlanted ? parseFloat(quantityPlanted) || null : null,
         notes: notes.trim() || null,
@@ -133,52 +120,25 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
               placeholderTextColor="#9CA3AF"
             />
 
-            <FieldLabel>Planted Date</FieldLabel>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => { setShowReadyPicker(false); setShowPlantedPicker(true); }}
-            >
-              <Text style={styles.dateButtonText}>{plantedDate ? formatDisplay(plantedDate) : 'Select date'}</Text>
-              <Text style={styles.dateChevron}>›</Text>
-            </TouchableOpacity>
-            {showPlantedPicker && (
-              <DateTimePicker
-                value={plantedDate ? new Date(plantedDate + 'T12:00:00') : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(_, date) => {
-                  setShowPlantedPicker(Platform.OS === 'ios');
-                  if (date) setPlantedDate(toISODate(date));
-                }}
-              />
-            )}
+            <FieldLabel>Planted Date (YYYY-MM-DD)</FieldLabel>
+            <TextInput
+              style={styles.input}
+              value={plantedDate}
+              onChangeText={setPlantedDate}
+              placeholder="e.g. 2026-04-02"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numbers-and-punctuation"
+            />
 
-            <FieldLabel>Expected Ready Date</FieldLabel>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => { setShowPlantedPicker(false); setShowReadyPicker(true); }}
-            >
-              <Text style={[styles.dateButtonText, !expectedReady && styles.datePlaceholder]}>
-                {expectedReady ? formatDisplay(expectedReady) : 'Optional — tap to set'}
-              </Text>
-              <Text style={styles.dateChevron}>›</Text>
-            </TouchableOpacity>
-            {expectedReady ? (
-              <TouchableOpacity onPress={() => setExpectedReady('')}>
-                <Text style={styles.clearDate}>Clear date</Text>
-              </TouchableOpacity>
-            ) : null}
-            {showReadyPicker && (
-              <DateTimePicker
-                value={expectedReady ? new Date(expectedReady + 'T12:00:00') : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(_, date) => {
-                  setShowReadyPicker(Platform.OS === 'ios');
-                  if (date) setExpectedReady(toISODate(date));
-                }}
-              />
-            )}
+            <FieldLabel>Expected Ready Date (YYYY-MM-DD, optional)</FieldLabel>
+            <TextInput
+              style={styles.input}
+              value={expectedReady}
+              onChangeText={setExpectedReady}
+              placeholder="e.g. 2026-06-01"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numbers-and-punctuation"
+            />
 
             <FieldLabel>Quantity Planted</FieldLabel>
             <TextInput
@@ -250,16 +210,6 @@ const styles = StyleSheet.create({
     fontSize: 15, color: '#111827',
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 11 },
-
-  dateButton: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-  },
-  dateButtonText: { fontSize: 15, color: '#111827' },
-  datePlaceholder: { color: '#9CA3AF' },
-  dateChevron: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
-  clearDate: { fontSize: 13, color: '#EF4444', marginTop: 4, marginLeft: 2 },
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center',

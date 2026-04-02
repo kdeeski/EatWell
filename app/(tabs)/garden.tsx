@@ -78,6 +78,7 @@ export default function GardenScreen() {
   const [sourceSuggestionId, setSourceSuggestionId] = useState<string | undefined>();
   const [editTarget, setEditTarget]                 = useState<GardenPlant | null>(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsError, setSuggestionsError]     = useState<string | null>(null);
   const [showPastHarvests, setShowPastHarvests]     = useState(false);
 
   const activePlants = gardenPlants.filter(
@@ -92,9 +93,10 @@ export default function GardenScreen() {
   const refreshSuggestions = useCallback(async () => {
     if (!userId || suggestionsLoading) return;
     setSuggestionsLoading(true);
+    setSuggestionsError(null);
     try {
       const now = new Date();
-      const suggestions = await generateGardenSuggestions({
+      const input = {
         current_month: now.getMonth() + 1,
         current_year: now.getFullYear(),
         location: 'Canterbury, New Zealand',
@@ -103,7 +105,10 @@ export default function GardenScreen() {
           .map((p) => ({ plant_name: p.plant_name, status: p.status })),
         cooked_meal_ingredients: extractIngredientFrequency(plannedMeals),
         inventory: inventoryItems.map((i) => ({ name: i.name, location: i.location })),
-      });
+      };
+      console.log('[garden-suggestions] calling with:', JSON.stringify(input));
+      const suggestions = await generateGardenSuggestions(input);
+      console.log('[garden-suggestions] got', suggestions.length, 'suggestions');
       const saved = await saveGardenSuggestions(
         userId,
         suggestions.map((s) => ({
@@ -116,7 +121,9 @@ export default function GardenScreen() {
       );
       setGardenSuggestions(saved);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Could not load garden suggestions.');
+      const msg = e.message ?? 'Could not load garden suggestions.';
+      console.error('[garden-suggestions] error:', msg);
+      setSuggestionsError(msg);
     } finally {
       setSuggestionsLoading(false);
     }
@@ -287,6 +294,11 @@ export default function GardenScreen() {
           <View style={styles.loadingRow}>
             <ActivityIndicator color="#3B7A57" />
             <Text style={styles.loadingText}>Getting suggestions…</Text>
+          </View>
+        ) : suggestionsError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>Could not load suggestions</Text>
+            <Text style={styles.errorDetail} selectable>{suggestionsError}</Text>
           </View>
         ) : activeSuggestions.length === 0 ? (
           <Text style={styles.emptyText}>
@@ -465,6 +477,12 @@ const styles = StyleSheet.create({
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
   loadingText: { fontSize: 14, color: '#6B7280' },
   emptyText: { fontSize: 14, color: '#9CA3AF', lineHeight: 20 },
+  errorBox: {
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 10, padding: 12, gap: 4,
+  },
+  errorTitle: { fontSize: 14, fontWeight: '600', color: '#DC2626' },
+  errorDetail: { fontSize: 12, color: '#991B1B', lineHeight: 18 },
 
   plantRow: {
     flexDirection: 'row', alignItems: 'center',
