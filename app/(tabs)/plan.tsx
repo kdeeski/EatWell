@@ -85,7 +85,7 @@ export default function PlanScreen() {
           const currentPos = orderRef.current.indexOf(draggingDay.current);
           if (target !== currentPos) {
             didMove.current = true;
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            LayoutAnimation.configureNext({ duration: 120, update: { type: LayoutAnimation.Types.easeInEaseOut } });
             const next = [...orderRef.current];
             next.splice(currentPos, 1);
             next.splice(target, 0, draggingDay.current);
@@ -120,9 +120,10 @@ export default function PlanScreen() {
           // Optimistic store update
           setMealPlan(planRef.current, reordered);
 
-          // Persist to DB
+          // Persist to DB, then sync store with real DB IDs
           try {
-            await reorderPlannedMeals(planRef.current.id, originalIds, reordered);
+            const saved = await reorderPlannedMeals(planRef.current.id, originalIds, reordered);
+            setMealPlan(planRef.current, saved);
           } catch (e) {
             console.error('Failed to save meal order', e);
             // Rollback: restore pre-drag state

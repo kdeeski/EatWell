@@ -230,11 +230,10 @@ export async function reorderPlannedMeals(
   mealPlanId: string,
   originalIds: string[],
   meals: PlannedMeal[]
-): Promise<void> {
+): Promise<PlannedMeal[]> {
   // INSERT new rows first — if this fails, the original rows are untouched.
   // No unique constraint on (meal_plan_id, day_of_week) so no conflict.
-  // day_of_week check (0-6) is satisfied since values come from the reorder mapping.
-  const { error: insError } = await supabase
+  const { data: newMeals, error: insError } = await supabase
     .from('planned_meals')
     .insert(meals.map((m) => ({
       meal_plan_id: mealPlanId,
@@ -246,7 +245,8 @@ export async function reorderPlannedMeals(
       estimated_prep_minutes: m.estimated_prep_minutes,
       ingredients: m.ingredients,
       holly_included: m.holly_included,
-    })));
+    })))
+    .select();
   if (insError) throw insError;
 
   // DELETE old rows only after INSERT succeeds.
@@ -255,6 +255,8 @@ export async function reorderPlannedMeals(
     .delete()
     .in('id', originalIds);
   if (delError) throw delError;
+
+  return newMeals as PlannedMeal[];
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────
