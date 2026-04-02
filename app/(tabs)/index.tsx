@@ -6,6 +6,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
 
+const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
+const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
+
 export default function TodayScreen() {
   const router = useRouter();
   const { plannedMeals, todayCheckin } = useAppStore();
@@ -13,13 +16,55 @@ export default function TodayScreen() {
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
 
-  const checkinPending = !todayCheckin?.completed_at;
+  const checkinDone = !!todayCheckin?.completed_at;
+  const lastNight   = todayCheckin?.last_night_response ?? null;
+  const tonightPicked = checkinDone
+    ? plannedMeals.find((m) => m.id === todayCheckin?.tonight_planned_meal_id) ?? null
+    : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.greeting}>Good morning.</Text>
 
-      {checkinPending && (
+      {checkinDone ? (
+        /* ── Completed check-in summary ── */
+        <TouchableOpacity
+          style={[styles.checkinCard, styles.checkinCardDone]}
+          onPress={() => router.push('/checkin')}
+        >
+          <Text style={[styles.checkinTitle, styles.checkinTitleDone]}>
+            Morning Check-In ✓
+          </Text>
+
+          {lastNight && (
+            <View style={styles.checkinRow}>
+              <Text style={styles.checkinRowLabel}>Last night</Text>
+              {lastNight.type === 'planned' && lastNight.meal_name ? (
+                <Text style={styles.checkinRowValue}>
+                  {lastNight.meal_name}
+                  {lastNight.rating != null
+                    ? `  ${RATING_EMOJI[lastNight.rating]} ${RATING_LABELS[lastNight.rating]}`
+                    : ''}
+                </Text>
+              ) : lastNight.type === 'ate_out' ? (
+                <Text style={styles.checkinRowValue}>Ate out</Text>
+              ) : lastNight.type === 'something_else' ? (
+                <Text style={styles.checkinRowValue}>Something else</Text>
+              ) : (
+                <Text style={styles.checkinRowValue}>Didn't cook</Text>
+              )}
+            </View>
+          )}
+
+          {tonightPicked && (
+            <View style={styles.checkinRow}>
+              <Text style={styles.checkinRowLabel}>Tonight</Text>
+              <Text style={styles.checkinRowValue}>{tonightPicked.meal_name}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ) : (
+        /* ── Pending check-in prompt ── */
         <TouchableOpacity
           style={styles.checkinCard}
           onPress={() => router.push('/checkin')}
@@ -78,9 +123,18 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
   },
+  checkinCardDone: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
   checkinTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF', marginBottom: 6 },
+  checkinTitleDone: { color: '#166534', marginBottom: 10 },
   checkinSub: { fontSize: 14, color: '#D1FAE5', lineHeight: 20, marginBottom: 12 },
   checkinCta: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  checkinRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  checkinRowLabel: { fontSize: 13, fontWeight: '600', color: '#4B7A5B', minWidth: 72 },
+  checkinRowValue: { fontSize: 13, color: '#166534', flex: 1 },
 
   section: { marginBottom: 24 },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
