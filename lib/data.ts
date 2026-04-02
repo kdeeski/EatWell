@@ -299,6 +299,18 @@ export async function saveShoppingList(
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ list: ShoppingList; items: ShoppingListItem[] }> {
+  // Delete any existing shopping list for this meal plan before creating a fresh one
+  const { data: existingList } = await supabase
+    .from('shopping_lists')
+    .select('id')
+    .eq('meal_plan_id', mealPlanId)
+    .maybeSingle();
+
+  if (existingList) {
+    await supabase.from('shopping_list_items').delete().eq('shopping_list_id', existingList.id);
+    await supabase.from('shopping_lists').delete().eq('id', existingList.id);
+  }
+
   const { data: list, error: listError } = await supabase
     .from('shopping_lists')
     .insert({ user_id: userId, meal_plan_id: mealPlanId, week_start_date: weekStartDate })

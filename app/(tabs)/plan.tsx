@@ -45,6 +45,7 @@ export default function PlanScreen() {
     panResponders.current = Array.from({ length: 7 }, (_, slotIndex) =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
           draggingFrom.current = slotIndex;
           draggingDay.current  = orderRef.current[slotIndex];
