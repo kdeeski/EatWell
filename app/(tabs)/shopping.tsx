@@ -112,12 +112,20 @@ export default function ShoppingScreen() {
   };
 
   const buildGardenConfirmed = (items: typeof shoppingItems, plants: typeof gardenPlants) => {
+    // Ready plants are always available
     const readyNames = new Set(
       plants.filter((p) => p.status === 'ready').map((p) => p.plant_name.toLowerCase().trim())
     );
+    // Cut-and-come-again plants are available even while growing (you can always pick some)
+    const cutAndComeNames = new Set(
+      plants
+        .filter((p) => p.is_cut_and_come_again && (p.status === 'growing' || p.status === 'planted'))
+        .map((p) => p.plant_name.toLowerCase().trim())
+    );
     const confirmed = new Set<string>();
     items.forEach((item) => {
-      if (item.from_garden || readyNames.has(item.name.toLowerCase().trim())) {
+      const name = item.name.toLowerCase().trim();
+      if (item.from_garden || readyNames.has(name) || cutAndComeNames.has(name)) {
         confirmed.add(item.id);
       }
     });
@@ -258,7 +266,7 @@ export default function ShoppingScreen() {
                 return (
                   <View key={item.id} style={[styles.itemRow, styles.itemRowConfirmed]}>
                     <View style={[styles.leafBox, styles.leafBoxConfirmed]}>
-                      <Text style={styles.confirmTick}>✓</Text>
+                      <Text style={styles.leafIcon}>🌿</Text>
                     </View>
                     <View style={styles.itemTextBlock}>
                       <Text style={[styles.itemName, styles.itemNameMuted]}>{item.name}</Text>
@@ -596,6 +604,7 @@ const styles = StyleSheet.create({
   },
   pantryBoxConfirmed: { backgroundColor: '#D1FAE5', borderColor: '#3B7A57' },
   confirmTick: { fontSize: 11 },
+  leafIcon: { fontSize: 13 },
 
   itemTextBlock: { flex: 1 },
   itemName: { fontSize: 15, color: '#1C1C1E' },
