@@ -661,8 +661,8 @@ const styles = StyleSheet.create({
   stocktakeButton: { backgroundColor: '#3B7A57', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   stocktakeButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
-  filterBar: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6', maxHeight: 52 },
-  filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
+  filterBar: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
   filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6' },
   filterPillActive: { backgroundColor: '#3B7A57' },
   filterPillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
