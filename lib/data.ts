@@ -473,15 +473,18 @@ export async function ensureUserProfile(userId: string, email: string): Promise<
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 export async function bootstrapUserData(userId: string, email: string) {
-  await ensureUserProfile(userId, email);
+  // Fire-and-forget — don't let profile upsert failure block data loading
+  ensureUserProfile(userId, email).catch((e) =>
+    console.warn('ensureUserProfile failed (non-fatal):', e)
+  );
 
   const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin] =
     await Promise.all([
-      loadInventoryItems(userId),
-      loadGardenPlants(userId),
-      loadCurrentMealPlan(userId),
-      loadShoppingList(userId),
-      loadTodayCheckin(userId),
+      loadInventoryItems(userId).catch((e) => { console.error('loadInventoryItems failed:', e); return [] as InventoryItem[]; }),
+      loadGardenPlants(userId).catch((e) => { console.error('loadGardenPlants failed:', e); return [] as GardenPlant[]; }),
+      loadCurrentMealPlan(userId).catch((e) => { console.error('loadCurrentMealPlan failed:', e); return null; }),
+      loadShoppingList(userId).catch((e) => { console.error('loadShoppingList failed:', e); return null; }),
+      loadTodayCheckin(userId).catch((e) => { console.error('loadTodayCheckin failed:', e); return null; }),
     ]);
 
   return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin };

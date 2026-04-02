@@ -74,7 +74,7 @@ export default function RootLayout() {
           setTodayCheckin(todayCheckin);
         }
       )
-    );
+    ).catch((e) => console.error('Bootstrap chain failed:', e));
   }, [session?.user?.id]);
 
   if (!updateReady || session === undefined) return null;
