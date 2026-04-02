@@ -140,9 +140,18 @@ export interface CategorisedItem {
 export async function categorisePantryItems(
   itemNames: string[]
 ): Promise<CategorisedItem[]> {
-  const { data, error } = await supabase.functions.invoke('categorise-pantry-items', {
-    body: { items: itemNames },
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/categorise-pantry-items';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${anonKey}`,
+      'apikey': anonKey,
+    },
+    body: JSON.stringify({ items: itemNames }),
   });
-  if (error) throw error;
-  return (data as CategorisedItem[]) ?? [];
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+  return data as CategorisedItem[];
 }
