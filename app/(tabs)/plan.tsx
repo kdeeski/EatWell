@@ -166,8 +166,12 @@ export default function PlanScreen() {
                           {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
                         </View>
                         <Text style={styles.mealName}>{meal.meal_name}</Text>
-                        {meal.estimated_prep_minutes ? (
-                          <Text style={styles.mealMeta}>~{meal.estimated_prep_minutes} min</Text>
+                        <Text style={styles.mealMeta}>
+                          {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
+                          {!isSelected ? '  ·  Tap for details' : ''}
+                        </Text>
+                        {isSelected && meal.description ? (
+                          <Text style={styles.description}>{meal.description}</Text>
                         ) : null}
                       </>
                     ) : (
@@ -254,6 +258,7 @@ const styles = StyleSheet.create({
 
   mealName:    { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 2 },
   mealMeta:    { fontSize: 12, color: '#9CA3AF' },
+  description: { fontSize: 14, color: '#374151', lineHeight: 21, marginTop: 8 },
   nightOff:    { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
 
   toolbar: {
