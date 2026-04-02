@@ -2,6 +2,7 @@
 // Swipe right to replenish (→ shopping list). Swipe left to remove.
 
 import { useState, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, ActivityIndicator, TextInput, Alert,
@@ -431,6 +432,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (items: InventoryItem[]) => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [step, setStep]               = useState<BulkStep>('input');
   const [text, setText]               = useState('');
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
@@ -556,7 +558,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
                 </TouchableOpacity>
               }
             />
-            <View style={styles.saveRow}>
+            <View style={[styles.saveRow, { paddingBottom: insets.bottom + 16 }]}>
               <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveAll} disabled={saving}>
                 {saving
                   ? <ActivityIndicator color="#fff" />
