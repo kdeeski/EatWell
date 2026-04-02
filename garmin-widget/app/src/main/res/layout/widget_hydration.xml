@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Home screen widget layout.
+  Root must be a RemoteViews-compatible view. LinearLayout works well.
+  appWidgetBackground gives the standard rounded card look.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Water drop icon -->
+    <ImageView
+        android:id="@+id/ivWaterDrop"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_water_drop"
+        android:contentDescription="@string/water_drop_desc" />
+
+    <!-- Today's total -->
+    <TextView
+        android:id="@+id/tvTotal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="0 ml"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Hint label -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/tap_to_log"
+        android:textColor="#CCFFFFFF"
+        android:textSize="11sp" />
+
+</LinearLayout>

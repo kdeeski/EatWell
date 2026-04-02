@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Garmin Hydration Widget</string>
+    <string name="water_drop_desc">Water drop icon</string>
+    <string name="tap_to_log">tap to +200 ml</string>
+    <string name="widget_description">Log water to Garmin Connect with a single tap</string>
+</resources>
