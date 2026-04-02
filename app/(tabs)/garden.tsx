@@ -2,7 +2,7 @@
 // Harvesting a cut-and-come-again plant resets it to 'growing'.
 // Harvesting any plant creates a garden-location inventory item.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator,
@@ -79,6 +79,16 @@ export default function GardenScreen() {
   const [editTarget, setEditTarget]                 = useState<GardenPlant | null>(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError]     = useState<string | null>(null);
+  const [loadingMsgIndex, setLoadingMsgIndex]       = useState(0);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const LOADING_MESSAGES = [
+    'Looking at what you already grow…',
+    'Checking Canterbury\'s seasonal window…',
+    'Matching to your cooking patterns…',
+    'Finding what\'s worth growing at home…',
+    'Almost there…',
+  ];
   const [showPastHarvests, setShowPastHarvests]     = useState(false);
 
   const activePlants = gardenPlants.filter(
@@ -94,6 +104,10 @@ export default function GardenScreen() {
     if (!userId || suggestionsLoading) return;
     setSuggestionsLoading(true);
     setSuggestionsError(null);
+    setLoadingMsgIndex(0);
+    loadingIntervalRef.current = setInterval(() => {
+      setLoadingMsgIndex((prev) => Math.min(prev + 1, LOADING_MESSAGES.length - 1));
+    }, 3500);
     try {
       const now = new Date();
       const input = {
@@ -125,6 +139,10 @@ export default function GardenScreen() {
       console.error('[garden-suggestions] error:', msg);
       setSuggestionsError(msg);
     } finally {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current);
+        loadingIntervalRef.current = null;
+      }
       setSuggestionsLoading(false);
     }
   }, [userId, gardenPlants, plannedMeals, inventoryItems, suggestionsLoading]);
@@ -293,7 +311,7 @@ export default function GardenScreen() {
         {suggestionsLoading ? (
           <View style={styles.loadingRow}>
             <ActivityIndicator color="#3B7A57" />
-            <Text style={styles.loadingText}>Getting suggestions…</Text>
+            <Text style={styles.loadingText}>{LOADING_MESSAGES[loadingMsgIndex]}</Text>
           </View>
         ) : suggestionsError ? (
           <View style={styles.errorBox}>
