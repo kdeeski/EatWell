@@ -182,13 +182,21 @@ export async function saveMealPlan(
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] }> {
-  const { data: plan, error: planError } = await supabase
+  // Upsert the plan row, then fetch separately — combined upsert+select
+  // can return empty if the conflict row had no columns to update.
+  const { error: upsertError } = await supabase
     .from('meal_plans')
     .upsert(
       { user_id: userId, week_start_date: weekStartDate, confirmed: true },
       { onConflict: 'user_id,week_start_date' }
-    )
-    .select()
+    );
+  if (upsertError) throw upsertError;
+
+  const { data: plan, error: planError } = await supabase
+    .from('meal_plans')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('week_start_date', weekStartDate)
     .single();
   if (planError) throw planError;
 
@@ -299,16 +307,18 @@ export async function saveShoppingList(
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ list: ShoppingList; items: ShoppingListItem[] }> {
-  // Delete any existing shopping list for this meal plan before creating a fresh one
-  const { data: existingList } = await supabase
+  // Delete any existing shopping lists for this meal plan (may be multiple from past bugs)
+  const { data: existingLists } = await supabase
     .from('shopping_lists')
     .select('id')
-    .eq('meal_plan_id', mealPlanId)
-    .maybeSingle();
+    .eq('meal_plan_id', mealPlanId);
 
-  if (existingList) {
-    await supabase.from('shopping_list_items').delete().eq('shopping_list_id', existingList.id);
-    await supabase.from('shopping_lists').delete().eq('id', existingList.id);
+  if (existingLists?.length) {
+    await supabase
+      .from('shopping_list_items')
+      .delete()
+      .in('shopping_list_id', existingLists.map((l) => l.id));
+    await supabase.from('shopping_lists').delete().eq('meal_plan_id', mealPlanId);
   }
 
   const { data: list, error: listError } = await supabase
