@@ -229,11 +229,10 @@ const styles = StyleSheet.create({
 
   mealCard: {
     flex: 1, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    borderWidth: 1, borderColor: '#E5E7EB',
   },
-  mealCardSelected: { borderColor: '#3B7A57', borderWidth: 2, elevation: 3 },
-  mealCardEmpty:    { backgroundColor: '#F9FAFB', shadowOpacity: 0 },
+  mealCardSelected: { borderColor: '#3B7A57', borderWidth: 2 },
+  mealCardEmpty:    { backgroundColor: '#F9FAFB', borderColor: '#F3F4F6' },
 
   badgeRow:    { flexDirection: 'row', gap: 6, marginBottom: 4 },
   fishBadge:   {
