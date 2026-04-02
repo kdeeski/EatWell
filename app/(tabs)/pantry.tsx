@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#fff', borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1,
+    borderWidth: 1, borderColor: '#E5E7EB',
   },
   itemRowLowStock: { borderLeftWidth: 3, borderLeftColor: '#F59E0B' },
   itemLeft: { flex: 1 },
