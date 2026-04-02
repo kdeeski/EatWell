@@ -5,8 +5,8 @@
 import { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, PanResponder, ActivityIndicator, Modal,
-  TextInput, FlatList, Alert, KeyboardAvoidingView, Platform,
+  Animated, PanResponder, ActivityIndicator, Modal, Alert,
+  TextInput, FlatList, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
 import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems } from '../../lib/data';
@@ -201,7 +201,13 @@ export default function ShoppingScreen() {
       <View style={styles.headingRow}>
         <Text style={styles.heading}>Shopping</Text>
         <View style={styles.headingButtons}>
-          <TouchableOpacity style={styles.addButton} onPress={() => setBulkVisible(true)}>
+          <TouchableOpacity style={styles.addButton} onPress={() => {
+            if (!useAppStore.getState().shoppingList) {
+              Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
+              return;
+            }
+            setBulkVisible(true);
+          }}>
             <Text style={styles.addButtonText}>+ Add</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
@@ -219,6 +225,7 @@ export default function ShoppingScreen() {
         onClose={() => setBulkVisible(false)}
         onSaved={(items) => { items.forEach((i) => useAppStore.getState().addShoppingItem(i)); setBulkVisible(false); }}
       />
+
 
       {CATEGORY_ORDER.map((cat) => {
         const items = itemsByCategory[cat];

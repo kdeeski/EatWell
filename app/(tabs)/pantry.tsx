@@ -132,7 +132,7 @@ export default function PantryScreen() {
             onPress={() => setLocationFilter(f.key as LocationFilter)}
           >
             <Text style={[styles.filterPillText, locationFilter === f.key && styles.filterPillTextActive]}>
-              {f.emoji}  {f.label}
+              {f.label}
             </Text>
           </TouchableOpacity>
         ))}
