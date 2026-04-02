@@ -160,7 +160,7 @@ export default function ShoppingScreen() {
           user_id: userId,
           name: item.name.toLowerCase().trim(),
           category: item.ingredient_category === 'herbs_spices' ? 'herbs_spices' : 'pantry_dry_goods',
-          location: 'pantry',
+          location: item.ingredient_category === 'herbs_spices' ? 'fridge' : 'pantry',
           quantity: item.quantity,
           unit: item.unit,
           min_quantity: 0,
