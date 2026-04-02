@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
 import { saveCheckin, logCookedMeal } from '../../lib/data';
 
-type Step = 'debrief' | 'rating' | 'tonight' | 'done';
+type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
 const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
@@ -38,6 +38,7 @@ export default function CheckinFlow() {
 
   const [step, setStep] = useState<Step>('debrief');
   const [lastNightChoice, setLastNightChoice] = useState<string | null>(null);
+  const [somethingElseName, setSomethingElseName] = useState('');
   const [rating, setRating] = useState<number | null>(null);
   const [wouldCookAgain, setWouldCookAgain] = useState<boolean | null>(null);
   const [notes, setNotes] = useState('');
@@ -46,6 +47,9 @@ export default function CheckinFlow() {
 
   const startEditing = () => {
     setLastNightChoice(initialChoice);
+    setSomethingElseName(
+      existingLastNight?.type === 'something_else' ? (existingLastNight.meal_name ?? '') : ''
+    );
     setRating((existingLastNight?.rating as number | null | undefined) ?? null);
     setWouldCookAgain(existingLastNight?.would_cook_again ?? null);
     setNotes(existingLastNight?.notes ?? '');
@@ -93,7 +97,7 @@ export default function CheckinFlow() {
               ) : lastNight.type === 'ate_out' ? (
                 <Text style={styles.summaryMeal}>Ate out</Text>
               ) : lastNight.type === 'something_else' ? (
-                <Text style={styles.summaryMeal}>Something else</Text>
+                <Text style={styles.summaryMeal}>{lastNight.meal_name ?? 'Something else'}</Text>
               ) : (
                 <Text style={styles.summaryMeal}>Didn't cook</Text>
               )}
@@ -132,6 +136,8 @@ export default function CheckinFlow() {
     setLastNightChoice(choice);
     if (choice === lastNightsMeal?.id) {
       setStep('rating');
+    } else if (choice === 'something_else') {
+      setStep('something_else_detail');
     } else {
       setStep('tonight');
     }
@@ -184,7 +190,9 @@ export default function CheckinFlow() {
               : lastNightChoice === 'something_else' ? 'something_else'
               : lastNightChoice === 'ate_out' ? 'ate_out'
               : 'didnt_cook',
-            meal_name: lastNightChoice === lastNightsMeal?.id ? lastNightsMeal?.meal_name : undefined,
+            meal_name: lastNightChoice === lastNightsMeal?.id ? lastNightsMeal?.meal_name
+              : lastNightChoice === 'something_else' ? (somethingElseName.trim() || undefined)
+              : undefined,
             rating: lastNightChoice === lastNightsMeal?.id ? rating : null,
             would_cook_again: lastNightChoice === lastNightsMeal?.id ? wouldCookAgain : null,
             notes: lastNightChoice === lastNightsMeal?.id ? (notes.trim() || null) : null,
@@ -238,6 +246,27 @@ export default function CheckinFlow() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('didnt_cook')}>
               <Text style={styles.mealOptionName}>Didn't cook</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Something else — what did you cook? */}
+        {step === 'something_else_detail' && (
+          <View>
+            <Text style={styles.stepTitle}>What did you cook?</Text>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="e.g. pasta with leftover veg"
+              value={somethingElseName}
+              onChangeText={setSomethingElseName}
+              autoFocus
+              autoCapitalize="sentences"
+            />
+            <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('tonight')}>
+              <Text style={styles.primaryButtonText}>Next →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.skipLink} onPress={() => { setSomethingElseName(''); setStep('tonight'); }}>
+              <Text style={styles.skipLinkText}>Skip — I'd rather not say</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -469,5 +498,7 @@ const styles = StyleSheet.create({
 
   editButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   editButtonText: { fontSize: 15, color: '#9CA3AF', fontWeight: '500' },
+  skipLink: { paddingVertical: 14, alignItems: 'center' },
+  skipLinkText: { fontSize: 14, color: '#9CA3AF' },
   summaryTapHint: { fontSize: 11, color: '#9CA3AF', marginTop: 6 },
 });
