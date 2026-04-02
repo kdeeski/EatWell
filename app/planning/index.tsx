@@ -97,10 +97,31 @@ export default function PlanningFlow() {
         nightsAway,
         hollyHomeNights,
       });
-      // Safety net: remove any meals Claude planned on nights-away days
+      // Build confirmed garden list for validation
+      const gardenNames = [
+        ...gardenHarvesting,
+        ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
+      ].map((s) => s.toLowerCase());
+
       const result = {
         ...rawResult,
-        meals: rawResult.meals.filter((m) => !nightsAway.includes(m.day_of_week)),
+        meals: rawResult.meals
+          // Safety net: remove meals on nights-away days
+          .filter((m) => !nightsAway.includes(m.day_of_week))
+          .map((m) => ({
+            ...m,
+            ingredients: m.ingredients.map((ing) => ({
+              ...ing,
+              // Only trust from_garden if the ingredient name matches something
+              // the user actually confirmed as ready — prevents Claude marking
+              // all herbs/spices as garden when they're dried pantry items.
+              from_garden: ing.from_garden &&
+                gardenNames.length > 0 &&
+                gardenNames.some((g) =>
+                  ing.name.toLowerCase().includes(g) || g.includes(ing.name.toLowerCase())
+                ),
+            })),
+          })),
       };
 
       // Get Monday of the current week as the week start date
