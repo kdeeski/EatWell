@@ -135,6 +135,8 @@ RULES:
 
 18. Keep meal names short (max 5 words) — the cooking description carries the detail.
 
+19. NEVER combine multiple ingredients into one entry (e.g. never "salt and pepper" — always list as two separate ingredients: "salt" and "black pepper"). Every ingredient must be a single item with its own name, quantity, and unit.
+
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
     });
