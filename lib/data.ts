@@ -4,7 +4,7 @@
 
 import { supabase } from './supabase';
 import type {
-  GardenPlant, GardenHarvest,
+  GardenPlant, GardenHarvest, GardenSuggestion,
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
   CookedMeal, CheckIn,
   InventoryItem, ItemCategory, ItemLocation,
@@ -113,7 +113,7 @@ export async function loadGardenPlants(userId: string): Promise<GardenPlant[]> {
 }
 
 export async function addGardenPlant(
-  plant: Omit<GardenPlant, 'id' | 'created_at'>
+  plant: Omit<GardenPlant, 'id' | 'created_at' | 'updated_at'>
 ): Promise<GardenPlant> {
   const { data, error } = await supabase
     .from('garden_plants')
@@ -148,6 +148,84 @@ export async function recordHarvest(
     .single();
   if (error) throw error;
   return data as GardenHarvest;
+}
+
+export async function deleteGardenPlant(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('garden_plants')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateGardenPlant(
+  id: string,
+  updates: Partial<Omit<GardenPlant, 'id' | 'user_id' | 'created_at'>>
+): Promise<GardenPlant> {
+  const { data, error } = await supabase
+    .from('garden_plants')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as GardenPlant;
+}
+
+export async function loadGardenHarvestsForPlant(plantId: string): Promise<GardenHarvest[]> {
+  const { data, error } = await supabase
+    .from('garden_harvests')
+    .select('*')
+    .eq('garden_plant_id', plantId)
+    .order('harvest_date', { ascending: false });
+  if (error) throw error;
+  return data as GardenHarvest[];
+}
+
+export async function loadGardenSuggestions(userId: string): Promise<GardenSuggestion[]> {
+  const { data, error } = await supabase
+    .from('garden_suggestions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('dismissed', false)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data as GardenSuggestion[];
+}
+
+export async function saveGardenSuggestions(
+  userId: string,
+  suggestions: Array<{
+    plant_name: string;
+    why_now: string;
+    why_worth_growing: string;
+    why_suits_cooking: string;
+    month_generated: number;
+  }>
+): Promise<GardenSuggestion[]> {
+  const rows = suggestions.map((s) => ({ ...s, user_id: userId }));
+  const { data, error } = await supabase
+    .from('garden_suggestions')
+    .insert(rows)
+    .select();
+  if (error) throw error;
+  return data as GardenSuggestion[];
+}
+
+export async function dismissGardenSuggestion(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('garden_suggestions')
+    .update({ dismissed: true })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function markSuggestionAddedToGarden(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('garden_suggestions')
+    .update({ added_to_garden: true })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 // ─── Meal Plans ───────────────────────────────────────────────────────────────

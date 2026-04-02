@@ -16,7 +16,7 @@ type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 
 
 export default function PlanningFlow() {
   const router = useRouter();
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, userId } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   const [step, setStep] = useState<Step>('fridge');
@@ -157,7 +157,7 @@ export default function PlanningFlow() {
           )
       );
       if (newPlants.length > 0) {
-        setGardenPlants([...gardenPlants, ...newPlants]);
+        addGardenPlantsToStore(newPlants);
       }
 
       // Save to Supabase and update the app store

@@ -6,6 +6,7 @@ import type {
   ShoppingList,
   ShoppingListItem,
   GardenPlant,
+  GardenSuggestion,
   CheckIn,
 } from '../types';
 
@@ -36,6 +37,12 @@ interface AppState {
   gardenPlants: GardenPlant[];
   setGardenPlants: (plants: GardenPlant[]) => void;
   updateGardenPlant: (id: string, updates: Partial<GardenPlant>) => void;
+  addGardenPlantToStore: (plant: GardenPlant) => void;
+  addGardenPlantsToStore: (plants: GardenPlant[]) => void;
+  removeGardenPlant: (id: string) => void;
+  gardenSuggestions: GardenSuggestion[];
+  setGardenSuggestions: (suggestions: GardenSuggestion[]) => void;
+  dismissSuggestion: (id: string) => void;
 
   // ── Today's check-in ──────────────────────────────────────────────────────
   todayCheckin: CheckIn | null;
@@ -85,6 +92,20 @@ export const useAppStore = create<AppState>((set) => ({
   updateGardenPlant: (id, updates) =>
     set((state) => ({
       gardenPlants: state.gardenPlants.map((p) => p.id === id ? { ...p, ...updates } : p),
+    })),
+  addGardenPlantToStore: (plant) =>
+    set((state) => ({ gardenPlants: [...state.gardenPlants, plant] })),
+  addGardenPlantsToStore: (plants) =>
+    set((state) => ({ gardenPlants: [...state.gardenPlants, ...plants] })),
+  removeGardenPlant: (id) =>
+    set((state) => ({ gardenPlants: state.gardenPlants.filter((p) => p.id !== id) })),
+  gardenSuggestions: [],
+  setGardenSuggestions: (suggestions) => set({ gardenSuggestions: suggestions }),
+  dismissSuggestion: (id) =>
+    set((state) => ({
+      gardenSuggestions: state.gardenSuggestions.map((s) =>
+        s.id === id ? { ...s, dismissed: true } : s
+      ),
     })),
 
   // Check-in

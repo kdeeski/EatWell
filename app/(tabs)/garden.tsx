@@ -1,15 +1,30 @@
-// Garden screen — lifecycle tracker. Marking a plant as harvested creates a
-// garden-location inventory item so it shows up in the Pantry tab.
+// Garden screen — lifecycle tracker + AI planting suggestions.
+// Harvesting a cut-and-come-again plant resets it to 'growing'.
+// Harvesting any plant creates a garden-location inventory item.
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, TextInput, Alert, KeyboardAvoidingView, Platform,
+  Alert, ActivityIndicator,
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
-import { getPlantsInSeasonNow, getWindfallFruitsInSeason } from '../../constants/gardenCalendar';
-import { updateGardenPlantStatus, recordHarvest, upsertInventoryItem } from '../../lib/data';
-import type { GardenPlant } from '../../types';
+import {
+  updateGardenPlantStatus,
+  recordHarvest,
+  upsertInventoryItem,
+  deleteGardenPlant,
+  updateGardenPlant as updateGardenPlantDB,
+  loadGardenSuggestions,
+  saveGardenSuggestions,
+  dismissGardenSuggestion,
+  markSuggestionAddedToGarden,
+} from '../../lib/data';
+import { generateGardenSuggestions } from '../../lib/claude';
+import type { GardenPlant, PlantStatus, HarvestStorage } from '../../types';
+import AddPlantModal from '../../components/garden/AddPlantModal';
+import HarvestModal from '../../components/garden/HarvestModal';
+import PlantDetailModal from '../../components/garden/PlantDetailModal';
+import SuggestionCard from '../../components/garden/SuggestionCard';
 
 const STATUS_LABELS: Record<string, string> = {
   planted:   'Planted',
@@ -27,48 +42,161 @@ const STATUS_COLORS: Record<string, string> = {
   finished:  '#D1D5DB',
 };
 
+function extractIngredientFrequency(meals: ReturnType<typeof useAppStore.getState>['plannedMeals']) {
+  const counts = new Map<string, number>();
+  for (const meal of meals) {
+    for (const ing of meal.ingredients) {
+      if (ing.is_pantry_staple) continue;
+      counts.set(ing.name, (counts.get(ing.name) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([name, meal_count]) => ({ name, meal_count }));
+}
+
 export default function GardenScreen() {
-  const { gardenPlants, updateGardenPlant, upsertInventoryItem: upsertStore, userId } = useAppStore();
-  const [harvestTarget, setHarvestTarget] = useState<GardenPlant | null>(null);
+  const {
+    gardenPlants,
+    updateGardenPlant,
+    addGardenPlantToStore,
+    removeGardenPlant,
+    upsertInventoryItem: upsertStore,
+    inventoryItems,
+    plannedMeals,
+    gardenSuggestions,
+    setGardenSuggestions,
+    dismissSuggestion,
+    userId,
+  } = useAppStore();
+
+  const [harvestTarget, setHarvestTarget]           = useState<GardenPlant | null>(null);
+  const [detailTarget, setDetailTarget]             = useState<GardenPlant | null>(null);
+  const [addPlantVisible, setAddPlantVisible]       = useState(false);
+  const [addPlantInitialName, setAddPlantInitialName] = useState<string | undefined>();
+  const [sourceSuggestionId, setSourceSuggestionId] = useState<string | undefined>();
+  const [editTarget, setEditTarget]                 = useState<GardenPlant | null>(null);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showPastHarvests, setShowPastHarvests]     = useState(false);
 
   const activePlants = gardenPlants.filter(
     (p) => p.status !== 'finished' && p.status !== 'harvested'
   );
+  const pastPlants = gardenPlants.filter(
+    (p) => p.status === 'harvested' || p.status === 'finished'
+  );
 
-  const inSeasonNow    = getPlantsInSeasonNow();
-  const windfallFruits = getWindfallFruitsInSeason();
+  // ── Suggestions ─────────────────────────────────────────────────────────────
+
+  const refreshSuggestions = useCallback(async () => {
+    if (!userId || suggestionsLoading) return;
+    setSuggestionsLoading(true);
+    try {
+      const now = new Date();
+      const suggestions = await generateGardenSuggestions({
+        current_month: now.getMonth() + 1,
+        current_year: now.getFullYear(),
+        location: 'Canterbury, New Zealand',
+        plants_in_ground: gardenPlants
+          .filter((p) => p.status === 'planted' || p.status === 'growing')
+          .map((p) => ({ plant_name: p.plant_name, status: p.status })),
+        cooked_meal_ingredients: extractIngredientFrequency(plannedMeals),
+        inventory: inventoryItems.map((i) => ({ name: i.name, location: i.location })),
+      });
+      const saved = await saveGardenSuggestions(
+        userId,
+        suggestions.map((s) => ({
+          plant_name: s.plant_name,
+          why_now: s.why_now,
+          why_worth_growing: s.why_worth_growing,
+          why_suits_cooking: s.why_suits_cooking,
+          month_generated: now.getMonth() + 1,
+        }))
+      );
+      setGardenSuggestions(saved);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not load garden suggestions.');
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, [userId, gardenPlants, plannedMeals, inventoryItems, suggestionsLoading]);
+
+  // Auto-refresh if no suggestions or suggestions are from a different month
+  useEffect(() => {
+    if (!userId) return;
+    const currentMonth = new Date().getMonth() + 1;
+    const activeSuggestions = gardenSuggestions.filter((s) => !s.dismissed);
+    const hasCurrentMonth = activeSuggestions.some((s) => s.month_generated === currentMonth);
+
+    if (activeSuggestions.length === 0 || !hasCurrentMonth) {
+      // Try loading from DB first
+      loadGardenSuggestions(userId)
+        .then((saved) => {
+          const savedActive = saved.filter((s) => s.month_generated === currentMonth);
+          if (savedActive.length > 0) {
+            setGardenSuggestions(saved);
+          } else {
+            refreshSuggestions();
+          }
+        })
+        .catch(() => refreshSuggestions());
+    }
+  }, [userId]);
+
+  const handleAddToGarden = (suggestionId: string, plantName: string) => {
+    setSourceSuggestionId(suggestionId);
+    setAddPlantInitialName(plantName);
+    setAddPlantVisible(true);
+  };
+
+  const handleDismissSuggestion = async (id: string) => {
+    dismissSuggestion(id);
+    try {
+      await dismissGardenSuggestion(id);
+    } catch {
+      // Optimistic update already applied — silent failure is acceptable
+    }
+  };
+
+  // ── Plant actions ─────────────────────────────────────────────────────────────
 
   const handleMarkReady = async (plant: GardenPlant) => {
     try {
-      const updated = await updateGardenPlantStatus(plant.id, 'ready');
+      await updateGardenPlantStatus(plant.id, 'ready');
       updateGardenPlant(plant.id, { status: 'ready' });
     } catch {
       Alert.alert('Error', 'Could not update plant status.');
     }
   };
 
-  const handleHarvestDone = async (plant: GardenPlant, quantity: number, unit: string) => {
+  const handleHarvestDone = async (
+    plant: GardenPlant,
+    quantity: number,
+    unit: string,
+    storage: HarvestStorage,
+    notes: string | null
+  ) => {
     try {
-      // 1. Record the harvest event
       await recordHarvest({
         garden_plant_id: plant.id,
         user_id: userId!,
         harvest_date: new Date().toISOString().split('T')[0],
         quantity,
         unit,
-        storage: 'fresh',
-        notes: null,
+        storage,
+        notes,
       });
 
-      // 2. Mark plant as harvested
-      await updateGardenPlantStatus(plant.id, 'harvested');
-      updateGardenPlant(plant.id, { status: 'harvested' });
+      // Cut-and-come-again: return to growing; otherwise mark harvested
+      const newStatus: PlantStatus = plant.is_cut_and_come_again ? 'growing' : 'harvested';
+      await updateGardenPlantStatus(plant.id, newStatus);
+      updateGardenPlant(plant.id, { status: newStatus });
 
-      // 3. Create / top-up inventory item with location: garden
       const inventoryItem = await upsertInventoryItem({
         user_id: userId!,
         name: plant.plant_name.toLowerCase().trim(),
-        category: 'herbs_spices', // sensible default — user can edit in Pantry tab
+        category: 'herbs_spices',
         location: 'garden',
         quantity,
         unit,
@@ -80,45 +208,135 @@ export default function GardenScreen() {
       upsertStore(inventoryItem);
 
       setHarvestTarget(null);
+      setDetailTarget(null);
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Could not record harvest.');
     }
   };
 
+  const handleAddPlantSave = async (plant: GardenPlant) => {
+    addGardenPlantToStore(plant);
+
+    if (sourceSuggestionId) {
+      try {
+        await markSuggestionAddedToGarden(sourceSuggestionId);
+      } catch { /* silent */ }
+      dismissSuggestion(sourceSuggestionId);
+      try {
+        await dismissGardenSuggestion(sourceSuggestionId);
+      } catch { /* silent */ }
+    }
+
+    setAddPlantVisible(false);
+    setAddPlantInitialName(undefined);
+    setSourceSuggestionId(undefined);
+  };
+
+  const handleDeletePlant = async (id: string) => {
+    try {
+      await deleteGardenPlant(id);
+      removeGardenPlant(id);
+      setDetailTarget(null);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not delete plant.');
+    }
+  };
+
+  const handleEditPlant = (plant: GardenPlant) => {
+    setDetailTarget(null);
+    setEditTarget(plant);
+    setAddPlantVisible(true);
+  };
+
+  const handleEditSave = async (updatedPlant: GardenPlant) => {
+    addGardenPlantToStore; // no-op reference to keep linter quiet
+    updateGardenPlant(updatedPlant.id, updatedPlant);
+    setAddPlantVisible(false);
+    setEditTarget(null);
+  };
+
+  const handleStatusChange = async (id: string, status: PlantStatus) => {
+    try {
+      await updateGardenPlantStatus(id, status);
+      updateGardenPlant(id, { status });
+      // Refresh detail target if it's the same plant
+      if (detailTarget?.id === id) {
+        setDetailTarget((prev) => prev ? { ...prev, status } : prev);
+      }
+    } catch {
+      Alert.alert('Error', 'Could not update plant status.');
+    }
+  };
+
+  const activeSuggestions = gardenSuggestions.filter((s) => !s.dismissed);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Garden</Text>
 
-      {/* Seasonal planting prompt */}
-      {inSeasonNow.length > 0 && (
-        <View style={styles.promptCard}>
-          <Text style={styles.promptTitle}>In Season to Plant Now</Text>
-          <Text style={styles.promptBody}>
-            It's the right time for: {inSeasonNow.map((p) => p.plant).join(', ')}.
-          </Text>
-        </View>
-      )}
-
-      {windfallFruits.length > 0 && (
-        <View style={[styles.promptCard, styles.windfallCard]}>
-          <Text style={styles.promptTitle}>Seasonal Fruit</Text>
-          <Text style={styles.promptBody}>
-            {windfallFruits.map((f) => f.plant).join(' and ')} season is here —
-            worth factoring into this week's meals?
-          </Text>
-        </View>
-      )}
-
-      {/* Active plants */}
+      {/* ── What to Plant Now ─────────────────────────────────────────────── */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>In the Ground</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>What to Plant Now</Text>
+          <TouchableOpacity onPress={refreshSuggestions} disabled={suggestionsLoading}>
+            <Text style={styles.refreshLink}>{suggestionsLoading ? 'Loading…' : 'Refresh'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {suggestionsLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color="#3B7A57" />
+            <Text style={styles.loadingText}>Getting suggestions…</Text>
+          </View>
+        ) : activeSuggestions.length === 0 ? (
+          <Text style={styles.emptyText}>
+            No suggestions right now — tap Refresh to generate new ones.
+          </Text>
+        ) : (
+          activeSuggestions.map((s) => (
+            <SuggestionCard
+              key={s.id}
+              suggestion={s}
+              onAddToGarden={() => handleAddToGarden(s.id, s.plant_name)}
+              onDismiss={() => handleDismissSuggestion(s.id)}
+            />
+          ))
+        )}
+      </View>
+
+      {/* ── In the Ground ────────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>In the Ground</Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setAddPlantInitialName(undefined);
+              setSourceSuggestionId(undefined);
+              setAddPlantVisible(true);
+            }}
+          >
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
+
         {activePlants.length === 0 ? (
-          <Text style={styles.emptyText}>Nothing recorded yet — add plants when you put seedlings in.</Text>
+          <Text style={styles.emptyText}>
+            Nothing recorded yet — add plants when you put seedlings in.
+          </Text>
         ) : (
           activePlants.map((plant) => (
-            <View key={plant.id} style={styles.plantRow}>
+            <TouchableOpacity
+              key={plant.id}
+              style={styles.plantRow}
+              onPress={() => setDetailTarget(plant)}
+              activeOpacity={0.7}
+            >
               <View style={styles.plantInfo}>
                 <Text style={styles.plantName}>{plant.plant_name}</Text>
+                {plant.variety && (
+                  <Text style={styles.plantVariety}>{plant.variety}</Text>
+                )}
                 {plant.expected_ready_date && (
                   <Text style={styles.plantDate}>
                     Ready: {new Date(plant.expected_ready_date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })}
@@ -134,156 +352,138 @@ export default function GardenScreen() {
                 </View>
 
                 {plant.status === 'growing' && (
-                  <TouchableOpacity style={styles.actionButton} onPress={() => handleMarkReady(plant)}>
-                    <Text style={styles.actionButtonText}>Mark Ready</Text>
+                  <TouchableOpacity
+                    style={styles.quickButton}
+                    onPress={(e) => { e.stopPropagation?.(); handleMarkReady(plant); }}
+                  >
+                    <Text style={styles.quickButtonText}>Mark Ready</Text>
                   </TouchableOpacity>
                 )}
 
                 {plant.status === 'ready' && (
-                  <TouchableOpacity style={[styles.actionButton, styles.harvestButton]} onPress={() => setHarvestTarget(plant)}>
-                    <Text style={[styles.actionButtonText, styles.harvestButtonText]}>Harvest →</Text>
+                  <TouchableOpacity
+                    style={[styles.quickButton, styles.harvestQuickButton]}
+                    onPress={(e) => { e.stopPropagation?.(); setHarvestTarget(plant); }}
+                  >
+                    <Text style={[styles.quickButtonText, styles.harvestQuickButtonText]}>Harvest</Text>
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>
 
-      {/* Past harvests */}
-      {gardenPlants.some((p) => p.status === 'harvested' || p.status === 'finished') && (
+      {/* ── Past Harvests ─────────────────────────────────────────────────── */}
+      {pastPlants.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Past Harvests</Text>
-          {gardenPlants
-            .filter((p) => p.status === 'harvested' || p.status === 'finished')
-            .map((plant) => (
-              <View key={plant.id} style={[styles.plantRow, styles.plantRowMuted]}>
-                <Text style={styles.plantNameMuted}>{plant.plant_name}</Text>
-                <Text style={styles.statusTextMuted}>{STATUS_LABELS[plant.status]}</Text>
-              </View>
-            ))}
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => setShowPastHarvests((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sectionLabel}>Past Harvests</Text>
+            <Text style={styles.collapseToggle}>{showPastHarvests ? 'Hide' : `Show (${pastPlants.length})`}</Text>
+          </TouchableOpacity>
+
+          {showPastHarvests && pastPlants.map((plant) => (
+            <TouchableOpacity
+              key={plant.id}
+              style={[styles.plantRow, styles.plantRowMuted]}
+              onPress={() => setDetailTarget(plant)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.plantNameMuted}>{plant.plant_name}</Text>
+              <Text style={styles.statusTextMuted}>{STATUS_LABELS[plant.status]}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       )}
 
-      {/* Harvest modal */}
+      {/* ── Modals ────────────────────────────────────────────────────────── */}
       {harvestTarget && (
         <HarvestModal
           plant={harvestTarget}
-          onConfirm={(qty, unit) => handleHarvestDone(harvestTarget, qty, unit)}
+          onConfirm={(qty, unit, storage, notes) =>
+            handleHarvestDone(harvestTarget, qty, unit, storage, notes)
+          }
           onClose={() => setHarvestTarget(null)}
         />
       )}
+
+      <AddPlantModal
+        visible={addPlantVisible}
+        initialName={editTarget ? undefined : addPlantInitialName}
+        userId={userId ?? ''}
+        onSave={editTarget ? handleEditSave : handleAddPlantSave}
+        onClose={() => {
+          setAddPlantVisible(false);
+          setAddPlantInitialName(undefined);
+          setSourceSuggestionId(undefined);
+          setEditTarget(null);
+        }}
+      />
+
+      <PlantDetailModal
+        plant={detailTarget}
+        onClose={() => setDetailTarget(null)}
+        onStatusChange={handleStatusChange}
+        onHarvest={(plant) => {
+          setDetailTarget(null);
+          setHarvestTarget(plant);
+        }}
+        onEdit={handleEditPlant}
+        onDelete={handleDeletePlant}
+      />
     </ScrollView>
   );
 }
 
-// ─── Harvest modal ────────────────────────────────────────────────────────────
-
-function HarvestModal({ plant, onConfirm, onClose }: {
-  plant: GardenPlant;
-  onConfirm: (quantity: number, unit: string) => void;
-  onClose: () => void;
-}) {
-  const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit]         = useState('bunch');
-
-  return (
-    <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Harvest {plant.plant_name}</Text>
-            <View style={{ width: 60 }} />
-          </View>
-
-          <View style={styles.formBody}>
-            <Text style={styles.fieldLabel}>How much did you harvest?</Text>
-            <View style={styles.row}>
-              <TextInput
-                style={[styles.textInput, { flex: 1 }]}
-                value={quantity}
-                onChangeText={setQuantity}
-                keyboardType="decimal-pad"
-                autoFocus
-              />
-              <View style={{ width: 12 }} />
-              <TextInput
-                style={[styles.textInput, { flex: 1 }]}
-                value={unit}
-                onChangeText={setUnit}
-                placeholder="bunch, piece, g…"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <Text style={styles.harvestNote}>
-              This will add {plant.plant_name} to your Pantry under Garden 🌿 so it shows on your inventory.
-            </Text>
-
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={() => onConfirm(parseFloat(quantity) || 1, unit.trim() || 'bunch')}
-            >
-              <Text style={styles.confirmButtonText}>Confirm Harvest</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  content: { padding: 20, paddingTop: 60 },
+  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
   heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 24 },
 
-  promptCard: { backgroundColor: '#D1FAE5', borderRadius: 16, padding: 16, marginBottom: 16 },
-  windfallCard: { backgroundColor: '#FEF3C7' },
-  promptTitle: { fontSize: 14, fontWeight: '700', color: '#065F46', marginBottom: 4 },
-  promptBody: { fontSize: 14, color: '#064E3B', lineHeight: 20 },
+  section: { marginBottom: 28 },
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    fontSize: 13, fontWeight: '600', color: '#6B7280',
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  refreshLink: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  collapseToggle: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
 
-  section: { marginBottom: 24 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  addButton: {
+    paddingHorizontal: 12, paddingVertical: 5,
+    backgroundColor: '#3B7A57', borderRadius: 8,
+  },
+  addButtonText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+
+  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
+  loadingText: { fontSize: 14, color: '#6B7280' },
   emptyText: { fontSize: 14, color: '#9CA3AF', lineHeight: 20 },
 
-  plantRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', gap: 8 },
+  plantRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', gap: 8,
+  },
   plantRowMuted: { opacity: 0.6 },
   plantInfo: { flex: 1 },
   plantName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
-  plantNameMuted: { fontSize: 15, color: '#9CA3AF', flex: 1 },
+  plantVariety: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
   plantDate: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  plantNameMuted: { fontSize: 15, color: '#9CA3AF', flex: 1 },
   plantActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 12, fontWeight: '600' },
   statusTextMuted: { fontSize: 12, color: '#9CA3AF' },
 
-  actionButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#F3F4F6' },
-  actionButtonText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  harvestButton: { backgroundColor: '#3B7A57' },
-  harvestButtonText: { color: '#fff' },
-
-  // Modal
-  modalContainer: { flex: 1, backgroundColor: '#F9FAFB' },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
-  },
-  modalCancel: { fontSize: 16, color: '#6B7280', width: 60 },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  formBody: { padding: 20, gap: 8 },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  textInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#111827' },
-  row: { flexDirection: 'row' },
-  harvestNote: { fontSize: 13, color: '#6B7280', lineHeight: 20, marginTop: 12, fontStyle: 'italic' },
-  confirmButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
-  confirmButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  quickButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#F3F4F6' },
+  quickButtonText: { fontSize: 12, fontWeight: '600', color: '#374151' },
+  harvestQuickButton: { backgroundColor: '#3B7A57' },
+  harvestQuickButtonText: { color: '#fff' },
 });

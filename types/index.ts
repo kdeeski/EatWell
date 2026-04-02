@@ -55,6 +55,10 @@ export interface GardenPlant {
   status: PlantStatus;
   quantity_planted: number | null;
   notes: string | null;
+  variety: string | null;
+  location_note: string | null;
+  is_cut_and_come_again: boolean;
+  updated_at: string;
   created_at: string;
 }
 
@@ -67,6 +71,19 @@ export interface GardenHarvest {
   unit: string | null;
   storage: HarvestStorage;
   notes: string | null;
+  created_at: string;
+}
+
+export interface GardenSuggestion {
+  id: string;
+  user_id: string;
+  plant_name: string;
+  why_now: string;
+  why_worth_growing: string;
+  why_suits_cooking: string;
+  month_generated: number;
+  dismissed: boolean;
+  added_to_garden: boolean;
   created_at: string;
 }
 

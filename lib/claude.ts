@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
-import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, PlannedMeal } from '../types';
+import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, GardenSuggestion, PlannedMeal } from '../types';
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
 
@@ -135,6 +135,47 @@ export interface CategorisedItem {
   name: string;
   category: string;
   location: string;
+}
+
+// ─── Garden Suggestions ───────────────────────────────────────────────────────
+
+export interface GardenSuggestionsInput {
+  current_month: number;
+  current_year: number;
+  location: string;
+  plants_in_ground: Array<{ plant_name: string; status: string }>;
+  cooked_meal_ingredients: Array<{ name: string; meal_count: number }>;
+  inventory: Array<{ name: string; location: string }>;
+}
+
+export async function generateGardenSuggestions(
+  input: GardenSuggestionsInput
+): Promise<GardenSuggestion[]> {
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/garden-suggestions';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+    return (data as { suggestions: GardenSuggestion[] }).suggestions;
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new Error('Garden suggestions timed out — please try again.');
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function categorisePantryItems(
