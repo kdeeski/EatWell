@@ -129,7 +129,9 @@ RULES:
 
 6a. WEEKLY BALANCE — every week must include: exactly 1 fish/seafood meal, at least 1 fully vegetarian meal (no meat, no fish — eggs/dairy fine). The remaining nights are meat-based. This is a hard rule, not a guideline.
 
-7. Avoid the same carb base on consecutive nights where possible (guideline, not hard rule).
+7. Never repeat the same pasta shape or carb base in the same week (hard rule). E.g. if pappardelle appears once, no other meal that week uses pappardelle or any other pasta — use rice, polenta, gnocchi, bread, or grains instead for variety.
+
+7a. FRESH PASTA — if a meal uses fresh pasta (pappardelle, tagliatelle, fettuccine, etc.), mark it as is_pantry_staple: true and from_fridge: false — the user makes their own fresh pasta and does not buy it. Do not add fresh pasta to the shopping list.
 
 8. Omit days the user is away entirely — do not generate a meal for those day_of_week values.
 
