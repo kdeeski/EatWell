@@ -1,13 +1,13 @@
 // This Week screen — shows the 7-meal plan with drag-to-reorder.
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   PanResponder, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
-import { reorderPlannedMeals } from '../../lib/data';
+import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
 import type { PlannedMeal } from '../../types';
 
 if (Platform.OS === 'android') {
@@ -19,8 +19,16 @@ const CARD_HEIGHT = 106; // card height + margin
 
 export default function PlanScreen() {
   const router = useRouter();
-  const { plannedMeals, currentMealPlan, setMealPlan } = useAppStore();
+  const { plannedMeals, currentMealPlan, setMealPlan, userId } = useAppStore();
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
+
+  // Fallback: if bootstrap didn't populate the plan, load directly when this tab mounts.
+  useEffect(() => {
+    if (currentMealPlan || !userId) return;
+    loadCurrentMealPlan(userId)
+      .then((data) => { if (data) setMealPlan(data.plan, data.meals); })
+      .catch((e) => console.error('Plan tab direct load failed:', e));
+  }, [userId]);
   const [isDragging, setIsDragging] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
     Array.from({ length: 7 }, (_, i) => i)

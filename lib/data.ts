@@ -155,16 +155,19 @@ export async function recordHarvest(
 export async function loadCurrentMealPlan(
   userId: string
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] } | null> {
-  const { data: plan, error: planError } = await supabase
+  // Use plain array + [0] instead of maybeSingle() to avoid edge-case errors.
+  const { data: plans, error: planError } = await supabase
     .from('meal_plans')
     .select('*')
     .eq('user_id', userId)
     .order('week_start_date', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
 
-  if (planError || !plan) return null;
+  if (planError) throw planError; // surface the actual error instead of silent null
+  if (!plans || plans.length === 0) return null;
+
+  const plan = plans[0] as MealPlan;
 
   const { data: meals, error: mealsError } = await supabase
     .from('planned_meals')
@@ -173,7 +176,8 @@ export async function loadCurrentMealPlan(
     .order('day_of_week');
 
   if (mealsError) throw mealsError;
-  return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
+  console.log(`loadCurrentMealPlan: plan ${plan.id} (${plan.week_start_date}), ${meals?.length ?? 0} meals`);
+  return { plan, meals: (meals ?? []) as PlannedMeal[] };
 }
 
 export async function saveMealPlan(
