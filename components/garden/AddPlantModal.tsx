@@ -3,6 +3,8 @@ import {
   Modal, View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addGardenPlant } from '../../lib/data';
 import type { GardenPlant } from '../../types';
 
@@ -14,20 +16,34 @@ interface Props {
   onClose: () => void;
 }
 
-export default function AddPlantModal({ visible, initialName, userId, onSave, onClose }: Props) {
-  const today = new Date().toISOString().split('T')[0];
+function toISODate(d: Date) {
+  return d.toISOString().split('T')[0];
+}
 
-  const [plantName, setPlantName]   = useState(initialName ?? '');
-  const [variety, setVariety]       = useState('');
-  const [locationNote, setLocationNote] = useState('');
-  const [plantedDate, setPlantedDate]   = useState(today);
+function formatDisplay(iso: string) {
+  return new Date(iso + 'T12:00:00').toLocaleDateString('en-NZ', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  });
+}
+
+export default function AddPlantModal({ visible, initialName, userId, onSave, onClose }: Props) {
+  const insets = useSafeAreaInsets();
+  const today = toISODate(new Date());
+
+  const [plantName, setPlantName]         = useState(initialName ?? '');
+  const [variety, setVariety]             = useState('');
+  const [locationNote, setLocationNote]   = useState('');
+  const [plantedDate, setPlantedDate]     = useState(today);
   const [expectedReady, setExpectedReady] = useState('');
   const [isCutAndComeAgain, setIsCutAndComeAgain] = useState(false);
   const [quantityPlanted, setQuantityPlanted] = useState('');
-  const [notes, setNotes]           = useState('');
-  const [saving, setSaving]         = useState(false);
+  const [notes, setNotes]                 = useState('');
+  const [saving, setSaving]               = useState(false);
 
-  // Reset when opened with a new initial name
+  // Date picker state
+  const [showPlantedPicker, setShowPlantedPicker]   = useState(false);
+  const [showReadyPicker, setShowReadyPicker]       = useState(false);
+
   const handleOpen = () => {
     setPlantName(initialName ?? '');
     setVariety('');
@@ -37,6 +53,8 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
     setIsCutAndComeAgain(false);
     setQuantityPlanted('');
     setNotes('');
+    setShowPlantedPicker(false);
+    setShowReadyPicker(false);
   };
 
   const handleSave = async () => {
@@ -51,8 +69,8 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
         plant_name: plantName.trim(),
         variety: variety.trim() || null,
         location_note: locationNote.trim() || null,
-        planted_date: plantedDate.trim() || today,
-        expected_ready_date: expectedReady.trim() || null,
+        planted_date: plantedDate || today,
+        expected_ready_date: expectedReady || null,
         status: 'planted',
         quantity_planted: quantityPlanted ? parseFloat(quantityPlanted) || null : null,
         notes: notes.trim() || null,
@@ -75,13 +93,13 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
       onShow={handleOpen}
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Text style={styles.cancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.title}>Add Plant</Text>
-            <TouchableOpacity onPress={handleSave} disabled={saving}>
+            <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Text style={[styles.save, saving && styles.saveDim]}>Save</Text>
             </TouchableOpacity>
           </View>
@@ -116,31 +134,58 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
             />
 
             <FieldLabel>Planted Date</FieldLabel>
-            <TextInput
-              style={styles.input}
-              value={plantedDate}
-              onChangeText={setPlantedDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="numbers-and-punctuation"
-            />
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => { setShowReadyPicker(false); setShowPlantedPicker(true); }}
+            >
+              <Text style={styles.dateButtonText}>{plantedDate ? formatDisplay(plantedDate) : 'Select date'}</Text>
+              <Text style={styles.dateChevron}>›</Text>
+            </TouchableOpacity>
+            {showPlantedPicker && (
+              <DateTimePicker
+                value={plantedDate ? new Date(plantedDate + 'T12:00:00') : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(_, date) => {
+                  setShowPlantedPicker(Platform.OS === 'ios');
+                  if (date) setPlantedDate(toISODate(date));
+                }}
+              />
+            )}
 
             <FieldLabel>Expected Ready Date</FieldLabel>
-            <TextInput
-              style={styles.input}
-              value={expectedReady}
-              onChangeText={setExpectedReady}
-              placeholder="YYYY-MM-DD (optional)"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="numbers-and-punctuation"
-            />
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => { setShowPlantedPicker(false); setShowReadyPicker(true); }}
+            >
+              <Text style={[styles.dateButtonText, !expectedReady && styles.datePlaceholder]}>
+                {expectedReady ? formatDisplay(expectedReady) : 'Optional — tap to set'}
+              </Text>
+              <Text style={styles.dateChevron}>›</Text>
+            </TouchableOpacity>
+            {expectedReady ? (
+              <TouchableOpacity onPress={() => setExpectedReady('')}>
+                <Text style={styles.clearDate}>Clear date</Text>
+              </TouchableOpacity>
+            ) : null}
+            {showReadyPicker && (
+              <DateTimePicker
+                value={expectedReady ? new Date(expectedReady + 'T12:00:00') : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(_, date) => {
+                  setShowReadyPicker(Platform.OS === 'ios');
+                  if (date) setExpectedReady(toISODate(date));
+                }}
+              />
+            )}
 
             <FieldLabel>Quantity Planted</FieldLabel>
             <TextInput
               style={styles.input}
               value={quantityPlanted}
               onChangeText={setQuantityPlanted}
-              placeholder="e.g. 4 seedlings (optional)"
+              placeholder="e.g. 4 (optional)"
               placeholderTextColor="#9CA3AF"
               keyboardType="decimal-pad"
             />
@@ -184,7 +229,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   cancel: { fontSize: 16, color: '#6B7280', width: 60 },
@@ -205,6 +250,16 @@ const styles = StyleSheet.create({
     fontSize: 15, color: '#111827',
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 11 },
+
+  dateButton: {
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  dateButtonText: { fontSize: 15, color: '#111827' },
+  datePlaceholder: { color: '#9CA3AF' },
+  dateChevron: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
+  clearDate: { fontSize: 13, color: '#EF4444', marginTop: 4, marginLeft: 2 },
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center',
