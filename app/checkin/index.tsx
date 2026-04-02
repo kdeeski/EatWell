@@ -72,9 +72,9 @@ export default function CheckinFlow() {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.stepTitle}>Today's check-in ✓</Text>
 
-          {/* Last night */}
+          {/* Last night — tap to re-open debrief */}
           {lastNight && (
-            <View style={styles.summaryCard}>
+            <TouchableOpacity style={styles.summaryCard} onPress={startEditing} activeOpacity={0.7}>
               <Text style={styles.summaryLabel}>Last night</Text>
               {lastNight.type === 'planned' && lastNight.meal_name ? (
                 <>
@@ -97,18 +97,24 @@ export default function CheckinFlow() {
               ) : (
                 <Text style={styles.summaryMeal}>Didn't cook</Text>
               )}
-            </View>
+              <Text style={styles.summaryTapHint}>Tap to edit</Text>
+            </TouchableOpacity>
           )}
 
-          {/* Tonight */}
+          {/* Tonight — tap to change */}
           {tonightMeal && (
-            <View style={[styles.summaryCard, styles.summaryCardGreen]}>
+            <TouchableOpacity
+              style={[styles.summaryCard, styles.summaryCardGreen]}
+              onPress={() => { startEditing(); setStep('tonight'); }}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.summaryLabel, { color: '#3B7A57' }]}>Tonight</Text>
               <Text style={styles.summaryMeal}>{tonightMeal.meal_name}</Text>
               {tonightMeal.is_fish && (
                 <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
               )}
-            </View>
+              <Text style={styles.summaryTapHint}>Tap to change</Text>
+            </TouchableOpacity>
           )}
 
           <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
@@ -463,4 +469,5 @@ const styles = StyleSheet.create({
 
   editButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   editButtonText: { fontSize: 15, color: '#9CA3AF', fontWeight: '500' },
+  summaryTapHint: { fontSize: 11, color: '#9CA3AF', marginTop: 6 },
 });
