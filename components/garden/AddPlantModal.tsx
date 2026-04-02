@@ -91,7 +91,7 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.body} contentContainerStyle={[styles.bodyContent, { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
             <FieldLabel>Plant Name *</FieldLabel>
             <TextInput
               style={styles.input}
