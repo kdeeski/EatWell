@@ -625,23 +625,22 @@ function StocktakePendingRow({ item, onChange, onRemove }: {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function mapStocktakeCategory(raw: string): ItemCategory {
-  const map: Record<string, ItemCategory> = {
+  const canonical = new Set<string>([
+    'meat_fish', 'dairy_eggs', 'produce', 'bread_bakery',
+    'pantry_dry_goods', 'herbs_spices', 'cans_preserves',
+    'oils_vinegars', 'condiments_sauces',
+  ]);
+  const key = raw.toLowerCase();
+  if (canonical.has(key)) return key as ItemCategory;
+  // Legacy names from old prompt version
+  const legacy: Record<string, ItemCategory> = {
     spices_herbs: 'herbs_spices',
-    herbs_spices: 'herbs_spices',
-    oils_vinegars: 'oils_vinegars',
     canned_jarred: 'cans_preserves',
-    cans_preserves: 'cans_preserves',
     dry_goods: 'pantry_dry_goods',
-    pantry_dry_goods: 'pantry_dry_goods',
     condiments: 'condiments_sauces',
-    condiments_sauces: 'condiments_sauces',
     baking: 'pantry_dry_goods',
-    produce: 'produce',
-    meat_fish: 'meat_fish',
-    dairy_eggs: 'dairy_eggs',
-    bread_bakery: 'bread_bakery',
   };
-  return map[raw.toLowerCase()] ?? 'pantry_dry_goods';
+  return legacy[key] ?? 'pantry_dry_goods';
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────

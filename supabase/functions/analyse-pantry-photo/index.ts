@@ -54,17 +54,19 @@ Your job is to identify every labelled item you can read in the photo.
 
 For each item, return:
 - name: the item name, lowercase, singular (e.g. "cumin", "olive oil", "soy sauce", "arborio rice")
-- category: one of spices_herbs | oils_vinegars | canned_jarred | dry_goods | condiments | baking | other
+- category: one of herbs_spices | oils_vinegars | cans_preserves | pantry_dry_goods | condiments_sauces | bread_bakery | meat_fish | produce | dairy_eggs
 - notes: optional short note if relevant (e.g. "almost empty", "two jars"), otherwise null
 
 Category guide:
-- spices_herbs: dried spices, dried herbs, spice blends, seasoning mixes
+- herbs_spices: dried spices, dried herbs, spice blends, seasoning mixes, baking spices (cinnamon, vanilla, etc.)
 - oils_vinegars: cooking oils, olive oils, vinegars
-- canned_jarred: canned tomatoes, beans, tinned fish, jars of paste, jarred sauces
-- dry_goods: pasta, rice, lentils, flour, oats, cereals, nuts, seeds, sugar
-- condiments: sauces, mustards, hot sauces, mayonnaise, miso, fish sauce
-- baking: baking powder, baking soda, yeast, cocoa, vanilla, icing sugar, chocolate
-- other: anything that doesn't fit
+- cans_preserves: canned tomatoes, beans, tinned fish, jars of paste, jarred sauces, preserved foods
+- pantry_dry_goods: pasta, rice, lentils, flour, oats, cereals, nuts, seeds, sugar, baking powder, baking soda, yeast, cocoa, chocolate
+- condiments_sauces: sauces, mustards, hot sauces, mayonnaise, miso, fish sauce, soy sauce
+- bread_bakery: bread, crackers, crispbread, wraps, tortillas
+- meat_fish: tinned fish not in a sauce (e.g. canned tuna, sardines)
+- produce: dried fruit, dried mushrooms, anything plant-based not fitting above
+- dairy_eggs: anything dairy or egg based
 
 Respond ONLY with valid JSON: { "items": [ { "name": "...", "category": "...", "notes": null } ] }
 
