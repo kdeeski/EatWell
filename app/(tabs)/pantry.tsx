@@ -492,8 +492,15 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
         </View>
 
         {step === 'input' && (
-          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <View style={styles.bulkInputStep}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'android' ? 80 : 0}
+          >
+            <ScrollView
+              contentContainerStyle={styles.bulkInputStep}
+              keyboardShouldPersistTaps="handled"
+            >
               <Text style={styles.bulkInputHint}>
                 Type or paste your items — one per line. AI will assign categories and locations.
               </Text>
@@ -516,7 +523,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
               >
                 <Text style={styles.categoriseButtonText}>Categorise</Text>
               </TouchableOpacity>
-            </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         )}
 
@@ -722,11 +729,11 @@ const styles = StyleSheet.create({
   dropdownTextActive: { color: '#3B7A57', fontWeight: '600' },
 
   // Bulk add
-  bulkInputStep: { flex: 1, padding: 20 },
+  bulkInputStep: { padding: 20, paddingBottom: 40 },
   bulkInputHint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 16 },
   bulkTextArea: {
-    flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
-    borderRadius: 12, padding: 14, fontSize: 15, color: '#111827', minHeight: 200,
+    height: 260, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    borderRadius: 12, padding: 14, fontSize: 15, color: '#111827',
   },
   errorText: { fontSize: 14, color: '#DC2626', textAlign: 'center', marginTop: 12 },
   categoriseButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
