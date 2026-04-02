@@ -88,6 +88,9 @@ export default function PlanScreen() {
 
           if (reordered.length === 0) return;
 
+          // Capture snapshot before optimistic update so rollback is accurate
+          const snapshot = mealsRef.current.slice();
+
           // Optimistic store update
           setMealPlan(planRef.current, reordered);
 
@@ -96,8 +99,8 @@ export default function PlanScreen() {
             await reorderPlannedMeals(planRef.current.id, reordered);
           } catch (e) {
             console.error('Failed to save meal order', e);
-            // Rollback: restore original order from DB
-            setMealPlan(planRef.current, mealsRef.current);
+            // Rollback: restore pre-drag state
+            setMealPlan(planRef.current, snapshot);
           }
         },
       })

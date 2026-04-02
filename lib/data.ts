@@ -226,26 +226,32 @@ export async function reorderPlannedMeals(
   mealPlanId: string,
   meals: PlannedMeal[]
 ): Promise<void> {
-  const { error: delError } = await supabase
-    .from('planned_meals')
-    .delete()
-    .eq('meal_plan_id', mealPlanId);
-  if (delError) throw delError;
+  // Use UPDATE per row (not delete+insert) to avoid data loss if one write fails.
+  // Phase 1: shift all to offset values (day + 7) to avoid unique constraint conflicts mid-swap.
+  // Phase 2: set final values.
+  const phase1 = await Promise.all(
+    meals.map((m) =>
+      supabase
+        .from('planned_meals')
+        .update({ day_of_week: m.day_of_week + 7 })
+        .eq('id', m.id)
+        .eq('meal_plan_id', mealPlanId)
+    )
+  );
+  const err1 = phase1.find((r) => r.error)?.error;
+  if (err1) throw err1;
 
-  const { error: insError } = await supabase
-    .from('planned_meals')
-    .insert(meals.map((m) => ({
-      meal_plan_id: mealPlanId,
-      day_of_week: m.day_of_week,
-      meal_name: m.meal_name,
-      description: m.description,
-      is_fish: m.is_fish,
-      needs_recipe: m.needs_recipe,
-      estimated_prep_minutes: m.estimated_prep_minutes,
-      ingredients: m.ingredients,
-      holly_included: m.holly_included,
-    })));
-  if (insError) throw insError;
+  const phase2 = await Promise.all(
+    meals.map((m) =>
+      supabase
+        .from('planned_meals')
+        .update({ day_of_week: m.day_of_week })
+        .eq('id', m.id)
+        .eq('meal_plan_id', mealPlanId)
+    )
+  );
+  const err2 = phase2.find((r) => r.error)?.error;
+  if (err2) throw err2;
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────

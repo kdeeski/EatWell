@@ -59,14 +59,21 @@ export default function RootLayout() {
     if (!session || bootstrapped.current) return;
     bootstrapped.current = true;
     setUserId(session.user.id);
-    bootstrapUserData(session.user.id, session.user.email ?? '').then(
-      ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
-        setInventoryItems(inventoryItems);
-        setGardenPlants(gardenPlants);
-        if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
-        if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
-        setTodayCheckin(todayCheckin);
-      }
+    // Explicitly set the session on the Supabase client before querying —
+    // onAuthStateChange can fire before the client's JWT is ready for RLS.
+    supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token!,
+    }).then(() =>
+      bootstrapUserData(session.user.id, session.user.email ?? '').then(
+        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
+          setInventoryItems(inventoryItems);
+          setGardenPlants(gardenPlants);
+          if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
+          if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
+          setTodayCheckin(todayCheckin);
+        }
+      )
     );
   }, [session?.user?.id]);
 
