@@ -26,6 +26,16 @@ export default function CheckinFlow() {
   const todayIndex = (new Date().getDay() + 6) % 7;
   const tonightOptions = plannedMeals.filter((m) => m.day_of_week === todayIndex);
 
+  const [editing, setEditing] = useState(false);
+
+  // Pre-populate from existing check-in when entering edit mode
+  const existingLastNight = todayCheckin?.last_night_response;
+  const initialChoice = existingLastNight?.type === 'planned' ? (lastNightsMeal?.id ?? null)
+    : existingLastNight?.type === 'ate_out' ? 'ate_out'
+    : existingLastNight?.type === 'something_else' ? 'something_else'
+    : existingLastNight?.type === 'didnt_cook' ? 'didnt_cook'
+    : null;
+
   const [step, setStep] = useState<Step>('debrief');
   const [lastNightChoice, setLastNightChoice] = useState<string | null>(null);
   const [rating, setRating] = useState<number | null>(null);
@@ -34,8 +44,18 @@ export default function CheckinFlow() {
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // If already completed today, show summary
-  if (todayCheckin?.completed_at) {
+  const startEditing = () => {
+    setLastNightChoice(initialChoice);
+    setRating((existingLastNight?.rating as number | null | undefined) ?? null);
+    setWouldCookAgain(existingLastNight?.would_cook_again ?? null);
+    setNotes(existingLastNight?.notes ?? '');
+    setTonightChoice(todayCheckin?.tonight_planned_meal_id ?? null);
+    setStep('debrief');
+    setEditing(true);
+  };
+
+  // If already completed today, show summary (unless editing)
+  if (todayCheckin?.completed_at && !editing) {
     const tonightMeal = plannedMeals.find((m) => m.id === todayCheckin.tonight_planned_meal_id);
     const lastNight = todayCheckin.last_night_response;
     const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
@@ -93,6 +113,9 @@ export default function CheckinFlow() {
 
           <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
             <Text style={styles.primaryButtonText}>Back to today</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.editButton} onPress={startEditing}>
+            <Text style={styles.editButtonText}>Edit check-in</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -170,14 +193,15 @@ export default function CheckinFlow() {
       console.error('Failed to save check-in', e);
     }
     setSaving(false);
+    setEditing(false);
     setStep('done');
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.cancel}>Skip</Text>
+        <TouchableOpacity onPress={() => { setEditing(false); router.back(); }}>
+          <Text style={styles.cancel}>{editing ? 'Cancel' : 'Skip'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Morning check-in</Text>
         <View style={{ width: 48 }} />
@@ -436,4 +460,7 @@ const styles = StyleSheet.create({
   summaryMeal: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
   summaryDetail: { fontSize: 14, color: '#6B7280', marginBottom: 4 },
   summaryNotes: { fontSize: 14, color: '#374151', fontStyle: 'italic', marginTop: 4 },
+
+  editButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  editButtonText: { fontSize: 15, color: '#9CA3AF', fontWeight: '500' },
 });
