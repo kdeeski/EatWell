@@ -37,6 +37,7 @@ export default function PlanScreen() {
   // Track drag state in refs (no re-renders during drag)
   const draggingFrom = useRef<number | null>(null);   // original slot index
   const draggingDay  = useRef<number | null>(null);   // dayIndex of dragged meal
+  const didMove      = useRef(false);                 // true only if position changed
 
   // PanResponders created ONCE per slot — must not be recreated on render
   const panResponders = useRef<ReturnType<typeof PanResponder.create>[] | null>(null);
@@ -47,6 +48,7 @@ export default function PlanScreen() {
         onPanResponderGrant: () => {
           draggingFrom.current = slotIndex;
           draggingDay.current  = orderRef.current[slotIndex];
+          didMove.current      = false;
           setExpandedSlot(null);
           setIsDragging(true);
         },
@@ -56,6 +58,7 @@ export default function PlanScreen() {
           const target    = Math.max(0, Math.min(6, Math.round(rawTarget)));
           const currentPos = orderRef.current.indexOf(draggingDay.current);
           if (target !== currentPos) {
+            didMove.current = true;
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             const next = [...orderRef.current];
             next.splice(currentPos, 1);
@@ -65,36 +68,35 @@ export default function PlanScreen() {
           }
         },
         onPanResponderRelease: async () => {
+          const moved = didMove.current;
           draggingFrom.current = null;
           draggingDay.current  = null;
+          didMove.current      = false;
           setIsDragging(false);
-          if (!planRef.current) return;
+
+          // Only save if the order actually changed
+          if (!moved || !planRef.current) return;
 
           const finalOrder = orderRef.current;
-          const updates = finalOrder
+          const reordered = finalOrder
             .map((originalDay, newPosition) => {
               const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
-              return meal ? { meal, newDay: newPosition } : null;
+              return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
             })
-            .filter(Boolean) as { meal: PlannedMeal; newDay: number }[];
+            .filter(Boolean) as PlannedMeal[];
+
+          if (reordered.length === 0) return;
 
           // Optimistic store update
-          setMealPlan(planRef.current, updates.map(({ meal, newDay }) => ({
-            ...meal,
-            day_of_week: newDay as PlannedMeal['day_of_week'],
-          })));
+          setMealPlan(planRef.current, reordered);
 
           // Persist to DB
-          if (planRef.current) {
-            try {
-              const reordered = updates.map(({ meal, newDay }) => ({
-                ...meal,
-                day_of_week: newDay as PlannedMeal['day_of_week'],
-              }));
-              await reorderPlannedMeals(planRef.current.id, reordered);
-            } catch (e) {
-              console.error('Failed to save meal order', e);
-            }
+          try {
+            await reorderPlannedMeals(planRef.current.id, reordered);
+          } catch (e) {
+            console.error('Failed to save meal order', e);
+            // Rollback: restore original order from DB
+            setMealPlan(planRef.current, mealsRef.current);
           }
         },
       })
