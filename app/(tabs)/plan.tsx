@@ -1,9 +1,9 @@
-// This Week screen — shows the 7-meal plan with drag-to-reorder.
+// This Week screen — tap a meal to select it, then use ▲▼ to move it.
 
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  PanResponder, LayoutAnimation, Platform, UIManager,
+  LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
@@ -15,232 +15,213 @@ if (Platform.OS === 'android') {
 }
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const CARD_HEIGHT = 106; // card height + margin
 
 export default function PlanScreen() {
   const router = useRouter();
   const { plannedMeals, currentMealPlan, setMealPlan, userId } = useAppStore();
-  const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loadDebug, setLoadDebug] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Fallback: if bootstrap didn't populate the plan, load directly when this tab mounts.
-  useEffect(() => {
-    if (currentMealPlan || !userId) {
-      setLoadDebug(`currentMealPlan=${!!currentMealPlan}, userId=${userId ?? 'null'}`);
-      return;
-    }
-    setLoadDebug(`Attempting direct load for userId=${userId}`);
-    loadCurrentMealPlan(userId)
-      .then((data) => {
-        if (data) {
-          setLoadDebug(`Loaded: planId=${data.plan.id}, meals=${data.meals.length}`);
-          setMealPlan(data.plan, data.meals);
-        } else {
-          setLoadDebug(`loadCurrentMealPlan returned null`);
-        }
-      })
-      .catch((e) => {
-        const msg = e?.message ?? JSON.stringify(e);
-        setLoadError(msg);
-        setLoadDebug(`Error: ${msg}`);
-      });
-  }, [userId]);
-  const [isDragging, setIsDragging] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
     Array.from({ length: 7 }, (_, i) => i)
   );
 
-  // Always-current refs for use inside PanResponder closures (avoid stale captures)
-  const orderRef = useRef(displayOrder);
-  orderRef.current = displayOrder;
   const mealsRef = useRef(plannedMeals);
   mealsRef.current = plannedMeals;
   const planRef = useRef(currentMealPlan);
   planRef.current = currentMealPlan;
+  const displayOrderRef = useRef(displayOrder);
+  displayOrderRef.current = displayOrder;
 
-  // Track drag state in refs (no re-renders during drag)
-  const draggingFrom = useRef<number | null>(null);   // original slot index
-  const draggingDay  = useRef<number | null>(null);   // dayIndex of dragged meal
-  const didMove      = useRef(false);                 // true only if position changed
+  useEffect(() => {
+    if (currentMealPlan || !userId) return;
+    loadCurrentMealPlan(userId)
+      .then((data) => { if (data) setMealPlan(data.plan, data.meals); })
+      .catch((e) => setLoadError(e?.message ?? String(e)));
+  }, [userId]);
 
-  // PanResponders created ONCE per slot — must not be recreated on render
-  const panResponders = useRef<ReturnType<typeof PanResponder.create>[] | null>(null);
-  if (!panResponders.current) {
-    panResponders.current = Array.from({ length: 7 }, (_, slotIndex) =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {
-          draggingFrom.current = slotIndex;
-          draggingDay.current  = orderRef.current[slotIndex];
-          didMove.current      = false;
-          setExpandedSlot(null);
-          setIsDragging(true);
-        },
-        onPanResponderMove: (_, { dy }) => {
-          if (draggingFrom.current === null || draggingDay.current === null) return;
-          const rawTarget = draggingFrom.current + dy / CARD_HEIGHT;
-          const target    = Math.max(0, Math.min(6, Math.round(rawTarget)));
-          const currentPos = orderRef.current.indexOf(draggingDay.current);
-          if (target !== currentPos) {
-            didMove.current = true;
-            LayoutAnimation.configureNext({ duration: 120, update: { type: LayoutAnimation.Types.easeInEaseOut } });
-            const next = [...orderRef.current];
-            next.splice(currentPos, 1);
-            next.splice(target, 0, draggingDay.current);
-            orderRef.current = next;
-            setDisplayOrder(next);
-          }
-        },
-        onPanResponderRelease: async () => {
-          const moved = didMove.current;
-          draggingFrom.current = null;
-          draggingDay.current  = null;
-          didMove.current      = false;
-          setIsDragging(false);
+  const moveSelected = async (direction: -1 | 1) => {
+    if (selectedSlot === null || !planRef.current || saving) return;
+    const toIndex = selectedSlot + direction;
+    if (toIndex < 0 || toIndex >= displayOrderRef.current.length) return;
 
-          // Only save if the order actually changed
-          if (!moved || !planRef.current) return;
+    const next = [...displayOrderRef.current];
+    const tmp = next[selectedSlot];
+    next[selectedSlot] = next[toIndex];
+    next[toIndex] = tmp;
 
-          const finalOrder = orderRef.current;
-          const reordered = finalOrder
-            .map((originalDay, newPosition) => {
-              const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
-              return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
-            })
-            .filter(Boolean) as PlannedMeal[];
+    LayoutAnimation.configureNext({ duration: 150, update: { type: LayoutAnimation.Types.easeInEaseOut } });
+    setDisplayOrder(next);
+    setSelectedSlot(toIndex);
 
-          if (reordered.length === 0) return;
-
-          // Capture snapshot + original IDs before optimistic update
-          const snapshot = mealsRef.current.slice();
-          const originalIds = mealsRef.current.map((m) => m.id);
-
-          // Optimistic store update
-          setMealPlan(planRef.current, reordered);
-
-          // Persist to DB, then sync store with real DB IDs
-          try {
-            const saved = await reorderPlannedMeals(planRef.current.id, originalIds, reordered);
-            setMealPlan(planRef.current, saved);
-          } catch (e) {
-            console.error('Failed to save meal order', e);
-            // Rollback: restore pre-drag state
-            setMealPlan(planRef.current, snapshot);
-          }
-        },
-      })
+    // Only reorder the VISIBLE meals (one per slot via find).
+    // Extras (e.g. day=0 unassigned meals) are excluded from the move
+    // so they remain untouched in the DB.
+    const visibleMeals = displayOrderRef.current.map((originalDay) =>
+      mealsRef.current.find((m) => m.day_of_week === originalDay) ?? null
     );
-  }
+    const reordered = next
+      .map((originalDay, newPosition) => {
+        const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
+        return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
+      })
+      .filter(Boolean) as PlannedMeal[];
+
+    if (reordered.length === 0) return;
+
+    const snapshot = mealsRef.current.slice();
+    // Only delete the original visible rows, not the extras
+    const originalIds = visibleMeals.filter(Boolean).map((m) => m!.id);
+    setMealPlan(planRef.current, reordered);
+
+    setSaving(true);
+    try {
+      const saved = await reorderPlannedMeals(planRef.current.id, originalIds, reordered);
+      setMealPlan(planRef.current, saved);
+    } catch (e) {
+      console.error('Failed to save meal order', e);
+      setMealPlan(planRef.current, snapshot);
+      setDisplayOrder(displayOrderRef.current);
+      setSelectedSlot(selectedSlot);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const hasPlan = plannedMeals.length > 0;
+  const selectedMeal = selectedSlot !== null
+    ? plannedMeals.find((m) => m.day_of_week === displayOrder[selectedSlot]) ?? null
+    : null;
+  const canMoveUp   = selectedSlot !== null && selectedSlot > 0 && !!selectedMeal;
+  const canMoveDown = selectedSlot !== null && selectedSlot < displayOrder.length - 1 && !!selectedMeal;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} scrollEnabled={!isDragging}>
-      <Text style={styles.heading}>This Week</Text>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.heading}>This Week</Text>
 
-      {!hasPlan ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No plan yet</Text>
-          <Text style={styles.emptyBody}>
-            Time to plan the week. The app will look at what's in your fridge,
-            what's in the garden, and build 7 meals around it.
-          </Text>
-          {loadDebug && (
-            <Text style={styles.debugText}>{loadDebug}</Text>
-          )}
-          {loadError && (
-            <Text style={styles.errorText}>{loadError}</Text>
-          )}
-          <TouchableOpacity style={styles.planButton} onPress={() => router.push('/planning')}>
-            <Text style={styles.planButtonText}>Plan This Week</Text>
+        {!hasPlan ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No plan yet</Text>
+            <Text style={styles.emptyBody}>
+              Time to plan the week. The app will look at what's in your fridge,
+              what's in the garden, and build meals around it.
+            </Text>
+            {loadError && (
+              <Text style={styles.errorText}>{loadError}</Text>
+            )}
+            <TouchableOpacity style={styles.planButton} onPress={() => router.push('/planning')}>
+              <Text style={styles.planButtonText}>Plan This Week</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.hint}>
+              {selectedMeal ? `"${selectedMeal.meal_name}" selected` : 'Tap a meal to move it'}
+            </Text>
+
+            {displayOrder.map((dayIndex, listIndex) => {
+              const meal       = plannedMeals.find((m) => m.day_of_week === dayIndex);
+              const isSelected = selectedSlot === listIndex;
+
+              return (
+                <TouchableOpacity
+                  key={listIndex}
+                  style={styles.dayRow}
+                  onPress={() => {
+                    if (!meal) return;
+                    setSelectedSlot(isSelected ? null : listIndex);
+                  }}
+                  activeOpacity={meal ? 0.7 : 1}
+                >
+                  <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
+                    {DAY_SHORT[listIndex]}
+                  </Text>
+
+                  <View style={[
+                    styles.mealCard,
+                    isSelected && styles.mealCardSelected,
+                    !meal && styles.mealCardEmpty,
+                  ]}>
+                    {meal ? (
+                      <>
+                        <View style={styles.badgeRow}>
+                          {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
+                          {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
+                        </View>
+                        <Text style={styles.mealName}>{meal.meal_name}</Text>
+                        {meal.estimated_prep_minutes ? (
+                          <Text style={styles.mealMeta}>~{meal.estimated_prep_minutes} min</Text>
+                        ) : null}
+                      </>
+                    ) : (
+                      <Text style={styles.nightOff}>Night off</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
+              <Text style={styles.replanButtonText}>Replan the Week</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
+
+      {/* Move toolbar — only visible when a meal is selected */}
+      {selectedMeal && (
+        <View style={styles.toolbar}>
+          <TouchableOpacity
+            style={[styles.toolbarBtn, !canMoveUp && styles.toolbarBtnDisabled]}
+            onPress={() => moveSelected(-1)}
+            disabled={!canMoveUp || saving}
+          >
+            <Text style={[styles.toolbarBtnText, !canMoveUp && styles.toolbarBtnTextDisabled]}>▲  Earlier in the week</Text>
+          </TouchableOpacity>
+          <View style={styles.toolbarDivider} />
+          <TouchableOpacity
+            style={[styles.toolbarBtn, !canMoveDown && styles.toolbarBtnDisabled]}
+            onPress={() => moveSelected(1)}
+            disabled={!canMoveDown || saving}
+          >
+            <Text style={[styles.toolbarBtnText, !canMoveDown && styles.toolbarBtnTextDisabled]}>▼  Later in the week</Text>
+          </TouchableOpacity>
+          <View style={styles.toolbarDivider} />
+          <TouchableOpacity style={styles.toolbarBtn} onPress={() => setSelectedSlot(null)}>
+            <Text style={styles.toolbarDoneText}>Done</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <>
-          <Text style={styles.dragHint}>Hold ≡ and drag to reorder</Text>
-
-          {displayOrder.map((dayIndex, listIndex) => {
-            const meal       = plannedMeals.find((m) => m.day_of_week === dayIndex);
-            const isExpanded = expandedSlot === listIndex;
-            const pr         = panResponders.current![listIndex];
-
-            return (
-              <View key={listIndex} style={styles.dayRow}>
-                <Text style={styles.dayLabel}>{DAY_SHORT[listIndex]}</Text>
-
-                <TouchableOpacity
-                  style={[
-                    styles.mealCard,
-                    isExpanded && styles.mealCardExpanded,
-                    !meal && styles.mealCardEmpty,
-                  ]}
-                  activeOpacity={meal ? 0.7 : 1}
-                  onPress={() => meal && setExpandedSlot(isExpanded ? null : listIndex)}
-                >
-                  {meal ? (
-                    <>
-                      <View style={styles.badgeRow}>
-                        {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
-                        {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
-                      </View>
-                      <Text style={styles.mealName}>{meal.meal_name}</Text>
-                      <Text style={styles.mealMeta}>
-                        {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
-                        {!isExpanded ? '  ·  Tap for How to Cook' : ''}
-                      </Text>
-                      {isExpanded && meal.description && (
-                        <Text style={styles.description}>{meal.description}</Text>
-                      )}
-                    </>
-                  ) : (
-                    <Text style={styles.nightOff}>Night off</Text>
-                  )}
-                </TouchableOpacity>
-
-                {meal && (
-                  <View style={styles.dragHandle} {...pr.panHandlers}>
-                    <Text style={styles.dragIcon}>≡</Text>
-                  </View>
-                )}
-              </View>
-            );
-          })}
-
-          <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
-            <Text style={styles.replanButtonText}>Replan the Week</Text>
-          </TouchableOpacity>
-        </>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  content:   { padding: 20, paddingTop: 60 },
+  content:   { padding: 20, paddingTop: 60, paddingBottom: 20 },
   heading:   { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
-  dragHint:  { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
+  hint:      { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
 
   emptyState: { alignItems: 'center', paddingTop: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },
   emptyBody:  { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
-  debugText:  { fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginBottom: 8, paddingHorizontal: 12 },
   errorText:  { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 16, paddingHorizontal: 12 },
   planButton:     { backgroundColor: '#3B7A57', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
   planButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
 
-  dayRow:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 8 },
-  dayLabel: { width: 36, fontSize: 13, fontWeight: '600', color: '#9CA3AF', paddingTop: 14 },
+  dayRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
+  dayLabel: { width: 36, fontSize: 13, fontWeight: '600', color: '#9CA3AF' },
+  dayLabelSelected: { color: '#3B7A57' },
 
   mealCard: {
     flex: 1, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
-  mealCardExpanded: { borderColor: '#3B7A57', borderWidth: 1.5, shadowOpacity: 0.08, elevation: 2 },
-  mealCardEmpty:    { backgroundColor: '#F9FAFB' },
+  mealCardSelected: { borderColor: '#3B7A57', borderWidth: 2, elevation: 3 },
+  mealCardEmpty:    { backgroundColor: '#F9FAFB', shadowOpacity: 0 },
 
   badgeRow:    { flexDirection: 'row', gap: 6, marginBottom: 4 },
   fishBadge:   {
@@ -252,15 +233,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
 
-  mealName:    { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 4 },
+  mealName:    { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 2 },
   mealMeta:    { fontSize: 12, color: '#9CA3AF' },
-  description: { marginTop: 12, fontSize: 15, color: '#374151', lineHeight: 23 },
   nightOff:    { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
 
-  dragHandle: {
-    width: 32, paddingTop: 12, alignItems: 'center', justifyContent: 'flex-start',
+  toolbar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    paddingTop: 4,
   },
-  dragIcon: { fontSize: 20, color: '#D1D5DB', lineHeight: 28 },
+  toolbarBtn: { flex: 1, alignItems: 'center', paddingVertical: 12 },
+  toolbarBtnDisabled: { opacity: 0.3 },
+  toolbarBtnText: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
+  toolbarBtnTextDisabled: { color: '#9CA3AF' },
+  toolbarDoneText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  toolbarDivider: { width: 1, backgroundColor: '#F3F4F6', marginVertical: 8 },
 
   replanButton:     { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
   replanButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
