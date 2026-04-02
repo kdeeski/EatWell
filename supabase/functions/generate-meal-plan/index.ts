@@ -137,6 +137,8 @@ RULES:
 
 19. NEVER combine multiple ingredients into one entry (e.g. never "salt and pepper" — always list as two separate ingredients: "salt" and "black pepper"). Every ingredient must be a single item with its own name, quantity, and unit.
 
+20. GARDEN VARIETY RULE — garden produce is a weekly constraint (use what is ready before it spoils), not a theme to build the entire week around. Aim for variety across the week even when garden produce is abundant. A single garden herb should appear in at most 2 meals per week. Do not let garden availability dominate the menu or create repetitive flavour profiles.
+
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
     });

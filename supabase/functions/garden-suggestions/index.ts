@@ -92,7 +92,9 @@ Given the current month, what the user already grows, what they cook with, and t
 Rules:
 - Only suggest plants that can realistically be PLANTED (not just harvested) in the given month in Canterbury.
 - Do not repeat plants already in the ground with status planted or growing.
-- Prioritise plants that appear in their cooking history.
+- DIVERSITY RULE — actively fill gaps in the user's garden, not amplify what they already grow. If they already have several herbs, prioritise vegetables, brassicas, or fruit. Avoid suggesting more of a plant family already well represented in the ground.
+- ECHO CHAMBER RULE — if an ingredient appears frequently in cooking history AND is already grown in the garden, do not suggest growing more of it. Instead suggest complementary plants that would expand their cooking repertoire, not reinforce it.
+- Prioritise plants the user cooks with but does NOT already grow — the goal is to close the gap between what they cook and what they can harvest.
 - why_now: one sentence, mention specific planting window or timing reason.
 - why_worth_growing: one sentence, reference freshness, cost, or Christchurch shop availability.
 - why_suits_cooking: one sentence, reference their actual ingredient patterns where possible.
