@@ -24,16 +24,28 @@ export default function PlanScreen() {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
-    Array.from({ length: 7 }, (_, i) => i)
+  const [slots, setSlots] = useState<(string | null)[]>(() =>
+    Array.from({ length: 7 }, (_, i) => {
+      const meal = plannedMeals.find((m) => m.day_of_week === i);
+      return meal?.id ?? null;
+    })
   );
 
   const mealsRef = useRef(plannedMeals);
   mealsRef.current = plannedMeals;
   const planRef = useRef(currentMealPlan);
   planRef.current = currentMealPlan;
-  const displayOrderRef = useRef(displayOrder);
-  displayOrderRef.current = displayOrder;
+  const slotsRef = useRef(slots);
+  slotsRef.current = slots;
+
+  // Sync slots when plannedMeals changes (e.g. after bootstrap or save)
+  useEffect(() => {
+    if (saving) return; // don't clobber in-flight reorder
+    setSlots(Array.from({ length: 7 }, (_, i) => {
+      const meal = plannedMeals.find((m) => m.day_of_week === i);
+      return meal?.id ?? null;
+    }));
+  }, [plannedMeals]);
 
   useEffect(() => {
     if (currentMealPlan || !userId) return;
@@ -45,15 +57,15 @@ export default function PlanScreen() {
   const moveSelected = (direction: -1 | 1) => {
     if (selectedSlot === null) return;
     const toIndex = selectedSlot + direction;
-    if (toIndex < 0 || toIndex >= displayOrderRef.current.length) return;
+    if (toIndex < 0 || toIndex >= slotsRef.current.length) return;
 
-    const next = [...displayOrderRef.current];
+    const next = [...slotsRef.current];
     const tmp = next[selectedSlot];
     next[selectedSlot] = next[toIndex];
     next[toIndex] = tmp;
 
     LayoutAnimation.configureNext({ duration: 150, update: { type: LayoutAnimation.Types.easeInEaseOut } });
-    setDisplayOrder(next);
+    setSlots(next);
     setSelectedSlot(toIndex);
     setDirty(true);
   };
@@ -62,15 +74,14 @@ export default function PlanScreen() {
     setSelectedSlot(null);
     if (!dirty || !planRef.current) { setDirty(false); return; }
 
-    // Visible meals only (one per slot) — extras stay untouched
-    const visibleOriginalIds = displayOrderRef.current
-      .map((d) => mealsRef.current.find((m) => m.day_of_week === d))
-      .filter(Boolean)
-      .map((m) => m!.id);
+    // Build reordered list: slot index becomes new day_of_week
+    const visibleOriginalIds = slotsRef.current
+      .filter((id): id is string => id !== null);
 
-    const reordered = displayOrderRef.current
-      .map((originalDay, newPosition) => {
-        const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
+    const reordered = slotsRef.current
+      .map((id, newPosition) => {
+        if (!id) return null;
+        const meal = mealsRef.current.find((m) => m.id === id);
         return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
       })
       .filter(Boolean) as PlannedMeal[];
@@ -81,12 +92,20 @@ export default function PlanScreen() {
     setSaving(true);
     try {
       const saved = await reorderPlannedMeals(planRef.current.id, visibleOriginalIds, reordered);
+      // Reset slots from saved meals so IDs are fresh
+      setSlots(Array.from({ length: 7 }, (_, i) => {
+        const meal = saved.find((m) => m.day_of_week === i);
+        return meal?.id ?? null;
+      }));
       setMealPlan(planRef.current, saved);
     } catch (e) {
       console.error('Failed to save meal order', e);
       setMealPlan(planRef.current, snapshot);
-      // Revert display order to match rolled-back store
-      setDisplayOrder(Array.from({ length: 7 }, (_, i) => i));
+      // Revert slots to match rolled-back store
+      setSlots(Array.from({ length: 7 }, (_, i) => {
+        const meal = snapshot.find((m) => m.day_of_week === i);
+        return meal?.id ?? null;
+      }));
     } finally {
       setSaving(false);
       setDirty(false);
@@ -95,10 +114,10 @@ export default function PlanScreen() {
 
   const hasPlan = plannedMeals.length > 0;
   const selectedMeal = selectedSlot !== null
-    ? plannedMeals.find((m) => m.day_of_week === displayOrder[selectedSlot]) ?? null
+    ? plannedMeals.find((m) => m.id === slots[selectedSlot]) ?? null
     : null;
   const canMoveUp   = selectedSlot !== null && selectedSlot > 0 && !!selectedMeal;
-  const canMoveDown = selectedSlot !== null && selectedSlot < displayOrder.length - 1 && !!selectedMeal;
+  const canMoveDown = selectedSlot !== null && selectedSlot < slots.length - 1 && !!selectedMeal;
 
   return (
     <View style={styles.container}>
@@ -125,8 +144,8 @@ export default function PlanScreen() {
               {selectedMeal ? `"${selectedMeal.meal_name}" selected` : 'Tap a meal to move it'}
             </Text>
 
-            {displayOrder.map((dayIndex, listIndex) => {
-              const meal       = plannedMeals.find((m) => m.day_of_week === dayIndex);
+            {slots.map((mealId, listIndex) => {
+              const meal       = mealId ? plannedMeals.find((m) => m.id === mealId) ?? null : null;
               const isSelected = selectedSlot === listIndex;
 
               return (
