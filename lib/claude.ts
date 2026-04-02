@@ -129,20 +129,20 @@ export async function getFridgeConfirmationNarrative(
   return (data as { narrative: string }).narrative;
 }
 
-// ─── Analyse Pantry Photo ─────────────────────────────────────────────────────
+// ─── Categorise Pantry Items ──────────────────────────────────────────────────
 
-export interface StocktakeItem {
+export interface CategorisedItem {
   name: string;
   category: string;
-  notes: string | null;
+  location: string;
 }
 
-export async function analysePantryPhotos(
-  imageDataUris: string[]
-): Promise<StocktakeItem[]> {
-  const { data, error } = await supabase.functions.invoke('analyse-pantry-photo', {
-    body: { images: imageDataUris },
+export async function categorisePantryItems(
+  itemNames: string[]
+): Promise<CategorisedItem[]> {
+  const { data, error } = await supabase.functions.invoke('categorise-pantry-items', {
+    body: { items: itemNames },
   });
   if (error) throw error;
-  return (data as { items: StocktakeItem[] }).items ?? [];
+  return (data as CategorisedItem[]) ?? [];
 }

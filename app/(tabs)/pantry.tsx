@@ -8,9 +8,8 @@ import {
   KeyboardAvoidingView, Platform, FlatList,
   Animated, PanResponder, StatusBar,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../../store/useAppStore';
-import { analysePantryPhotos } from '../../lib/claude';
+import { categorisePantryItems } from '../../lib/claude';
 import { upsertInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem } from '../../lib/data';
 import type { ItemCategory, ItemLocation, InventoryItem } from '../../types';
 
@@ -74,7 +73,7 @@ export default function PantryScreen() {
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('all');
   const [addVisible, setAddVisible] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
-  const [stocktakeVisible, setStocktakeVisible] = useState(false);
+  const [bulkVisible, setBulkVisible] = useState(false);
 
   const filtered = inventoryItems.filter(
     (i) => !i.depleted && (locationFilter === 'all' || i.location === locationFilter)
@@ -117,8 +116,8 @@ export default function PantryScreen() {
           <TouchableOpacity style={styles.addButton} onPress={() => { setEditItem(null); setAddVisible(true); }}>
             <Text style={styles.addButtonText}>+ Add</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.stocktakeButton} onPress={() => setStocktakeVisible(true)}>
-            <Text style={styles.stocktakeButtonText}>Stocktake</Text>
+          <TouchableOpacity style={styles.bulkAddButton} onPress={() => setBulkVisible(true)}>
+            <Text style={styles.bulkAddButtonText}>Bulk Add</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -143,7 +142,7 @@ export default function PantryScreen() {
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Nothing here yet</Text>
           <Text style={styles.emptyBody}>
-            Tap "+ Add" to add items manually, or use Stocktake to photograph your shelves.
+            Tap "+ Add" for a single item, or "Bulk Add" to paste a list and let AI categorise it.
           </Text>
         </View>
       ) : (
@@ -176,12 +175,12 @@ export default function PantryScreen() {
         onSaved={(item) => { upsertStore(item); setAddVisible(false); setEditItem(null); }}
       />
 
-      {/* Stocktake modal */}
-      <StocktakeModal
-        visible={stocktakeVisible}
+      {/* Bulk add modal */}
+      <BulkAddModal
+        visible={bulkVisible}
         userId={userId!}
-        onClose={() => setStocktakeVisible(false)}
-        onSaved={(saved) => { saved.forEach((i) => upsertStore(i)); setStocktakeVisible(false); }}
+        onClose={() => setBulkVisible(false)}
+        onSaved={(saved) => { saved.forEach((i) => upsertStore(i)); setBulkVisible(false); }}
       />
     </View>
   );
@@ -422,51 +421,43 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
   );
 }
 
-// ─── Stocktake modal ──────────────────────────────────────────────────────────
+// ─── Bulk add modal ───────────────────────────────────────────────────────────
 
-type StocktakeStep = 'pick' | 'analysing' | 'review';
+type BulkStep = 'input' | 'categorising' | 'review';
 
-function StocktakeModal({ visible, userId, onClose, onSaved }: {
+function BulkAddModal({ visible, userId, onClose, onSaved }: {
   visible: boolean;
   userId: string;
   onClose: () => void;
   onSaved: (items: InventoryItem[]) => void;
 }) {
-  const [step, setStep]                   = useState<StocktakeStep>('pick');
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [pendingItems, setPendingItems]   = useState<PendingItem[]>([]);
-  const [saving, setSaving]               = useState(false);
-  const [error, setError]                 = useState<string | null>(null);
+  const [step, setStep]               = useState<BulkStep>('input');
+  const [text, setText]               = useState('');
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState<string | null>(null);
 
-  const reset = () => { setStep('pick'); setSelectedImages([]); setPendingItems([]); setError(null); setSaving(false); };
+  const reset = () => { setStep('input'); setText(''); setPendingItems([]); setError(null); setSaving(false); };
   const handleClose = () => { reset(); onClose(); };
 
-  const pickImage = async (useCamera: boolean) => {
-    const result = useCamera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as any, quality: 0.3, base64: true, exif: false })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, allowsMultipleSelection: false, quality: 0.3, base64: true, exif: false });
-    if (result.canceled) return;
-    const uris = result.assets.filter((a: any) => a.base64).map((a: any) => `data:image/jpeg;base64,${a.base64}`);
-    if (uris.length) setSelectedImages((prev) => [...prev, ...uris]);
-  };
-
-  const analyse = async () => {
-    if (!selectedImages.length) { setError('Add at least one photo first.'); return; }
+  const categorise = async () => {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) { setError('Enter at least one item.'); return; }
     setError(null);
-    setStep('analysing');
+    setStep('categorising');
     try {
-      const found = await analysePantryPhotos(selectedImages.slice(-1));
-      setPendingItems(found.map((f, i) => ({
+      const results = await categorisePantryItems(lines);
+      setPendingItems(results.map((r, i) => ({
         id: `${i}-${Date.now()}`,
-        name: f.name,
-        category: mapStocktakeCategory(f.category),
-        location: 'pantry' as ItemLocation,
-        notes: f.notes ?? null,
+        name: r.name,
+        category: toItemCategory(r.category),
+        location: toItemLocation(r.location),
+        notes: null,
       })));
       setStep('review');
     } catch (e: any) {
-      setError(e?.message ?? e?.error ?? 'Analysis failed. Try again.');
-      setStep('pick');
+      setError(e?.message ?? 'Categorisation failed. Try again.');
+      setStep('input');
     }
   };
 
@@ -476,7 +467,7 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: {
     setSaving(true);
     try {
       const saved = await saveStocktakeItems(userId, valid.map((i) => ({
-        name: i.name.trim(),
+        name: i.name.trim().toLowerCase(),
         category: i.category,
         location: i.location,
         notes: i.notes,
@@ -495,53 +486,57 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: {
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
           <Text style={styles.modalTitle}>
-            {step === 'pick' ? 'Photograph Pantry' : step === 'analysing' ? 'Analysing…' : 'Review Items'}
+            {step === 'input' ? 'Bulk Add' : step === 'categorising' ? 'Categorising…' : 'Review Items'}
           </Text>
           <View style={{ width: 60 }} />
         </View>
 
-        {step === 'pick' && (
-          <View style={styles.pickStep}>
-            <Text style={styles.pickHint}>
-              Photograph one shelf at a time. Claude will read the labels and build a list to review.
-            </Text>
-            <View style={styles.pickButtons}>
-              <TouchableOpacity style={styles.pickButton} onPress={() => pickImage(true)}>
-                <Text style={styles.pickButtonText}>📷  Camera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.pickButton} onPress={() => pickImage(false)}>
-                <Text style={styles.pickButtonText}>🖼  Library</Text>
+        {step === 'input' && (
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <View style={styles.bulkInputStep}>
+              <Text style={styles.bulkInputHint}>
+                Type or paste your items — one per line. AI will assign categories and locations.
+              </Text>
+              <TextInput
+                style={styles.bulkTextArea}
+                value={text}
+                onChangeText={setText}
+                multiline
+                autoFocus
+                placeholder={'olive oil\ncumin\nchickpeas\nsoy sauce\nchicken breast'}
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="none"
+                textAlignVertical="top"
+              />
+              {error && <Text style={styles.errorText}>{error}</Text>}
+              <TouchableOpacity
+                style={[styles.categoriseButton, !text.trim() && { opacity: 0.4 }]}
+                onPress={categorise}
+                disabled={!text.trim()}
+              >
+                <Text style={styles.categoriseButtonText}>Categorise</Text>
               </TouchableOpacity>
             </View>
-            {selectedImages.length > 0 && (
-              <Text style={styles.imageCount}>{selectedImages.length} photo{selectedImages.length > 1 ? 's' : ''} ready</Text>
-            )}
-            {error && <Text style={styles.errorText}>{error}</Text>}
-            {selectedImages.length > 0 && (
-              <TouchableOpacity style={styles.analyseButton} onPress={analyse}>
-                <Text style={styles.analyseButtonText}>Analyse Photos</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          </KeyboardAvoidingView>
         )}
 
-        {step === 'analysing' && (
+        {step === 'categorising' && (
           <View style={styles.analysingStep}>
             <ActivityIndicator size="large" color="#3B7A57" />
-            <Text style={styles.analysingText}>Reading your labels…</Text>
+            <Text style={styles.analysingText}>Categorising your items…</Text>
           </View>
         )}
 
         {step === 'review' && (
           <>
-            <Text style={styles.reviewHint}>Edit names, adjust categories and locations, remove anything wrong.</Text>
+            <Text style={styles.reviewHint}>Adjust categories or locations if anything looks off.</Text>
             <FlatList
               data={pendingItems}
               keyExtractor={(item) => item.id}
               style={{ flex: 1 }}
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
               renderItem={({ item }) => (
-                <StocktakePendingRow
+                <PendingItemRow
                   item={item}
                   onChange={(updates) => setPendingItems((prev) => prev.map((i) => i.id === item.id ? { ...i, ...updates } : i))}
                   onRemove={() => setPendingItems((prev) => prev.filter((i) => i.id !== item.id))}
@@ -550,7 +545,7 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: {
               ListFooterComponent={
                 <TouchableOpacity style={styles.addManualButton}
                   onPress={() => setPendingItems((prev) => [...prev, { id: `m-${Date.now()}`, name: '', category: 'pantry_dry_goods', location: 'pantry', notes: null }])}>
-                  <Text style={styles.addManualText}>+ Add Item Manually</Text>
+                  <Text style={styles.addManualText}>+ Add Item</Text>
                 </TouchableOpacity>
               }
             />
@@ -569,9 +564,9 @@ function StocktakeModal({ visible, userId, onClose, onSaved }: {
   );
 }
 
-// ─── Stocktake pending row ────────────────────────────────────────────────────
+// ─── Pending item review row ──────────────────────────────────────────────────
 
-function StocktakePendingRow({ item, onChange, onRemove }: {
+function PendingItemRow({ item, onChange, onRemove }: {
   item: PendingItem;
   onChange: (u: Partial<PendingItem>) => void;
   onRemove: () => void;
@@ -624,23 +619,22 @@ function StocktakePendingRow({ item, onChange, onRemove }: {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function mapStocktakeCategory(raw: string): ItemCategory {
-  const canonical = new Set<string>([
-    'meat_fish', 'dairy_eggs', 'produce', 'bread_bakery',
-    'pantry_dry_goods', 'herbs_spices', 'cans_preserves',
-    'oils_vinegars', 'condiments_sauces',
-  ]);
+const CANONICAL_CATEGORIES = new Set<string>([
+  'meat_fish', 'dairy_eggs', 'produce', 'bread_bakery',
+  'pantry_dry_goods', 'herbs_spices', 'cans_preserves',
+  'oils_vinegars', 'condiments_sauces',
+]);
+
+function toItemCategory(raw: string): ItemCategory {
   const key = raw.toLowerCase();
-  if (canonical.has(key)) return key as ItemCategory;
-  // Legacy names from old prompt version
-  const legacy: Record<string, ItemCategory> = {
-    spices_herbs: 'herbs_spices',
-    canned_jarred: 'cans_preserves',
-    dry_goods: 'pantry_dry_goods',
-    condiments: 'condiments_sauces',
-    baking: 'pantry_dry_goods',
-  };
-  return legacy[key] ?? 'pantry_dry_goods';
+  return CANONICAL_CATEGORIES.has(key) ? (key as ItemCategory) : 'pantry_dry_goods';
+}
+
+function toItemLocation(raw: string): ItemLocation {
+  const key = raw.toLowerCase();
+  return (['fridge', 'freezer', 'pantry', 'garden'] as ItemLocation[]).includes(key as ItemLocation)
+    ? (key as ItemLocation)
+    : 'pantry';
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -657,8 +651,8 @@ const styles = StyleSheet.create({
   headerButtons: { flexDirection: 'row', gap: 8 },
   addButton: { backgroundColor: '#F3F4F6', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   addButtonText: { color: '#374151', fontWeight: '600', fontSize: 14 },
-  stocktakeButton: { backgroundColor: '#3B7A57', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  stocktakeButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  bulkAddButton: { backgroundColor: '#3B7A57', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  bulkAddButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
   filterBar: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
@@ -727,16 +721,16 @@ const styles = StyleSheet.create({
   dropdownText: { fontSize: 14, color: '#374151' },
   dropdownTextActive: { color: '#3B7A57', fontWeight: '600' },
 
-  // Stocktake
-  pickStep: { flex: 1, padding: 24 },
-  pickHint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 28 },
-  pickButtons: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  pickButton: { flex: 1, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
-  pickButtonText: { fontSize: 16, color: '#111827', fontWeight: '600' },
-  imageCount: { fontSize: 14, color: '#3B7A57', fontWeight: '600', marginBottom: 16, textAlign: 'center' },
-  errorText: { fontSize: 14, color: '#DC2626', textAlign: 'center', marginBottom: 12 },
-  analyseButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
-  analyseButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  // Bulk add
+  bulkInputStep: { flex: 1, padding: 20 },
+  bulkInputHint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 16 },
+  bulkTextArea: {
+    flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    borderRadius: 12, padding: 14, fontSize: 15, color: '#111827', minHeight: 200,
+  },
+  errorText: { fontSize: 14, color: '#DC2626', textAlign: 'center', marginTop: 12 },
+  categoriseButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
+  categoriseButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   analysingStep: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   analysingText: { fontSize: 16, color: '#6B7280' },
   reviewHint: { fontSize: 14, color: '#6B7280', paddingHorizontal: 16, paddingVertical: 12 },
