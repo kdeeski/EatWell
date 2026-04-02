@@ -108,8 +108,14 @@ export default function PlanningFlow() {
       const dayOfWeek = now.getDay();
       const monday = new Date(now);
       monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-      const weekStartDate = monday.toISOString().split('T')[0];
-      const todayStr = now.toISOString().split('T')[0];
+      const localDate = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      const weekStartDate = localDate(monday);
+      const todayStr = localDate(now);
 
       // Save garden extras to garden_plants if not already tracked
       const extraNames = gardenExtras.split(',').map((s) => s.trim()).filter(Boolean);
