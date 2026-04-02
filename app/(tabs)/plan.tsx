@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
-import { updateMealDayOfWeek } from '../../lib/data';
+import { reorderPlannedMeals } from '../../lib/data';
 import type { PlannedMeal } from '../../types';
 
 if (Platform.OS === 'android') {
@@ -85,12 +85,16 @@ export default function PlanScreen() {
           })));
 
           // Persist to DB
-          try {
-            await Promise.all(
-              updates.map(({ meal, newDay }) => updateMealDayOfWeek(meal.id, newDay))
-            );
-          } catch (e) {
-            console.error('Failed to save meal order', e);
+          if (planRef.current) {
+            try {
+              const reordered = updates.map(({ meal, newDay }) => ({
+                ...meal,
+                day_of_week: newDay as PlannedMeal['day_of_week'],
+              }));
+              await reorderPlannedMeals(planRef.current.id, reordered);
+            } catch (e) {
+              console.error('Failed to save meal order', e);
+            }
           }
         },
       })

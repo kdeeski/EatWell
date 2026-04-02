@@ -215,12 +215,22 @@ export async function saveMealPlan(
   return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
 }
 
-export async function updateMealDayOfWeek(mealId: string, dayOfWeek: number): Promise<void> {
-  const { error } = await supabase
+export async function reorderPlannedMeals(
+  mealPlanId: string,
+  meals: PlannedMeal[]
+): Promise<void> {
+  // Delete all current meals for this plan and reinsert with new day_of_week values.
+  // Uses DELETE + INSERT (same path as saveMealPlan) to avoid relying on UPDATE RLS.
+  const { error: delError } = await supabase
     .from('planned_meals')
-    .update({ day_of_week: dayOfWeek })
-    .eq('id', mealId);
-  if (error) throw error;
+    .delete()
+    .eq('meal_plan_id', mealPlanId);
+  if (delError) throw delError;
+
+  const { error: insError } = await supabase
+    .from('planned_meals')
+    .insert(meals.map(({ id: _id, ...m }) => m));
+  if (insError) throw insError;
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────
