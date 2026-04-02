@@ -182,45 +182,17 @@ export async function saveMealPlan(
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] }> {
-  // Find or create the plan row for this week — avoid duplicates
-  const { data: existing } = await supabase
-    .from('meal_plans')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('week_start_date', weekStartDate)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  let planId: string;
-  if (existing) {
-    planId = existing.id;
-    // Delete any stale duplicate rows for this week, keep only this one
-    await supabase
-      .from('meal_plans')
-      .delete()
-      .eq('user_id', userId)
-      .eq('week_start_date', weekStartDate)
-      .neq('id', planId);
-  } else {
-    const { data: newPlan, error: insertError } = await supabase
-      .from('meal_plans')
-      .insert({ user_id: userId, week_start_date: weekStartDate, confirmed: true })
-      .select('id')
-      .single();
-    if (insertError) throw insertError;
-    planId = newPlan.id;
-  }
-
   const { data: plan, error: planError } = await supabase
     .from('meal_plans')
-    .update({ confirmed: true })
-    .eq('id', planId)
+    .upsert(
+      { user_id: userId, week_start_date: weekStartDate, confirmed: true },
+      { onConflict: 'user_id,week_start_date' }
+    )
     .select()
     .single();
   if (planError) throw planError;
 
-  await supabase.from('planned_meals').delete().eq('meal_plan_id', planId);
+  await supabase.from('planned_meals').delete().eq('meal_plan_id', plan.id);
 
   const mealsToInsert = generated.meals.map((m) => ({
     meal_plan_id: plan.id,
