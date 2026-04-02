@@ -5,11 +5,13 @@
 import { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, PanResponder, ActivityIndicator,
+  Animated, PanResponder, ActivityIndicator, Modal,
+  TextInput, FlatList, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
-import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants } from '../../lib/data';
-import type { ShoppingListItem } from '../../types';
+import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems } from '../../lib/data';
+import { categorisePantryItems } from '../../lib/claude';
+import type { ShoppingListItem, ItemCategory } from '../../types';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -129,6 +131,7 @@ export default function ShoppingScreen() {
     buildGardenConfirmed(shoppingItems, gardenPlants)
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [bulkVisible, setBulkVisible] = useState(false);
 
   const handleRefresh = async () => {
     if (!userId) return;
@@ -197,13 +200,25 @@ export default function ShoppingScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.headingRow}>
         <Text style={styles.heading}>Shopping</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
-          {refreshing
-            ? <ActivityIndicator size="small" color="#3B7A57" />
-            : <Text style={styles.refreshText}>Refresh</Text>
-          }
-        </TouchableOpacity>
+        <View style={styles.headingButtons}>
+          <TouchableOpacity style={styles.addButton} onPress={() => setBulkVisible(true)}>
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
+            {refreshing
+              ? <ActivityIndicator size="small" color="#3B7A57" />
+              : <Text style={styles.refreshText}>Refresh</Text>
+            }
+          </TouchableOpacity>
+        </View>
       </View>
+
+      <ShoppingBulkAddModal
+        visible={bulkVisible}
+        shoppingListId={useAppStore.getState().shoppingList?.id ?? null}
+        onClose={() => setBulkVisible(false)}
+        onSaved={(items) => { items.forEach((i) => useAppStore.getState().addShoppingItem(i)); setBulkVisible(false); }}
+      />
 
       {CATEGORY_ORDER.map((cat) => {
         const items = itemsByCategory[cat];
@@ -321,12 +336,216 @@ export default function ShoppingScreen() {
   );
 }
 
+// ── Shopping bulk add modal ───────────────────────────────────────────────────
+
+const CATEGORY_LABELS_SHORT: Record<ItemCategory, string> = {
+  meat_fish: 'Meat & Fish', dairy_eggs: 'Dairy & Eggs', produce: 'Produce',
+  bread_bakery: 'Bread & Bakery', pantry_dry_goods: 'Pantry & Dry Goods',
+  herbs_spices: 'Herbs & Spices', cans_preserves: 'Cans & Preserves',
+  oils_vinegars: 'Oils & Vinegars', condiments_sauces: 'Condiments & Sauces',
+};
+
+function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
+  visible: boolean;
+  shoppingListId: string | null;
+  onClose: () => void;
+  onSaved: (items: ShoppingListItem[]) => void;
+}) {
+  type Step = 'input' | 'categorising' | 'review';
+  const [step, setStep] = useState<Step>('input');
+  const [text, setText] = useState('');
+  const [pending, setPending] = useState<{ id: string; name: string; category: ItemCategory }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => { setStep('input'); setText(''); setPending([]); setError(null); setSaving(false); };
+  const handleClose = () => { reset(); onClose(); };
+
+  const categorise = async () => {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) { setError('Enter at least one item.'); return; }
+    setError(null);
+    setStep('categorising');
+    try {
+      const results = await categorisePantryItems(lines);
+      setPending(results.map((r, i) => ({
+        id: `${i}-${Date.now()}`,
+        name: r.name,
+        category: (Object.keys(CATEGORY_LABELS_SHORT).includes(r.category) ? r.category : 'pantry_dry_goods') as ItemCategory,
+      })));
+      setStep('review');
+    } catch (e: any) {
+      setError(e?.message ?? 'Categorisation failed. Try again.');
+      setStep('input');
+    }
+  };
+
+  const saveAll = async () => {
+    const valid = pending.filter((i) => i.name.trim());
+    if (!valid.length || !shoppingListId) return;
+    setSaving(true);
+    try {
+      const saved = await addAdHocShoppingItems(shoppingListId, valid.map((i) => ({ name: i.name, category: i.category })));
+      onSaved(saved);
+      reset();
+    } catch (e: any) {
+      Alert.alert('Save Failed', e.message ?? 'Please try again.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <View style={modalStyles.container}>
+        <View style={modalStyles.header}>
+          <TouchableOpacity onPress={handleClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
+          <Text style={modalStyles.title}>
+            {step === 'input' ? 'Add Items' : step === 'categorising' ? 'Categorising…' : 'Review Items'}
+          </Text>
+          <View style={{ width: 60 }} />
+        </View>
+
+        {step === 'input' && (
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'android' ? 80 : 0}>
+            <ScrollView contentContainerStyle={modalStyles.inputStep} keyboardShouldPersistTaps="handled">
+              <Text style={modalStyles.hint}>One item per line. AI will assign categories.</Text>
+              <TextInput
+                style={modalStyles.textArea}
+                value={text}
+                onChangeText={setText}
+                multiline
+                autoFocus
+                placeholder={'olive oil\nchicken thighs\nsourdough bread'}
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="none"
+                textAlignVertical="top"
+              />
+              {error && <Text style={modalStyles.error}>{error}</Text>}
+              <TouchableOpacity
+                style={[modalStyles.primaryButton, !text.trim() && { opacity: 0.4 }]}
+                onPress={categorise}
+                disabled={!text.trim()}
+              >
+                <Text style={modalStyles.primaryButtonText}>Categorise</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        )}
+
+        {step === 'categorising' && (
+          <View style={modalStyles.centred}>
+            <ActivityIndicator size="large" color="#3B7A57" />
+            <Text style={modalStyles.hint}>Categorising your items…</Text>
+          </View>
+        )}
+
+        {step === 'review' && (
+          <>
+            <Text style={modalStyles.reviewHint}>Adjust any categories before adding to your list.</Text>
+            <FlatList
+              data={pending}
+              keyExtractor={(i) => i.id}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+              renderItem={({ item }) => (
+                <ShoppingPendingRow
+                  item={item}
+                  onChange={(cat) => setPending((prev) => prev.map((i) => i.id === item.id ? { ...i, category: cat } : i))}
+                  onRemove={() => setPending((prev) => prev.filter((i) => i.id !== item.id))}
+                />
+              )}
+              ListFooterComponent={
+                <TouchableOpacity style={modalStyles.addManual}
+                  onPress={() => setPending((prev) => [...prev, { id: `m-${Date.now()}`, name: '', category: 'pantry_dry_goods' }])}>
+                  <Text style={modalStyles.addManualText}>+ Add Item</Text>
+                </TouchableOpacity>
+              }
+            />
+            <View style={modalStyles.saveRow}>
+              <TouchableOpacity style={[modalStyles.primaryButton, saving && { opacity: 0.6 }]} onPress={saveAll} disabled={saving}>
+                {saving
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={modalStyles.primaryButtonText}>Add {pending.filter((i) => i.name.trim()).length} Items to List</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+function ShoppingPendingRow({ item, onChange, onRemove }: {
+  item: { id: string; name: string; category: ItemCategory };
+  onChange: (cat: ItemCategory) => void;
+  onRemove: () => void;
+}) {
+  const [catOpen, setCatOpen] = useState(false);
+  return (
+    <View style={modalStyles.pendingRow}>
+      <Text style={modalStyles.pendingName}>{item.name}</Text>
+      <View style={modalStyles.pendingMeta}>
+        <TouchableOpacity style={[modalStyles.catPill, { flex: 1 }]} onPress={() => setCatOpen(!catOpen)}>
+          <Text style={modalStyles.catPillText}>{CATEGORY_LABELS_SHORT[item.category]} ▾</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onRemove} style={modalStyles.removeButton}>
+          <Text style={modalStyles.removeButtonText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+      {catOpen && (
+        <View style={modalStyles.dropdown}>
+          {(Object.entries(CATEGORY_LABELS_SHORT) as [ItemCategory, string][]).map(([key, label]) => (
+            <TouchableOpacity key={key} style={[modalStyles.dropdownOption, item.category === key && modalStyles.dropdownOptionActive]}
+              onPress={() => { onChange(key); setCatOpen(false); }}>
+              <Text style={[modalStyles.dropdownText, item.category === key && modalStyles.dropdownTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const modalStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: Platform.OS === 'android' ? 24 : 16, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  cancel: { fontSize: 16, color: '#6B7280', width: 60 },
+  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
+  inputStep: { padding: 20, paddingBottom: 40 },
+  hint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 16 },
+  textArea: { height: 260, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 14, fontSize: 15, color: '#111827' },
+  error: { fontSize: 14, color: '#DC2626', marginTop: 12, textAlign: 'center' },
+  primaryButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  centred: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  reviewHint: { fontSize: 14, color: '#6B7280', paddingHorizontal: 16, paddingVertical: 12 },
+  pendingRow: { backgroundColor: '#fff', borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  pendingName: { fontSize: 15, color: '#111827', fontWeight: '500', marginBottom: 8, textTransform: 'capitalize' },
+  pendingMeta: { flexDirection: 'row', alignItems: 'center' },
+  catPill: { backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  catPillText: { fontSize: 12, color: '#374151' },
+  removeButton: { padding: 4, marginLeft: 8 },
+  removeButtonText: { fontSize: 16, color: '#9CA3AF' },
+  dropdown: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden', marginTop: 4 },
+  dropdownOption: { paddingHorizontal: 14, paddingVertical: 11 },
+  dropdownOptionActive: { backgroundColor: '#F0FDF4' },
+  dropdownText: { fontSize: 14, color: '#374151' },
+  dropdownTextActive: { color: '#3B7A57', fontWeight: '600' },
+  addManual: { borderWidth: 1, borderColor: '#D1D5DB', borderStyle: 'dashed', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginBottom: 16 },
+  addManualText: { fontSize: 15, color: '#6B7280' },
+  saveRow: { padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingBottom: 32 },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   centered: { justifyContent: 'center', alignItems: 'center', padding: 32 },
   content: { padding: 20, paddingTop: 60 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
+  headingButtons: { flexDirection: 'row', gap: 8 },
+  addButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#3B7A57', alignItems: 'center' },
+  addButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
   refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 

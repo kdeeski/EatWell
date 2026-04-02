@@ -423,6 +423,32 @@ export async function addAdHocShoppingItem(
   return data as ShoppingListItem;
 }
 
+export async function addAdHocShoppingItems(
+  shoppingListId: string,
+  items: { name: string; category: ItemCategory }[]
+): Promise<ShoppingListItem[]> {
+  const { data, error } = await supabase
+    .from('shopping_list_items')
+    .insert(items.map((i) => ({
+      shopping_list_id: shoppingListId,
+      name: i.name.toLowerCase().trim(),
+      quantity: 1,
+      unit: 'item',
+      store: i.category === 'meat_fish' ? 'butcher' : 'supermarket',
+      buy_timing: 'weekend',
+      checked: false,
+      is_pantry_staple: false,
+      from_fridge: false,
+      from_garden: false,
+      ingredient_category: i.category,
+      herb_backup: null,
+      meal_names: [],
+    })))
+    .select();
+  if (error) throw error;
+  return data as ShoppingListItem[];
+}
+
 // ─── Cooked Meals & Check-ins ─────────────────────────────────────────────────
 
 export async function logCookedMeal(
