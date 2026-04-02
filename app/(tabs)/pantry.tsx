@@ -227,14 +227,19 @@ function InventoryRow({ item, onReplenish, onRemove, onEdit }: {
         <TouchableOpacity style={[styles.itemRow, isLowStock && styles.itemRowLowStock]} onPress={onEdit} activeOpacity={0.7}>
           <View style={styles.itemLeft}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemMeta}>
-              {item.quantity} {item.unit}
-              {isLowStock && <Text style={styles.lowStockText}>  · Low stock</Text>}
-            </Text>
+            {(isLowStock || (item.unit !== 'piece' || item.quantity !== 1)) && (
+              <Text style={styles.itemMeta}>
+                {item.quantity} {item.unit}
+                {isLowStock && <Text style={styles.lowStockText}>  · Low stock</Text>}
+              </Text>
+            )}
+            {isLowStock && item.unit === 'piece' && item.quantity === 1 && (
+              <Text style={[styles.itemMeta, styles.lowStockText]}>Low stock</Text>
+            )}
           </View>
           <View style={styles.locationBadge}>
             <Text style={styles.locationBadgeText}>
-              {LOC_EMOJI[item.location]}  {LOC_LABEL[item.location]}
+              {LOC_LABEL[item.location]}
             </Text>
           </View>
         </TouchableOpacity>
@@ -665,7 +670,7 @@ const styles = StyleSheet.create({
 
   filterBar: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6' },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0 },
   filterPillActive: { backgroundColor: '#3B7A57' },
   filterPillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
   filterPillTextActive: { color: '#fff' },
@@ -695,8 +700,8 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 15, color: '#111827', fontWeight: '500', textTransform: 'capitalize' },
   itemMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
   lowStockText: { color: '#F59E0B', fontWeight: '600' },
-  locationBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginLeft: 8 },
-  locationBadgeText: { fontSize: 11, color: '#374151', fontWeight: '500' },
+  locationBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginLeft: 8 },
+  locationBadgeText: { fontSize: 12, color: '#374151', fontWeight: '500' },
 
   // Modal shared
   modalContainer: { flex: 1, backgroundColor: '#F9FAFB' },
