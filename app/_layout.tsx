@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ export default function RootLayout() {
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [updateReady, setUpdateReady] = useState(false);
+  const bootstrapped = useRef(false);
 
   useEffect(() => {
     async function checkForUpdate() {
@@ -55,7 +56,8 @@ export default function RootLayout() {
   }, [session, segments]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || bootstrapped.current) return;
+    bootstrapped.current = true;
     setUserId(session.user.id);
     bootstrapUserData(session.user.id, session.user.email ?? '').then(
       ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {

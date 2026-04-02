@@ -159,11 +159,10 @@ export async function loadCurrentMealPlan(
     .from('meal_plans')
     .select('*')
     .eq('user_id', userId)
-    .eq('confirmed', true)
     .order('week_start_date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (planError || !plan) return null;
 
