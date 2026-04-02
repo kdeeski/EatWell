@@ -161,7 +161,7 @@ export async function loadCurrentMealPlan(
     .select('*')
     .eq('user_id', userId)
     .order('week_start_date', { ascending: false })
-    .order('generated_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(1);
 
   if (planError) throw planError; // surface the actual error instead of silent null
@@ -228,34 +228,33 @@ export async function saveMealPlan(
 
 export async function reorderPlannedMeals(
   mealPlanId: string,
+  originalIds: string[],
   meals: PlannedMeal[]
 ): Promise<void> {
-  // Use UPDATE per row (not delete+insert) to avoid data loss if one write fails.
-  // Phase 1: shift all to offset values (day + 7) to avoid unique constraint conflicts mid-swap.
-  // Phase 2: set final values.
-  const phase1 = await Promise.all(
-    meals.map((m) =>
-      supabase
-        .from('planned_meals')
-        .update({ day_of_week: m.day_of_week + 7 })
-        .eq('id', m.id)
-        .eq('meal_plan_id', mealPlanId)
-    )
-  );
-  const err1 = phase1.find((r) => r.error)?.error;
-  if (err1) throw err1;
+  // INSERT new rows first — if this fails, the original rows are untouched.
+  // No unique constraint on (meal_plan_id, day_of_week) so no conflict.
+  // day_of_week check (0-6) is satisfied since values come from the reorder mapping.
+  const { error: insError } = await supabase
+    .from('planned_meals')
+    .insert(meals.map((m) => ({
+      meal_plan_id: mealPlanId,
+      day_of_week: m.day_of_week,
+      meal_name: m.meal_name,
+      description: m.description,
+      is_fish: m.is_fish,
+      needs_recipe: m.needs_recipe,
+      estimated_prep_minutes: m.estimated_prep_minutes,
+      ingredients: m.ingredients,
+      holly_included: m.holly_included,
+    })));
+  if (insError) throw insError;
 
-  const phase2 = await Promise.all(
-    meals.map((m) =>
-      supabase
-        .from('planned_meals')
-        .update({ day_of_week: m.day_of_week })
-        .eq('id', m.id)
-        .eq('meal_plan_id', mealPlanId)
-    )
-  );
-  const err2 = phase2.find((r) => r.error)?.error;
-  if (err2) throw err2;
+  // DELETE old rows only after INSERT succeeds.
+  const { error: delError } = await supabase
+    .from('planned_meals')
+    .delete()
+    .in('id', originalIds);
+  if (delError) throw delError;
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────

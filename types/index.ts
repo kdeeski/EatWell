@@ -86,6 +86,7 @@ export interface MealPlan {
   generated_at: string;
   confirmed: boolean;
   notes: string | null;
+  created_at: string;
 }
 
 export interface PlannedMeal {
