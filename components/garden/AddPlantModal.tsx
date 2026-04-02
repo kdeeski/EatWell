@@ -4,12 +4,13 @@ import {
   ScrollView, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { addGardenPlant } from '../../lib/data';
+import { addGardenPlant, updateGardenPlant } from '../../lib/data';
 import type { GardenPlant } from '../../types';
 
 interface Props {
   visible: boolean;
   initialName?: string;
+  editPlant?: GardenPlant | null;
   userId: string;
   onSave: (plant: GardenPlant) => void;
   onClose: () => void;
@@ -19,11 +20,11 @@ function toISODate(d: Date) {
   return d.toISOString().split('T')[0];
 }
 
-export default function AddPlantModal({ visible, initialName, userId, onSave, onClose }: Props) {
+export default function AddPlantModal({ visible, initialName, editPlant, userId, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const today = toISODate(new Date());
 
-  const [plantName, setPlantName]         = useState(initialName ?? '');
+  const [plantName, setPlantName]         = useState('');
   const [variety, setVariety]             = useState('');
   const [locationNote, setLocationNote]   = useState('');
   const [plantedDate, setPlantedDate]     = useState(today);
@@ -33,15 +34,28 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
   const [notes, setNotes]                 = useState('');
   const [saving, setSaving]               = useState(false);
 
+  const isEditing = !!editPlant;
+
   const handleOpen = () => {
-    setPlantName(initialName ?? '');
-    setVariety('');
-    setLocationNote('');
-    setPlantedDate(today);
-    setExpectedReady('');
-    setIsCutAndComeAgain(false);
-    setQuantityPlanted('');
-    setNotes('');
+    if (editPlant) {
+      setPlantName(editPlant.plant_name);
+      setVariety(editPlant.variety ?? '');
+      setLocationNote(editPlant.location_note ?? '');
+      setPlantedDate(editPlant.planted_date);
+      setExpectedReady(editPlant.expected_ready_date ?? '');
+      setIsCutAndComeAgain(editPlant.is_cut_and_come_again);
+      setQuantityPlanted(editPlant.quantity_planted != null ? String(editPlant.quantity_planted) : '');
+      setNotes(editPlant.notes ?? '');
+    } else {
+      setPlantName(initialName ?? '');
+      setVariety('');
+      setLocationNote('');
+      setPlantedDate(today);
+      setExpectedReady('');
+      setIsCutAndComeAgain(false);
+      setQuantityPlanted('');
+      setNotes('');
+    }
   };
 
   const handleSave = async () => {
@@ -51,19 +65,33 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
     }
     setSaving(true);
     try {
-      const plant = await addGardenPlant({
-        user_id: userId,
-        plant_name: plantName.trim(),
-        variety: variety.trim() || null,
-        location_note: locationNote.trim() || null,
-        planted_date: plantedDate || today,
-        expected_ready_date: expectedReady.trim() || null,
-        status: 'planted',
-        quantity_planted: quantityPlanted ? parseFloat(quantityPlanted) || null : null,
-        notes: notes.trim() || null,
-        is_cut_and_come_again: isCutAndComeAgain,
-      });
-      onSave(plant);
+      if (isEditing) {
+        const updated = await updateGardenPlant(editPlant.id, {
+          plant_name: plantName.trim(),
+          variety: variety.trim() || null,
+          location_note: locationNote.trim() || null,
+          planted_date: plantedDate || today,
+          expected_ready_date: expectedReady.trim() || null,
+          quantity_planted: quantityPlanted ? parseFloat(quantityPlanted) || null : null,
+          notes: notes.trim() || null,
+          is_cut_and_come_again: isCutAndComeAgain,
+        });
+        onSave(updated);
+      } else {
+        const plant = await addGardenPlant({
+          user_id: userId,
+          plant_name: plantName.trim(),
+          variety: variety.trim() || null,
+          location_note: locationNote.trim() || null,
+          planted_date: plantedDate || today,
+          expected_ready_date: expectedReady.trim() || null,
+          status: 'planted',
+          quantity_planted: quantityPlanted ? parseFloat(quantityPlanted) || null : null,
+          notes: notes.trim() || null,
+          is_cut_and_come_again: isCutAndComeAgain,
+        });
+        onSave(plant);
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Could not save plant.');
     } finally {
@@ -85,7 +113,7 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Text style={styles.cancel}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Add Plant</Text>
+            <Text style={styles.title}>{isEditing ? 'Edit Plant' : 'Add Plant'}</Text>
             <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Text style={[styles.save, saving && styles.saveDim]}>Save</Text>
             </TouchableOpacity>
@@ -99,7 +127,7 @@ export default function AddPlantModal({ visible, initialName, userId, onSave, on
               onChangeText={setPlantName}
               placeholder="e.g. Basil"
               placeholderTextColor="#9CA3AF"
-              autoFocus
+              autoFocus={!isEditing}
             />
 
             <FieldLabel>Variety</FieldLabel>

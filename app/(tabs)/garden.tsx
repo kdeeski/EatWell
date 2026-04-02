@@ -274,7 +274,6 @@ export default function GardenScreen() {
   };
 
   const handleEditSave = async (updatedPlant: GardenPlant) => {
-    addGardenPlantToStore; // no-op reference to keep linter quiet
     updateGardenPlant(updatedPlant.id, updatedPlant);
     setAddPlantVisible(false);
     setEditTarget(null);
@@ -444,6 +443,7 @@ export default function GardenScreen() {
       <AddPlantModal
         visible={addPlantVisible}
         initialName={editTarget ? undefined : addPlantInitialName}
+        editPlant={editTarget}
         userId={userId ?? ''}
         onSave={editTarget ? handleEditSave : handleAddPlantSave}
         onClose={() => {
