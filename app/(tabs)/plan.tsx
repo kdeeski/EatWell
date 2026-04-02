@@ -22,6 +22,7 @@ export default function PlanScreen() {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
     Array.from({ length: 7 }, (_, i) => i)
@@ -41,8 +42,8 @@ export default function PlanScreen() {
       .catch((e) => setLoadError(e?.message ?? String(e)));
   }, [userId]);
 
-  const moveSelected = async (direction: -1 | 1) => {
-    if (selectedSlot === null || !planRef.current || saving) return;
+  const moveSelected = (direction: -1 | 1) => {
+    if (selectedSlot === null) return;
     const toIndex = selectedSlot + direction;
     if (toIndex < 0 || toIndex >= displayOrderRef.current.length) return;
 
@@ -54,38 +55,52 @@ export default function PlanScreen() {
     LayoutAnimation.configureNext({ duration: 150, update: { type: LayoutAnimation.Types.easeInEaseOut } });
     setDisplayOrder(next);
     setSelectedSlot(toIndex);
+    setDirty(true);
 
-    // Only reorder the VISIBLE meals (one per slot via find).
-    // Extras (e.g. day=0 unassigned meals) are excluded from the move
-    // so they remain untouched in the DB.
-    const visibleMeals = displayOrderRef.current.map((originalDay) =>
-      mealsRef.current.find((m) => m.day_of_week === originalDay) ?? null
-    );
-    const reordered = next
+    // Optimistic store update so Today screen reflects new order immediately
+    if (planRef.current) {
+      const reordered = next
+        .map((originalDay, newPosition) => {
+          const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
+          return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
+        })
+        .filter(Boolean) as PlannedMeal[];
+      if (reordered.length > 0) setMealPlan(planRef.current, reordered);
+    }
+  };
+
+  const handleDone = async () => {
+    setSelectedSlot(null);
+    if (!dirty || !planRef.current) { setDirty(false); return; }
+
+    // Visible meals only (one per slot) — extras stay untouched
+    const visibleOriginalIds = displayOrderRef.current
+      .map((d) => mealsRef.current.find((m) => m.day_of_week === d))
+      .filter(Boolean)
+      .map((m) => m!.id);
+
+    const reordered = displayOrderRef.current
       .map((originalDay, newPosition) => {
         const meal = mealsRef.current.find((m) => m.day_of_week === originalDay);
         return meal ? { ...meal, day_of_week: newPosition as PlannedMeal['day_of_week'] } : null;
       })
       .filter(Boolean) as PlannedMeal[];
 
-    if (reordered.length === 0) return;
+    if (reordered.length === 0) { setDirty(false); return; }
 
     const snapshot = mealsRef.current.slice();
-    // Only delete the original visible rows, not the extras
-    const originalIds = visibleMeals.filter(Boolean).map((m) => m!.id);
-    setMealPlan(planRef.current, reordered);
-
     setSaving(true);
     try {
-      const saved = await reorderPlannedMeals(planRef.current.id, originalIds, reordered);
+      const saved = await reorderPlannedMeals(planRef.current.id, visibleOriginalIds, reordered);
       setMealPlan(planRef.current, saved);
     } catch (e) {
       console.error('Failed to save meal order', e);
       setMealPlan(planRef.current, snapshot);
-      setDisplayOrder(displayOrderRef.current);
-      setSelectedSlot(selectedSlot);
+      // Revert display order to match rolled-back store
+      setDisplayOrder(Array.from({ length: 7 }, (_, i) => i));
     } finally {
       setSaving(false);
+      setDirty(false);
     }
   };
 
@@ -189,8 +204,8 @@ export default function PlanScreen() {
             <Text style={[styles.toolbarBtnText, !canMoveDown && styles.toolbarBtnTextDisabled]}>▼  Later in the week</Text>
           </TouchableOpacity>
           <View style={styles.toolbarDivider} />
-          <TouchableOpacity style={styles.toolbarBtn} onPress={() => setSelectedSlot(null)}>
-            <Text style={styles.toolbarDoneText}>Done</Text>
+          <TouchableOpacity style={styles.toolbarBtn} onPress={handleDone} disabled={saving}>
+            <Text style={styles.toolbarDoneText}>{saving ? 'Saving…' : 'Done'}</Text>
           </TouchableOpacity>
         </View>
       )}
