@@ -161,7 +161,7 @@ export async function loadCurrentMealPlan(
     .select('*')
     .eq('user_id', userId)
     .order('week_start_date', { ascending: false })
-    .order('created_at', { ascending: false })
+    .order('generated_at', { ascending: false })
     .limit(1);
 
   if (planError) throw planError; // surface the actual error instead of silent null
