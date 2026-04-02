@@ -21,13 +21,30 @@ export default function PlanScreen() {
   const router = useRouter();
   const { plannedMeals, currentMealPlan, setMealPlan, userId } = useAppStore();
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadDebug, setLoadDebug] = useState<string | null>(null);
 
   // Fallback: if bootstrap didn't populate the plan, load directly when this tab mounts.
   useEffect(() => {
-    if (currentMealPlan || !userId) return;
+    if (currentMealPlan || !userId) {
+      setLoadDebug(`currentMealPlan=${!!currentMealPlan}, userId=${userId ?? 'null'}`);
+      return;
+    }
+    setLoadDebug(`Attempting direct load for userId=${userId}`);
     loadCurrentMealPlan(userId)
-      .then((data) => { if (data) setMealPlan(data.plan, data.meals); })
-      .catch((e) => console.error('Plan tab direct load failed:', e));
+      .then((data) => {
+        if (data) {
+          setLoadDebug(`Loaded: planId=${data.plan.id}, meals=${data.meals.length}`);
+          setMealPlan(data.plan, data.meals);
+        } else {
+          setLoadDebug(`loadCurrentMealPlan returned null`);
+        }
+      })
+      .catch((e) => {
+        const msg = e?.message ?? JSON.stringify(e);
+        setLoadError(msg);
+        setLoadDebug(`Error: ${msg}`);
+      });
   }, [userId]);
   const [isDragging, setIsDragging] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
@@ -128,6 +145,12 @@ export default function PlanScreen() {
             Time to plan the week. The app will look at what's in your fridge,
             what's in the garden, and build 7 meals around it.
           </Text>
+          {loadDebug && (
+            <Text style={styles.debugText}>{loadDebug}</Text>
+          )}
+          {loadError && (
+            <Text style={styles.errorText}>{loadError}</Text>
+          )}
           <TouchableOpacity style={styles.planButton} onPress={() => router.push('/planning')}>
             <Text style={styles.planButtonText}>Plan This Week</Text>
           </TouchableOpacity>
@@ -200,7 +223,9 @@ const styles = StyleSheet.create({
 
   emptyState: { alignItems: 'center', paddingTop: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },
-  emptyBody:  { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
+  emptyBody:  { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
+  debugText:  { fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginBottom: 8, paddingHorizontal: 12 },
+  errorText:  { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 16, paddingHorizontal: 12 },
   planButton:     { backgroundColor: '#3B7A57', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
   planButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
 
