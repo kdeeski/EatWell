@@ -4,6 +4,7 @@
 
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
@@ -11,6 +12,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 
 export default function TodayScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { plannedMeals, todayCheckin } = useAppStore();
 
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
@@ -23,8 +25,16 @@ export default function TodayScreen() {
     : null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.greeting}>Good morning.</Text>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
+      <View style={styles.topRow}>
+        <Text style={styles.greeting}>Good morning.</Text>
+        <TouchableOpacity
+          onPress={() => router.push('/settings')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={styles.gearIcon}>⚙</Text>
+        </TouchableOpacity>
+      </View>
 
       {checkinDone ? (
         /* ── Completed check-in summary ── */
@@ -114,8 +124,10 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  content: { padding: 20, paddingTop: 60 },
-  greeting: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 24 },
+  content: { padding: 20 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+  greeting: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
+  gearIcon: { fontSize: 22, color: '#9CA3AF' },
 
   checkinCard: {
     backgroundColor: '#3B7A57',

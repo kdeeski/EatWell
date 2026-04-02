@@ -41,6 +41,22 @@ Deno.serve(async (req) => {
       .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
       .join(', ');
 
+    const prefs = input.preferences ?? null;
+
+    // Build preferences block for the prompt
+    let prefsBlock = '';
+    if (prefs) {
+      const lines: string[] = [];
+      if (prefs.cuisine_likes?.length)    lines.push(`Cuisines I love: ${prefs.cuisine_likes.join(', ')}`);
+      if (prefs.cuisine_dislikes?.length) lines.push(`Cuisines to avoid: ${prefs.cuisine_dislikes.join(', ')}`);
+      if (prefs.proteins_excluded?.length) lines.push(`Proteins I don't eat: ${prefs.proteins_excluded.join(', ')}`);
+      if (prefs.spice_level)              lines.push(`Spice level: ${prefs.spice_level}`);
+      if (prefs.weeknight_max_minutes)    lines.push(`Max weeknight cooking time: ${prefs.weeknight_max_minutes} minutes`);
+      if (prefs.weekend_cooking)          lines.push(`Weekend cooking style: ${prefs.weekend_cooking === 'project' ? 'Love a cooking project' : 'Keep it simple'}`);
+      if (prefs.cooking_notes)            lines.push(`Personal notes: ${prefs.cooking_notes}`);
+      if (lines.length) prefsBlock = `\nUSER PREFERENCES:\n${lines.join('\n')}\n`;
+    }
+
     // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
 
     const structurePrompt = `
@@ -60,7 +76,7 @@ ${(input.nightsAway ?? []).join(', ') || 'None'}
 
 HOLLY HOME (include her preferences these nights):
 ${(input.hollyHomeNights ?? []).join(', ') || 'None this week'}
-
+${prefsBlock}
 TODAY'S DATE: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
 Return ONLY a JSON object with this exact shape — no prose:
@@ -138,6 +154,8 @@ RULES:
 19. NEVER combine multiple ingredients into one entry (e.g. never "salt and pepper" — always list as two separate ingredients: "salt" and "black pepper"). Every ingredient must be a single item with its own name, quantity, and unit.
 
 20. GARDEN VARIETY RULE — garden produce is a weekly constraint (use what is ready before it spoils), not a theme to build the entire week around. Aim for variety across the week even when garden produce is abundant. A single garden herb should appear in at most 2 meals per week. Do not let garden availability dominate the menu or create repetitive flavour profiles.
+
+21. USER PREFERENCES — if USER PREFERENCES are provided in the prompt, treat them as personalisation constraints: lean toward cuisine_likes, avoid cuisine_dislikes, never use proteins_excluded, match spice_level (mild = subtle seasoning, medium = balanced, bold = heat welcome), respect weeknight_max_minutes for Mon–Thu prep times, apply weekend cooking style (project = longer/complex welcome on Sat–Sun, quick = keep it simple all week), and follow any personal cooking_notes. These preferences narrow and personalise choices — do not override safety rules above.
 
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],

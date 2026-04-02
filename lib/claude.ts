@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
-import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, GardenSuggestion, PlannedMeal } from '../types';
+import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, GardenSuggestion, PlannedMeal, UserPreferences } from '../types';
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
 
@@ -21,6 +21,16 @@ export interface MealPlanInput {
   spontaneousAdditions: string[];  // market finds, neighbour gifts, etc.
   nightsAway: number[];            // day_of_week values (0=Mon) user is away
   hollyHomeNights: number[];       // day_of_week values Holly is home (Phase 2)
+  preferences?: Pick<UserPreferences,
+    | 'cuisine_likes'
+    | 'cuisine_dislikes'
+    | 'proteins_excluded'
+    | 'spice_level'
+    | 'weeknight_max_minutes'
+    | 'weekend_cooking'
+    | 'holly_joins_regularly'
+    | 'cooking_notes'
+  > | null;
 }
 
 export interface GeneratedMealPlan {

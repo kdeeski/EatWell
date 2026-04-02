@@ -8,6 +8,7 @@ import type {
   GardenPlant,
   GardenSuggestion,
   CheckIn,
+  UserPreferences,
 } from '../types';
 
 interface AppState {
@@ -47,6 +48,10 @@ interface AppState {
   // ── Today's check-in ──────────────────────────────────────────────────────
   todayCheckin: CheckIn | null;
   setTodayCheckin: (checkin: CheckIn | null) => void;
+
+  // ── User preferences ──────────────────────────────────────────────────────
+  userPreferences: UserPreferences | null;
+  setUserPreferences: (prefs: UserPreferences | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -111,4 +116,8 @@ export const useAppStore = create<AppState>((set) => ({
   // Check-in
   todayCheckin: null,
   setTodayCheckin: (checkin) => set({ todayCheckin: checkin }),
+
+  // User preferences
+  userPreferences: null,
+  setUserPreferences: (prefs) => set({ userPreferences: prefs }),
 }));

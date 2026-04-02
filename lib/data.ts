@@ -8,6 +8,7 @@ import type {
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
   CookedMeal, CheckIn,
   InventoryItem, ItemCategory, ItemLocation,
+  UserPreferences,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
@@ -579,6 +580,31 @@ export async function ensureUserProfile(userId: string, email: string): Promise<
   if (error) throw error;
 }
 
+// ─── User Preferences ─────────────────────────────────────────────────────────
+
+export async function loadUserPreferences(userId: string): Promise<UserPreferences | null> {
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as UserPreferences | null;
+}
+
+export async function saveUserPreferences(
+  userId: string,
+  prefs: Omit<UserPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+): Promise<UserPreferences> {
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .upsert({ ...prefs, user_id: userId }, { onConflict: 'user_id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as UserPreferences;
+}
+
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 export async function bootstrapUserData(userId: string, email: string) {
@@ -587,14 +613,15 @@ export async function bootstrapUserData(userId: string, email: string) {
     console.warn('ensureUserProfile failed (non-fatal):', e)
   );
 
-  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin] =
+  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences] =
     await Promise.all([
       loadInventoryItems(userId).catch((e) => { console.error('loadInventoryItems failed:', e); return [] as InventoryItem[]; }),
       loadGardenPlants(userId).catch((e) => { console.error('loadGardenPlants failed:', e); return [] as GardenPlant[]; }),
       loadCurrentMealPlan(userId).catch((e) => { console.error('loadCurrentMealPlan failed:', e); return null; }),
       loadShoppingList(userId).catch((e) => { console.error('loadShoppingList failed:', e); return null; }),
       loadTodayCheckin(userId).catch((e) => { console.error('loadTodayCheckin failed:', e); return null; }),
+      loadUserPreferences(userId).catch((e) => { console.error('loadUserPreferences failed:', e); return null; }),
     ]);
 
-  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin };
+  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences };
 }

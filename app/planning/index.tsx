@@ -16,7 +16,7 @@ type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 
 
 export default function PlanningFlow() {
   const router = useRouter();
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   const [step, setStep] = useState<Step>('fridge');
@@ -96,6 +96,16 @@ export default function PlanningFlow() {
           .filter(Boolean),
         nightsAway,
         hollyHomeNights,
+        preferences: userPreferences ? {
+          cuisine_likes: userPreferences.cuisine_likes,
+          cuisine_dislikes: userPreferences.cuisine_dislikes,
+          proteins_excluded: userPreferences.proteins_excluded,
+          spice_level: userPreferences.spice_level,
+          weeknight_max_minutes: userPreferences.weeknight_max_minutes,
+          weekend_cooking: userPreferences.weekend_cooking,
+          holly_joins_regularly: userPreferences.holly_joins_regularly,
+          cooking_notes: userPreferences.cooking_notes,
+        } : null,
       });
       // Build confirmed garden list for validation
       const gardenNames = [

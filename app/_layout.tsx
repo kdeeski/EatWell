@@ -13,7 +13,7 @@ export default function RootLayout() {
   const segments = useSegments();
   const {
     setUserId, setInventoryItems, setGardenPlants,
-    setMealPlan, setShoppingList, setTodayCheckin,
+    setMealPlan, setShoppingList, setTodayCheckin, setUserPreferences,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [updateReady, setUpdateReady] = useState(false);
@@ -66,12 +66,13 @@ export default function RootLayout() {
       refresh_token: session.refresh_token!,
     }).then(() =>
       bootstrapUserData(session.user.id, session.user.email ?? '').then(
-        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin }) => {
+        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences }) => {
           setInventoryItems(inventoryItems);
           setGardenPlants(gardenPlants);
           if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
           if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
           setTodayCheckin(todayCheckin);
+          setUserPreferences(userPreferences);
         }
       )
     ).catch((e) => console.error('Bootstrap chain failed:', e));
@@ -87,6 +88,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="planning" options={{ presentation: 'modal' }} />
         <Stack.Screen name="checkin" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
       </Stack>
     </SafeAreaProvider>
   );

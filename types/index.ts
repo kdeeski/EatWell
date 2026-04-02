@@ -41,6 +41,27 @@ export interface InventoryItem {
   created_at: string;
 }
 
+// ─── User Preferences ─────────────────────────────────────────────────────────
+
+export type SpiceLevel = 'mild' | 'medium' | 'bold';
+export type WeekendCooking = 'quick' | 'project';
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  cuisine_likes: string[];
+  cuisine_dislikes: string[];
+  proteins_excluded: string[];
+  spice_level: SpiceLevel;
+  weeknight_max_minutes: number;
+  weekend_cooking: WeekendCooking;
+  holly_joins_regularly: boolean;
+  cooking_notes: string | null;
+  garden_location: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── Garden ───────────────────────────────────────────────────────────────────
 
 export type PlantStatus = 'planted' | 'growing' | 'ready' | 'harvested' | 'finished';
