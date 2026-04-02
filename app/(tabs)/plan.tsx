@@ -188,23 +188,27 @@ export default function PlanScreen() {
       {/* Move toolbar — only visible when a meal is selected */}
       {selectedMeal && (
         <View style={styles.toolbar}>
-          <TouchableOpacity
-            style={[styles.toolbarBtn, !canMoveUp && styles.toolbarBtnDisabled]}
-            onPress={() => moveSelected(-1)}
-            disabled={!canMoveUp || saving}
-          >
-            <Text style={[styles.toolbarBtnText, !canMoveUp && styles.toolbarBtnTextDisabled]}>▲  Earlier in the week</Text>
-          </TouchableOpacity>
-          <View style={styles.toolbarDivider} />
-          <TouchableOpacity
-            style={[styles.toolbarBtn, !canMoveDown && styles.toolbarBtnDisabled]}
-            onPress={() => moveSelected(1)}
-            disabled={!canMoveDown || saving}
-          >
-            <Text style={[styles.toolbarBtnText, !canMoveDown && styles.toolbarBtnTextDisabled]}>▼  Later in the week</Text>
-          </TouchableOpacity>
-          <View style={styles.toolbarDivider} />
-          <TouchableOpacity style={styles.toolbarBtn} onPress={handleDone} disabled={saving}>
+          <View style={styles.toolbarMoveRow}>
+            <TouchableOpacity
+              style={[styles.moveArrowBtn, !canMoveUp && styles.moveArrowBtnDisabled]}
+              onPress={() => moveSelected(-1)}
+              disabled={!canMoveUp}
+            >
+              <Text style={[styles.moveArrowIcon, !canMoveUp && styles.moveArrowIconDisabled]}>▲</Text>
+              <Text style={[styles.moveArrowLabel, !canMoveUp && styles.moveArrowIconDisabled]}>Earlier</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.moveArrowBtn, !canMoveDown && styles.moveArrowBtnDisabled]}
+              onPress={() => moveSelected(1)}
+              disabled={!canMoveDown}
+            >
+              <Text style={[styles.moveArrowIcon, !canMoveDown && styles.moveArrowIconDisabled]}>▼</Text>
+              <Text style={[styles.moveArrowLabel, !canMoveDown && styles.moveArrowIconDisabled]}>Later</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.toolbarDoneBtn} onPress={handleDone} disabled={saving}>
             <Text style={styles.toolbarDoneText}>{saving ? 'Saving…' : 'Done'}</Text>
           </TouchableOpacity>
         </View>
@@ -253,19 +257,47 @@ const styles = StyleSheet.create({
   nightOff:    { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
 
   toolbar: {
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-    paddingTop: 4,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  toolbarBtn: { flex: 1, alignItems: 'center', paddingVertical: 12 },
-  toolbarBtnDisabled: { opacity: 0.3 },
-  toolbarBtnText: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
-  toolbarBtnTextDisabled: { color: '#9CA3AF' },
-  toolbarDoneText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
-  toolbarDivider: { width: 1, backgroundColor: '#F3F4F6', marginVertical: 8 },
+  toolbarMoveRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  moveArrowBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  moveArrowBtnDisabled: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
+  },
+  moveArrowIcon: { fontSize: 14, color: '#3B7A57', fontWeight: '700' },
+  moveArrowLabel: { fontSize: 14, fontWeight: '600', color: '#3B7A57' },
+  moveArrowIconDisabled: { color: '#D1D5DB' },
+  toolbarDoneBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  toolbarDoneText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 
   replanButton:     { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
   replanButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
