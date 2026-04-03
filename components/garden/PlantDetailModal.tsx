@@ -73,7 +73,7 @@ export default function PlantDetailModal({ plant, onClose, onStatusChange, onHar
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
+    paddingHorizontal: 16, paddingBottom: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   closeText: { fontSize: 16, color: '#6B7280', width: 60 },
