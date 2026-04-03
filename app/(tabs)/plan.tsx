@@ -6,6 +6,7 @@ import {
   LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
 import type { PlannedMeal } from '../../types';
@@ -18,6 +19,7 @@ const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function PlanScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { plannedMeals, currentMealPlan, setMealPlan, userId } = useAppStore();
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -121,7 +123,7 @@ export default function PlanScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
         <Text style={styles.heading}>This Week</Text>
 
         {!hasPlan ? (
@@ -231,7 +233,7 @@ export default function PlanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  content:   { padding: 20, paddingTop: 60, paddingBottom: 20 },
+  content:   { padding: 20, paddingBottom: 20 },
   heading:   { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
   hint:      { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
 

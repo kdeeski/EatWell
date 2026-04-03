@@ -7,6 +7,7 @@ import {
   TextInput, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
 import { saveMealPlan, saveShoppingList, addGardenPlant } from '../../lib/data';
@@ -16,6 +17,7 @@ type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 
 
 export default function PlanningFlow() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
@@ -188,7 +190,7 @@ export default function PlanningFlow() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.cancel}>Cancel</Text>
         </TouchableOpacity>
@@ -367,7 +369,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 56,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',

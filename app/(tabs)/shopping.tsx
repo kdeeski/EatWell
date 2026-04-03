@@ -8,6 +8,7 @@ import {
   Animated, PanResponder, ActivityIndicator, Modal, Alert,
   TextInput, FlatList, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems } from '../../lib/data';
 import { categorisePantryItems } from '../../lib/claude';
@@ -100,6 +101,7 @@ export default function ShoppingScreen() {
     gardenPlants, setGardenPlants,
     upsertInventoryItem: upsertStore,
   } = useAppStore();
+  const insets = useSafeAreaInsets();
 
   const buildConfirmed = (items: typeof shoppingItems, inv: typeof inventoryItems) => {
     const confirmed = new Set<string>();
@@ -208,7 +210,7 @@ export default function ShoppingScreen() {
   }, {});
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
       <View style={styles.headingRow}>
         <Text style={styles.heading}>Shopping</Text>
         <View style={styles.headingButtons}>
@@ -560,7 +562,7 @@ const modalStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   centered: { justifyContent: 'center', alignItems: 'center', padding: 32 },
-  content: { padding: 20, paddingTop: 60 },
+  content: { padding: 20 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
   headingButtons: { flexDirection: 'row', gap: 8 },

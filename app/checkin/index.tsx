@@ -6,6 +6,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { saveCheckin, logCookedMeal } from '../../lib/data';
 
@@ -15,6 +16,7 @@ const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
 const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
 
 export default function CheckinFlow() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { plannedMeals, setTodayCheckin, todayCheckin, userId } = useAppStore();
 
@@ -66,7 +68,7 @@ export default function CheckinFlow() {
     const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.cancel}>Close</Text>
           </TouchableOpacity>
@@ -213,7 +215,7 @@ export default function CheckinFlow() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => { setEditing(false); router.back(); }}>
           <Text style={styles.cancel}>{editing ? 'Cancel' : 'Skip'}</Text>
         </TouchableOpacity>
@@ -395,7 +397,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 56,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',

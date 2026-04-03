@@ -7,6 +7,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import {
   updateGardenPlantStatus,
@@ -57,6 +58,7 @@ function extractIngredientFrequency(meals: ReturnType<typeof useAppStore.getStat
 }
 
 export default function GardenScreen() {
+  const insets = useSafeAreaInsets();
   const {
     gardenPlants,
     updateGardenPlant,
@@ -295,7 +297,7 @@ export default function GardenScreen() {
   const activeSuggestions = gardenSuggestions.filter((s) => !s.dismissed);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
       <Text style={styles.heading}>Garden</Text>
 
       {/* ── What to Plant Now ─────────────────────────────────────────────── */}
@@ -471,7 +473,7 @@ export default function GardenScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 40 },
   heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 24 },
 
   section: { marginBottom: 28 },
