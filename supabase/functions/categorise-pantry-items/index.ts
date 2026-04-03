@@ -23,7 +23,7 @@ Category rules:
 - oils_vinegars: cooking oils, olive oils, vinegars, sesame oil
 - condiments_sauces: sauces, mustards, hot sauces, mayonnaise, miso, fish sauce, soy sauce, worcestershire, ketchup, relish
 - beverages: juice, soft drinks, sparkling water, cordial, coffee, tea, mixers
-- alcohol: wine, beer, spirits, liqueur, cider
+- alcohol: wine, beer, spirits, liqueur, cider, vermouth, port, sherry, sake, mirin (alcoholic cooking wines), fortified wines
 - household: cleaning products, laundry liquid, dishwasher tablets, soap, shampoo, toilet paper, tissues, batteries, bin bags
 
 Location rules (sensible defaults):

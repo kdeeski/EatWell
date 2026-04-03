@@ -55,6 +55,7 @@ Your job is to identify every labelled item you can read in the photo.
 For each item, return:
 - name: the item name, lowercase, singular (e.g. "cumin", "olive oil", "soy sauce", "arborio rice")
 - category: one of herbs_spices | oils_vinegars | cans_preserves | pantry_dry_goods | condiments_sauces | bread_bakery | meat_fish | produce | dairy_eggs | beverages | alcohol | household
+- alcohol: wine, beer, spirits, vermouth, port, sherry, sake, mirin, fortified wines — NOT condiments
 - notes: optional short note if relevant (e.g. "almost empty", "two jars"), otherwise null
 
 Category guide:

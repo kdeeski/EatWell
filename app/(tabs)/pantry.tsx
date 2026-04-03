@@ -557,7 +557,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
         )}
 
         {step === 'review' && (
-          <>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <Text style={styles.reviewHint}>Adjust categories or locations if anything looks off.</Text>
             <FlatList
               data={pendingItems}
@@ -586,7 +586,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
                 }
               </TouchableOpacity>
             </View>
-          </>
+          </KeyboardAvoidingView>
         )}
       </View>
     </Modal>
