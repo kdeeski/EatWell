@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
 import { categorisePantryItems } from '../../lib/claude';
-import { upsertInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem } from '../../lib/data';
+import { upsertInventoryItem, updateInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem } from '../../lib/data';
 import type { ItemCategory, ItemLocation, InventoryItem } from '../../types';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -280,19 +280,30 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const saved = await upsertInventoryItem({
-        ...(existingItem ? { id: existingItem.id } : {}),
-        user_id: userId,
-        name: name.trim().toLowerCase(),
-        category,
-        location,
-        quantity: parseFloat(quantity) || 0,
-        unit,
-        min_quantity: parseFloat(minQty) || 0,
-        notes: notes.trim() || null,
-        added_date: new Date().toISOString().split('T')[0],
-        depleted: false,
-      });
+      let saved: InventoryItem;
+      if (existingItem) {
+        saved = await updateInventoryItem(existingItem.id, {
+          category,
+          location,
+          quantity: parseFloat(quantity) || 0,
+          unit,
+          min_quantity: parseFloat(minQty) || 0,
+          notes: notes.trim() || null,
+        });
+      } else {
+        saved = await upsertInventoryItem({
+          user_id: userId,
+          name: name.trim().toLowerCase(),
+          category,
+          location,
+          quantity: parseFloat(quantity) || 0,
+          unit,
+          min_quantity: parseFloat(minQty) || 0,
+          notes: notes.trim() || null,
+          added_date: new Date().toISOString().split('T')[0],
+          depleted: false,
+        });
+      }
       onSaved(saved);
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Could not save item.');
