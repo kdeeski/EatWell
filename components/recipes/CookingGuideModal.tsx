@@ -8,6 +8,7 @@ import { getCookingGuide } from '../../lib/claude';
 import type { CookingGuide } from '../../lib/claude';
 import type { Recipe } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
+import CookModeModal from './CookModeModal';
 
 interface Props {
   mealName: string;
@@ -54,6 +55,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
   const [guide, setGuide]       = useState<CookingGuide | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const [showSave, setShowSave] = useState(false);
+  const [showCookMode, setShowCookMode] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -118,7 +120,12 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
             >
               {/* How to cook it */}
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>How to cook it</Text>
+                <View style={styles.sectionLabelRow}>
+                  <Text style={styles.sectionLabel}>How to cook it</Text>
+                  <TouchableOpacity style={styles.cookModeBtn} onPress={() => setShowCookMode(true)}>
+                    <Text style={styles.cookModeBtnText}>Cook Mode</Text>
+                  </TouchableOpacity>
+                </View>
                 {guide.steps.map((step, i) => (
                   <View key={i} style={styles.stepRow}>
                     <Text style={styles.stepNum}>{i + 1}.</Text>
@@ -158,6 +165,14 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
           ) : null}
         </View>
       </Modal>
+
+      {showCookMode && guide && (
+        <CookModeModal
+          recipeName={mealName}
+          method={guide.steps.join('\n')}
+          onClose={() => setShowCookMode(false)}
+        />
+      )}
 
       {showSave && guide && (
         <SaveRecipeModal
@@ -217,6 +232,14 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, gap: 24 },
 
   section: { gap: 12 },
+  sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cookModeBtn: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  cookModeBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
