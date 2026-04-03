@@ -3,6 +3,7 @@ import {
   Modal, View, Text, StyleSheet, TouchableOpacity, TextInput,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { GardenPlant, HarvestStorage } from '../../types';
 
 interface Props {
@@ -18,6 +19,7 @@ const STORAGE_OPTIONS: { value: HarvestStorage; label: string }[] = [
 ];
 
 export default function HarvestModal({ plant, onConfirm, onClose }: Props) {
+  const insets = useSafeAreaInsets();
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit]         = useState('bunch');
   const [storage, setStorage]   = useState<HarvestStorage>('fresh');
@@ -36,7 +38,7 @@ export default function HarvestModal({ plant, onConfirm, onClose }: Props) {
     <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.container}>
-          <View style={styles.header}>
+          <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
             <TouchableOpacity onPress={onClose}>
               <Text style={styles.cancel}>Cancel</Text>
             </TouchableOpacity>
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
+    paddingHorizontal: 16, paddingBottom: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   cancel: { fontSize: 16, color: '#6B7280', width: 60 },

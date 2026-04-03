@@ -401,6 +401,7 @@ function ShoppingEditModal({ visible, item, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (id: string, updates: Partial<ShoppingListItem>) => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
@@ -442,7 +443,7 @@ function ShoppingEditModal({ visible, item, onClose, onSaved }: {
     <Modal visible={visible} animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={modalStyles.container}>
-          <View style={modalStyles.header}>
+          <View style={[modalStyles.header, { paddingTop: insets.top + 12 }]}>
             <TouchableOpacity onPress={onClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
             <Text style={modalStyles.title}>Edit Item</Text>
             <TouchableOpacity onPress={handleSave} disabled={saving}>
@@ -539,6 +540,7 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (items: ShoppingListItem[]) => void;
 }) {
+  const insets = useSafeAreaInsets();
   type Step = 'input' | 'categorising' | 'review';
   const [step, setStep] = useState<Step>('input');
   const [text, setText] = useState('');
@@ -585,7 +587,7 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <View style={modalStyles.container}>
-        <View style={modalStyles.header}>
+        <View style={[modalStyles.header, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity onPress={handleClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
           <Text style={modalStyles.title}>
             {step === 'input' ? 'Add Items' : step === 'categorising' ? 'Categorising…' : 'Review Items'}
@@ -697,7 +699,7 @@ function ShoppingPendingRow({ item, onChange, onRemove }: {
 
 const modalStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: Platform.OS === 'android' ? 24 : 16, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   cancel: { fontSize: 16, color: '#6B7280', width: 60 },
   title: { fontSize: 17, fontWeight: '700', color: '#111827' },
   inputStep: { padding: 20, paddingBottom: 40 },
