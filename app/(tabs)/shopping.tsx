@@ -314,7 +314,9 @@ export default function ShoppingScreen() {
                           {item.name}
                         </Text>
                         {isPantryConfirmed && (
-                          <Text style={styles.pantryNote}>In Your Pantry</Text>
+                          <Text style={styles.pantryNote}>
+                            {cat === 'herbs_spices' ? 'In Your Fridge' : 'In Your Pantry'}
+                          </Text>
                         )}
                         {cat === 'herbs_spices' && item.herb_backup && !isPantryConfirmed && (
                           <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
