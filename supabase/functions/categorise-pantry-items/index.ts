@@ -9,7 +9,7 @@ const SYSTEM = `You are helping categorise grocery and pantry items for a home c
 
 Given a list of item names, return a JSON array where each item has:
 - name: the item name as given (lowercase, singular)
-- category: exactly one of: meat_fish | dairy_eggs | produce | bread_bakery | pantry_dry_goods | herbs_spices | cans_preserves | oils_vinegars | condiments_sauces
+- category: exactly one of: meat_fish | dairy_eggs | produce | bread_bakery | pantry_dry_goods | herbs_spices | cans_preserves | oils_vinegars | condiments_sauces | beverages | alcohol | household
 - location: exactly one of: fridge | freezer | pantry | garden
 
 Category rules:
@@ -22,6 +22,9 @@ Category rules:
 - cans_preserves: ALL canned or tinned items (canned tomatoes, canned beans, canned fish, canned meat, tinned anything), jarred sauces, jarred pastes, jams, pickles, preserved foods
 - oils_vinegars: cooking oils, olive oils, vinegars, sesame oil
 - condiments_sauces: sauces, mustards, hot sauces, mayonnaise, miso, fish sauce, soy sauce, worcestershire, ketchup, relish
+- beverages: juice, soft drinks, sparkling water, cordial, coffee, tea, mixers
+- alcohol: wine, beer, spirits, liqueur, cider
+- household: cleaning products, laundry liquid, dishwasher tablets, soap, shampoo, toilet paper, tissues, batteries, bin bags
 
 Location rules (sensible defaults):
 - fridge: meat_fish, dairy_eggs, produce, opened condiments_sauces
