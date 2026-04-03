@@ -196,7 +196,13 @@ export interface CookingGuide {
   glossary: Array<{ term: string; definition: string }>;
 }
 
+const cookingGuideCache = new Map<string, CookingGuide>();
+
 export async function getCookingGuide(mealName: string, description: string): Promise<CookingGuide> {
+  const cacheKey = `${mealName}::${description}`;
+  const cached = cookingGuideCache.get(cacheKey);
+  if (cached) return cached;
+
   const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/cooking-guide';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
 
@@ -215,7 +221,9 @@ export async function getCookingGuide(mealName: string, description: string): Pr
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
-    return data as CookingGuide;
+    const guide = data as CookingGuide;
+    cookingGuideCache.set(cacheKey, guide);
+    return guide;
   } catch (e: any) {
     if (e?.name === 'AbortError') throw new Error('Cooking guide timed out — please try again.');
     throw e;
