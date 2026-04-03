@@ -13,7 +13,7 @@ export default function RootLayout() {
   const segments = useSegments();
   const {
     setUserId, setInventoryItems, setGardenPlants,
-    setMealPlan, setShoppingList, setTodayCheckin, setUserPreferences,
+    setMealPlan, setShoppingList, setTodayCheckin, setUserPreferences, setRecipes,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [updateReady, setUpdateReady] = useState(false);
@@ -66,13 +66,14 @@ export default function RootLayout() {
       refresh_token: session.refresh_token!,
     }).then(() =>
       bootstrapUserData(session.user.id, session.user.email ?? '').then(
-        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences }) => {
+        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes }) => {
           setInventoryItems(inventoryItems);
           setGardenPlants(gardenPlants);
           if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
           if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
           setTodayCheckin(todayCheckin);
           setUserPreferences(userPreferences);
+          setRecipes(recipes);
         }
       )
     ).catch((e) => console.error('Bootstrap chain failed:', e));

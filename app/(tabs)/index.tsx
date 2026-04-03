@@ -2,10 +2,13 @@
 // Shows tonight's chosen meal (or the pick-your-meal prompt),
 // any morning check-in that needs completing, and quick fridge notes.
 
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
+import CookingGuideModal from '../../components/recipes/CookingGuideModal';
+import type { PlannedMeal } from '../../types';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
 const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
@@ -14,6 +17,7 @@ export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { plannedMeals, todayCheckin } = useAppStore();
+  const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
 
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
@@ -95,6 +99,12 @@ export default function TodayScreen() {
             {tonightsMeal.description ? (
               <Text style={styles.mealDesc}>{tonightsMeal.description}</Text>
             ) : null}
+            <TouchableOpacity
+              style={styles.howToButton}
+              onPress={() => setGuideTarget(tonightsMeal)}
+            >
+              <Text style={styles.howToButtonText}>How to cook this →</Text>
+            </TouchableOpacity>
             {tonightsMeal.estimated_prep_minutes ? (
               <Text style={styles.mealMeta}>
                 ~{tonightsMeal.estimated_prep_minutes} min
@@ -118,6 +128,16 @@ export default function TodayScreen() {
           <Text style={styles.linkText}>See the Full Week →</Text>
         </TouchableOpacity>
       </View>
+
+      {guideTarget && (
+        <CookingGuideModal
+          mealName={guideTarget.meal_name}
+          description={guideTarget.description ?? ''}
+          visible={!!guideTarget}
+          onClose={() => setGuideTarget(null)}
+          onSaveToStash={() => {}}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -177,4 +197,7 @@ const styles = StyleSheet.create({
 
   linkRow: { paddingVertical: 4 },
   linkText: { fontSize: 15, color: '#3B7A57', fontWeight: '600' },
+
+  howToButton: { marginTop: 8, marginBottom: 4 },
+  howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
 });

@@ -8,7 +8,7 @@ import type {
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
   CookedMeal, CheckIn,
   InventoryItem, ItemCategory, ItemLocation,
-  UserPreferences,
+  UserPreferences, Recipe,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
@@ -613,7 +613,7 @@ export async function bootstrapUserData(userId: string, email: string) {
     console.warn('ensureUserProfile failed (non-fatal):', e)
   );
 
-  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences] =
+  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes] =
     await Promise.all([
       loadInventoryItems(userId).catch((e) => { console.error('loadInventoryItems failed:', e); return [] as InventoryItem[]; }),
       loadGardenPlants(userId).catch((e) => { console.error('loadGardenPlants failed:', e); return [] as GardenPlant[]; }),
@@ -621,7 +621,55 @@ export async function bootstrapUserData(userId: string, email: string) {
       loadShoppingList(userId).catch((e) => { console.error('loadShoppingList failed:', e); return null; }),
       loadTodayCheckin(userId).catch((e) => { console.error('loadTodayCheckin failed:', e); return null; }),
       loadUserPreferences(userId).catch((e) => { console.error('loadUserPreferences failed:', e); return null; }),
+      loadRecipes(userId).catch((e) => { console.error('loadRecipes failed:', e); return [] as Recipe[]; }),
     ]);
 
-  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences };
+  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes };
+}
+
+// ─── Recipes ──────────────────────────────────────────────────────────────────
+
+export async function loadRecipes(userId: string): Promise<Recipe[]> {
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name');
+  if (error) throw error;
+  return data as Recipe[];
+}
+
+export async function saveRecipe(
+  userId: string,
+  data: Omit<Recipe, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'times_cooked'>
+): Promise<Recipe> {
+  const { data: result, error } = await supabase
+    .from('recipes')
+    .insert({ ...data, user_id: userId })
+    .select()
+    .single();
+  if (error) throw error;
+  return result as Recipe;
+}
+
+export async function updateRecipe(
+  id: string,
+  updates: Partial<Omit<Recipe, 'id' | 'user_id' | 'created_at'>>
+): Promise<Recipe> {
+  const { data, error } = await supabase
+    .from('recipes')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Recipe;
+}
+
+export async function deleteRecipe(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('recipes')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }

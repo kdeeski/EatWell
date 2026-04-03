@@ -73,6 +73,14 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <TabIcon name="leaf-outline" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="recipes"
+        options={{
+          title: 'Recipes',
+          tabBarLabel: 'Recipes',
+          tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={22} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

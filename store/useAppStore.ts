@@ -9,6 +9,7 @@ import type {
   GardenSuggestion,
   CheckIn,
   UserPreferences,
+  Recipe,
 } from '../types';
 
 interface AppState {
@@ -52,6 +53,13 @@ interface AppState {
   // ── User preferences ──────────────────────────────────────────────────────
   userPreferences: UserPreferences | null;
   setUserPreferences: (prefs: UserPreferences | null) => void;
+
+  // ── Recipes ───────────────────────────────────────────────────────────────
+  recipes: Recipe[];
+  setRecipes: (recipes: Recipe[]) => void;
+  addRecipe: (recipe: Recipe) => void;
+  updateRecipeInStore: (id: string, updates: Partial<Recipe>) => void;
+  removeRecipe: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -120,4 +128,16 @@ export const useAppStore = create<AppState>((set) => ({
   // User preferences
   userPreferences: null,
   setUserPreferences: (prefs) => set({ userPreferences: prefs }),
+
+  // Recipes
+  recipes: [],
+  setRecipes: (recipes) => set({ recipes }),
+  addRecipe: (recipe) =>
+    set((state) => ({ recipes: [...state.recipes, recipe].sort((a, b) => a.name.localeCompare(b.name)) })),
+  updateRecipeInStore: (id, updates) =>
+    set((state) => ({
+      recipes: state.recipes.map((r) => r.id === id ? { ...r, ...updates } : r),
+    })),
+  removeRecipe: (id) =>
+    set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) })),
 }));

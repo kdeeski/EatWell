@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
 import type { PlannedMeal } from '../../types';
+import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -25,6 +26,7 @@ export default function PlanScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -183,6 +185,14 @@ export default function PlanScreen() {
                         {isSelected && meal.description ? (
                           <Text style={styles.description}>{meal.description}</Text>
                         ) : null}
+                        {isSelected && (
+                          <TouchableOpacity
+                            style={styles.howToButton}
+                            onPress={() => setGuideTarget(meal)}
+                          >
+                            <Text style={styles.howToButtonText}>How to cook this →</Text>
+                          </TouchableOpacity>
+                        )}
                       </>
                     ) : (
                       <Text style={styles.nightOff}>Night off</Text>
@@ -198,6 +208,17 @@ export default function PlanScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Cooking guide modal */}
+      {guideTarget && (
+        <CookingGuideModal
+          mealName={guideTarget.meal_name}
+          description={guideTarget.description ?? ''}
+          visible={!!guideTarget}
+          onClose={() => setGuideTarget(null)}
+          onSaveToStash={() => {}}
+        />
+      )}
 
       {/* Move toolbar — only visible when a meal is selected */}
       {selectedMeal && (
@@ -315,4 +336,7 @@ const styles = StyleSheet.create({
 
   replanButton:     { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
   replanButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
+
+  howToButton: { marginTop: 8 },
+  howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
 });

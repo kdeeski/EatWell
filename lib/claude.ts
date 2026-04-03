@@ -188,6 +188,42 @@ export async function generateGardenSuggestions(
   }
 }
 
+// ─── Cooking Guide ────────────────────────────────────────────────────────────
+
+export interface CookingGuide {
+  steps: string[];
+  components: Array<{ name: string; description: string; steps: string[] }>;
+  glossary: Array<{ term: string; definition: string }>;
+}
+
+export async function getCookingGuide(mealName: string, description: string): Promise<CookingGuide> {
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/cooking-guide';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify({ meal_name: mealName, description }),
+      signal: controller.signal,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+    return data as CookingGuide;
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new Error('Cooking guide timed out — please try again.');
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function categorisePantryItems(
   itemNames: string[]
 ): Promise<CategorisedItem[]> {

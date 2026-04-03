@@ -1,0 +1,87 @@
+import Anthropic from 'npm:@anthropic-ai/sdk';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+function jsonOrError(raw: string, label: string): { parsed: any; error: string | null } {
+  const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+  try {
+    return { parsed: JSON.parse(cleaned), error: null };
+  } catch {
+    return { parsed: null, error: `${label} — invalid JSON. Raw start: ${cleaned.slice(0, 200)}` };
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'ANTHROPIC_API_KEY secret not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const client = new Anthropic({ apiKey });
+    const rawBody = await req.text();
+    if (!rawBody) {
+      return new Response(JSON.stringify({ error: 'Request body is empty' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const input = JSON.parse(rawBody);
+    const { meal_name, description } = input;
+
+    if (!meal_name) {
+      return new Response(JSON.stringify({ error: 'meal_name is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: `You are a culinary guide for EatWell. Given a meal name and description:
+1. Return 6-8 clear cooking steps for the dish
+2. Identify any sub-recipes or components mentioned (dukkah, harissa, beurre blanc, curry paste, etc) and return a name, 1-sentence description, and 3-5 steps to make each
+3. Identify any technique terms (braise, compote, render, fold, julienne, etc) and define them in plain English (1-2 sentences, no jargon in the definition)
+If nothing special return empty arrays for components and glossary.
+Respond ONLY with valid JSON matching this exact schema:
+{
+  "steps": ["string"],
+  "components": [{"name": "string", "description": "string", "steps": ["string"]}],
+  "glossary": [{"term": "string", "definition": "string"}]
+}`,
+      messages: [
+        {
+          role: 'user',
+          content: `Meal name: ${meal_name}\nDescription: ${description ?? ''}`,
+        },
+      ],
+    });
+
+    const raw = (response.content[0] as { type: string; text: string }).text;
+    const { parsed, error } = jsonOrError(raw, 'Cooking guide');
+    if (error) {
+      return new Response(JSON.stringify({ error }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify(parsed), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ error: err.message ?? 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

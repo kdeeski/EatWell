@@ -220,6 +220,30 @@ export interface LastNightResponse {
   notes?: string | null;
 }
 
+// ─── Recipes ─────────────────────────────────────────────────────────────────
+
+export type RecipeCategory =
+  | 'mains' | 'sauces_dressings' | 'sides'
+  | 'desserts' | 'baking' | 'marinades_rubs'
+  | 'glossary' | 'component';
+
+export interface Recipe {
+  id: string;
+  user_id: string;
+  name: string;
+  category: RecipeCategory;
+  description: string | null;
+  ingredients: string | null;
+  method: string | null;
+  source_url: string | null;
+  rating: number | null;
+  would_cook_again: boolean | null;
+  times_cooked: number;
+  cooked_meal_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── Canterbury Garden Calendar ───────────────────────────────────────────────
 
 export interface PlantWindow {
