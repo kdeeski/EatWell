@@ -3,6 +3,7 @@ import {
   Modal, View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadGardenHarvestsForPlant } from '../../lib/data';
 import type { GardenPlant, GardenHarvest, PlantStatus } from '../../types';
 
@@ -38,6 +39,7 @@ const STORAGE_LABELS: Record<string, string> = {
 };
 
 export default function PlantDetailModal({ plant, onClose, onStatusChange, onHarvest, onEdit, onDelete }: Props) {
+  const insets = useSafeAreaInsets();
   const [harvests, setHarvests] = useState<GardenHarvest[]>([]);
   const [loadingHarvests, setLoadingHarvests] = useState(false);
 
@@ -81,7 +83,7 @@ export default function PlantDetailModal({ plant, onClose, onStatusChange, onHar
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+        <ScrollView style={styles.body} contentContainerStyle={[styles.bodyContent, { paddingBottom: insets.bottom + 40 }]}>
           {/* Status badge */}
           <View style={styles.statusRow}>
             <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[plant.status] + '20' }]}>
