@@ -216,7 +216,6 @@ export default function PlanScreen() {
           description={guideTarget.description ?? ''}
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}
-          onSaveToStash={() => {}}
         />
       )}
 

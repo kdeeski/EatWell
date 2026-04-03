@@ -36,13 +36,17 @@ Deno.serve(async (req) => {
       });
     }
     const input = JSON.parse(rawBody);
-    const { meal_name, description } = input;
+    const { meal_name, description, existing_names } = input;
 
     if (!meal_name) {
       return new Response(JSON.stringify({ error: 'meal_name is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const existingBlock = existing_names?.length
+      ? `\nThe user already has these in their recipe stash: ${existing_names.join(', ')}. If you would identify one of these as a component, still include it but return steps: [] — the app will display the saved version from the stash.`
+      : '';
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -51,7 +55,7 @@ Deno.serve(async (req) => {
 1. Return 6-8 clear cooking steps for the dish
 2. Identify any sub-recipes or components mentioned (dukkah, harissa, beurre blanc, curry paste, etc) and return a name, 1-sentence description, and 3-5 steps to make each
 3. Identify any technique terms (braise, compote, render, fold, julienne, etc) and define them in plain English (1-2 sentences, no jargon in the definition)
-If nothing special return empty arrays for components and glossary.
+If nothing special return empty arrays for components and glossary.${existingBlock}
 Respond ONLY with valid JSON matching this exact schema:
 {
   "steps": ["string"],

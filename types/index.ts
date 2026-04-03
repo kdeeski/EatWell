@@ -230,6 +230,12 @@ export type RecipeCategory =
   | 'desserts' | 'baking' | 'marinades_rubs'
   | 'glossary' | 'component';
 
+export interface RecipeGuideJson {
+  steps: string[];
+  components: Array<{ name: string; description: string; steps: string[] }>;
+  glossary: Array<{ term: string; definition: string }>;
+}
+
 export interface Recipe {
   id: string;
   user_id: string;
@@ -243,6 +249,7 @@ export interface Recipe {
   would_cook_again: boolean | null;
   times_cooked: number;
   cooked_meal_id: string | null;
+  guide_json: RecipeGuideJson | null;
   created_at: string;
   updated_at: string;
 }

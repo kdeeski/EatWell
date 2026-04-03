@@ -135,7 +135,6 @@ export default function TodayScreen() {
           description={guideTarget.description ?? ''}
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}
-          onSaveToStash={() => {}}
         />
       )}
     </ScrollView>

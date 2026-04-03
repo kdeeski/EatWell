@@ -198,7 +198,7 @@ export interface CookingGuide {
 
 const cookingGuideCache = new Map<string, CookingGuide>();
 
-export async function getCookingGuide(mealName: string, description: string): Promise<CookingGuide> {
+export async function getCookingGuide(mealName: string, description: string, existingNames?: string[]): Promise<CookingGuide> {
   const cacheKey = `${mealName}::${description}`;
   const cached = cookingGuideCache.get(cacheKey);
   if (cached) return cached;
@@ -216,7 +216,7 @@ export async function getCookingGuide(mealName: string, description: string): Pr
         'Authorization': `Bearer ${anonKey}`,
         'apikey': anonKey,
       },
-      body: JSON.stringify({ meal_name: mealName, description }),
+      body: JSON.stringify({ meal_name: mealName, description, existing_names: existingNames }),
       signal: controller.signal,
     });
     const data = await response.json();
