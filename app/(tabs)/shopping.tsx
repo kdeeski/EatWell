@@ -171,7 +171,7 @@ export default function ShoppingScreen() {
           user_id: userId,
           name: item.name.toLowerCase().trim(),
           category: item.ingredient_category === 'herbs_spices' ? 'herbs_spices' : 'pantry_dry_goods',
-          location: item.ingredient_category === 'herbs_spices' ? 'fridge' : 'pantry',
+          location: item.ingredient_category === 'herbs_spices' && item.name.toLowerCase().startsWith('fresh ') ? 'fridge' : 'pantry',
           quantity: item.quantity,
           unit: item.unit,
           min_quantity: 0,
@@ -315,7 +315,7 @@ export default function ShoppingScreen() {
                         </Text>
                         {isPantryConfirmed && (
                           <Text style={styles.pantryNote}>
-                            {cat === 'herbs_spices' ? 'In Your Fridge' : 'In Your Pantry'}
+                            {item.name.toLowerCase().startsWith('fresh ') ? 'In Your Fridge' : 'In Your Pantry'}
                           </Text>
                         )}
                         {cat === 'herbs_spices' && item.herb_backup && !isPantryConfirmed && (
