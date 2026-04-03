@@ -7,7 +7,7 @@ import type {
   GardenPlant, GardenHarvest, GardenSuggestion,
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
   CookedMeal, CheckIn,
-  InventoryItem, ItemCategory, ItemLocation,
+  InventoryItem, ItemCategory, ItemLocation, Store,
   UserPreferences, Recipe,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
@@ -364,10 +364,11 @@ export async function loadShoppingList(
   return { list: list as ShoppingList, items: items as ShoppingListItem[] };
 }
 
-function normalizeStore(raw: string): 'grocer' | 'butcher' | 'supermarket' {
+function normalizeStore(raw: string): Store {
   const s = (raw ?? '').toLowerCase();
   if (s === 'butcher' || s.includes('butch') || s.includes('meat')) return 'butcher';
   if (s === 'grocer' || s.includes('grocer') || s.includes('market') || s.includes('farm') || s.includes('fish')) return 'grocer';
+  if (s === 'liquor_store' || s.includes('liquor') || s.includes('bottle') || s.includes('wine') || s.includes('beer')) return 'liquor_store';
   return 'supermarket';
 }
 
@@ -381,7 +382,7 @@ function normalizeCategory(raw: string): ItemCategory {
   const valid = [
     'meat_fish','dairy_eggs','produce','bread_bakery',
     'pantry_dry_goods','herbs_spices','cans_preserves',
-    'oils_vinegars','condiments_sauces',
+    'oils_vinegars','condiments_sauces','beverages','alcohol',
   ];
   // Legacy mapping
   if (s === 'fresh_herbs') return 'herbs_spices';
@@ -472,6 +473,20 @@ export async function toggleShoppingItemChecked(
     .update({ checked })
     .eq('id', id);
   if (error) throw error;
+}
+
+export async function updateShoppingItem(
+  id: string,
+  updates: Partial<Pick<ShoppingListItem, 'name' | 'quantity' | 'unit' | 'store' | 'ingredient_category' | 'buy_timing'>>
+): Promise<ShoppingListItem> {
+  const { data, error } = await supabase
+    .from('shopping_list_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ShoppingListItem;
 }
 
 export async function addAdHocShoppingItem(

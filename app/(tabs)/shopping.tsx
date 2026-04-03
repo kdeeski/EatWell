@@ -2,7 +2,7 @@
 // Garden items are pre-confirmed from the garden tracker (source of truth).
 // Dried spices/herbs not from the garden use the pantry "Have it" flow.
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Animated, PanResponder, ActivityIndicator, Modal, Alert,
@@ -10,15 +10,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems } from '../../lib/data';
+import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem } from '../../lib/data';
 import { categorisePantryItems } from '../../lib/claude';
-import type { ShoppingListItem, ItemCategory } from '../../types';
+import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
 const CATEGORY_ORDER: IngredientCategory[] = [
   'meat_fish', 'produce', 'herbs_spices', 'bread_bakery',
   'pantry_dry_goods', 'cans_preserves', 'oils_vinegars', 'condiments_sauces',
+  'beverages', 'alcohol',
 ];
 
 const CATEGORY_LABELS: Record<IngredientCategory, string> = {
@@ -31,6 +32,8 @@ const CATEGORY_LABELS: Record<IngredientCategory, string> = {
   cans_preserves:     'Cans & Preserves',
   oils_vinegars:      'Oils & Vinegars',
   condiments_sauces:  'Condiments & Sauces',
+  beverages:          'Beverages',
+  alcohol:            'Alcohol',
 };
 
 function itemQuantityLabel(item: ShoppingListItem): string {
@@ -100,6 +103,7 @@ export default function ShoppingScreen() {
     inventoryItems, setInventoryItems,
     gardenPlants, setGardenPlants,
     upsertInventoryItem: upsertStore,
+    updateShoppingItemInStore,
   } = useAppStore();
   const insets = useSafeAreaInsets();
 
@@ -145,6 +149,7 @@ export default function ShoppingScreen() {
   );
   const [refreshing, setRefreshing] = useState(false);
   const [bulkVisible, setBulkVisible] = useState(false);
+  const [editTarget, setEditTarget] = useState<ShoppingListItem | null>(null);
 
   const handleRefresh = async () => {
     if (!userId) return;
@@ -240,11 +245,21 @@ export default function ShoppingScreen() {
       />
 
 
+      <ShoppingEditModal
+        visible={editTarget !== null}
+        item={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSaved={(id, updates) => {
+          updateShoppingItemInStore(id, updates);
+          setEditTarget(null);
+        }}
+      />
+
       {CATEGORY_ORDER.map((cat) => {
         const items = itemsByCategory[cat];
         if (!items) return null;
 
-        const hasPantrySwipe = cat === 'pantry_dry_goods' || cat === 'cans_preserves' || cat === 'oils_vinegars' || cat === 'condiments_sauces';
+        const hasPantrySwipe = ['pantry_dry_goods','cans_preserves','oils_vinegars','condiments_sauces','beverages'].includes(cat);
 
         return (
           <View key={cat} style={styles.section}>
@@ -269,7 +284,7 @@ export default function ShoppingScreen() {
               // Garden-confirmed herb — static badge, no swipe (garden is source of truth)
               if (isGardenConfirmed) {
                 return (
-                  <View key={item.id} style={[styles.itemRow, styles.itemRowConfirmed]}>
+                  <TouchableOpacity key={item.id} onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowConfirmed]}>
                     <View style={[styles.leafBox, styles.leafBoxConfirmed]}>
                       <Text style={styles.leafIcon}>🌿</Text>
                     </View>
@@ -277,14 +292,14 @@ export default function ShoppingScreen() {
                       <Text style={[styles.itemName, styles.itemNameMuted]}>{item.name}</Text>
                       <Text style={styles.herbGardenNote}>From Your Garden</Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               }
 
               // Fridge item — static badge, no interaction
               if (item.from_fridge) {
                 return (
-                  <View key={item.id} style={[styles.itemRow, styles.itemRowFridge]}>
+                  <TouchableOpacity key={item.id} onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowFridge]}>
                     <View style={styles.fridgeBox}>
                       <Text style={styles.fridgeTick}>✓</Text>
                     </View>
@@ -292,7 +307,7 @@ export default function ShoppingScreen() {
                       {itemQuantityLabel(item)}
                     </Text>
                     <Text style={styles.fridgeBadge}>In Fridge</Text>
-                  </View>
+                  </TouchableOpacity>
                 );
               }
 
@@ -307,7 +322,7 @@ export default function ShoppingScreen() {
                     onSwipeRight={() => handlePantryHaveIt(item)}
                     onSwipeLeft={() => handlePantryNeedToBuy(item.id)}
                   >
-                    <View style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}>
+                    <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}>
                       <View style={[styles.pantryBox, isPantryConfirmed && styles.pantryBoxConfirmed]}>
                         {isPantryConfirmed && <Text style={styles.confirmTick}>✓</Text>}
                       </View>
@@ -327,7 +342,7 @@ export default function ShoppingScreen() {
                       {item.buy_timing === 'day_of' && !isPantryConfirmed && (
                         <Text style={styles.dayOfBadge}>Buy Fresh</Text>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   </SwipeableRow>
                 );
               }
@@ -338,6 +353,8 @@ export default function ShoppingScreen() {
                   key={item.id}
                   style={styles.itemRow}
                   onPress={() => toggleShoppingItem(item.id)}
+                  onLongPress={() => setEditTarget(item)}
+                  delayLongPress={400}
                 >
                   <View style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
                     {item.checked && <Text style={styles.checkTick}>✓</Text>}
@@ -365,7 +382,155 @@ const CATEGORY_LABELS_SHORT: Record<ItemCategory, string> = {
   bread_bakery: 'Bread & Bakery', pantry_dry_goods: 'Pantry & Dry Goods',
   herbs_spices: 'Herbs & Spices', cans_preserves: 'Cans & Preserves',
   oils_vinegars: 'Oils & Vinegars', condiments_sauces: 'Condiments & Sauces',
+  beverages: 'Beverages', alcohol: 'Alcohol',
 };
+
+const STORE_LABELS: Record<Store, string> = {
+  grocer:       'Grocer',
+  butcher:      'Butcher',
+  supermarket:  'Supermarket',
+  liquor_store: 'Liquor Store',
+};
+
+// ── Shopping edit modal ───────────────────────────────────────────────────────
+
+function ShoppingEditModal({ visible, item, onClose, onSaved }: {
+  visible: boolean;
+  item: ShoppingListItem | null;
+  onClose: () => void;
+  onSaved: (id: string, updates: Partial<ShoppingListItem>) => void;
+}) {
+  const [name, setName] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('');
+  const [store, setStore] = useState<Store>('supermarket');
+  const [category, setCategory] = useState<ItemCategory>('produce');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (item) {
+      setName(item.name);
+      setQuantity(String(item.quantity));
+      setUnit(item.unit);
+      setStore(item.store);
+      setCategory(item.ingredient_category);
+    }
+  }, [item?.id]);
+
+  const handleSave = async () => {
+    if (!item || !name.trim()) return;
+    setSaving(true);
+    try {
+      const updates: Partial<ShoppingListItem> = {
+        name: name.trim(),
+        quantity: parseFloat(quantity) || item.quantity,
+        unit: unit.trim() || item.unit,
+        store,
+        ingredient_category: category,
+      };
+      await updateShoppingItem(item.id, updates);
+      onSaved(item.id, updates);
+    } catch (e) {
+      Alert.alert('Save Failed', 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={modalStyles.container}>
+          <View style={modalStyles.header}>
+            <TouchableOpacity onPress={onClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
+            <Text style={modalStyles.title}>Edit Item</Text>
+            <TouchableOpacity onPress={handleSave} disabled={saving}>
+              <Text style={[modalStyles.cancel, { color: '#3B7A57', fontWeight: '700' }]}>
+                {saving ? 'Saving…' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
+            <View>
+              <Text style={editStyles.label}>Name</Text>
+              <TextInput
+                style={editStyles.input}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="none"
+                returnKeyType="done"
+              />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={editStyles.label}>Quantity</Text>
+                <TextInput
+                  style={editStyles.input}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={editStyles.label}>Unit</Text>
+                <TextInput
+                  style={editStyles.input}
+                  value={unit}
+                  onChangeText={setUnit}
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                />
+              </View>
+            </View>
+            <View>
+              <Text style={editStyles.label}>Store</Text>
+              <View style={editStyles.pillRow}>
+                {(Object.entries(STORE_LABELS) as [Store, string][]).map(([key, label]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[editStyles.pill, store === key && editStyles.pillActive]}
+                    onPress={() => setStore(key)}
+                  >
+                    <Text style={[editStyles.pillText, store === key && editStyles.pillTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View>
+              <Text style={editStyles.label}>Category</Text>
+              <View style={editStyles.pillRow}>
+                {(Object.entries(CATEGORY_LABELS_SHORT) as [ItemCategory, string][])
+                  .filter(([key]) => key !== 'dairy_eggs')
+                  .map(([key, label]) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={[editStyles.pill, category === key && editStyles.pillActive]}
+                      onPress={() => setCategory(key)}
+                    >
+                      <Text style={[editStyles.pillText, category === key && editStyles.pillTextActive]}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const editStyles = StyleSheet.create({
+  label: { fontSize: 13, fontWeight: '600', color: '#6B7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#111827' },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  pillActive: { backgroundColor: '#F0FDF4', borderColor: '#3B7A57' },
+  pillText: { fontSize: 13, color: '#374151' },
+  pillTextActive: { color: '#3B7A57', fontWeight: '600' },
+});
+
+// ── Shopping bulk add modal ───────────────────────────────────────────────────
 
 function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
   visible: boolean;

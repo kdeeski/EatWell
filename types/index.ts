@@ -22,7 +22,9 @@ export type ItemCategory =
   | 'herbs_spices'
   | 'cans_preserves'
   | 'oils_vinegars'
-  | 'condiments_sauces';
+  | 'condiments_sauces'
+  | 'beverages'
+  | 'alcohol';
 
 export type ItemLocation = 'fridge' | 'freezer' | 'pantry' | 'garden';
 
@@ -110,7 +112,7 @@ export interface GardenSuggestion {
 
 // ─── Meal Planning ────────────────────────────────────────────────────────────
 
-export type Store = 'grocer' | 'butcher' | 'supermarket';
+export type Store = 'grocer' | 'butcher' | 'supermarket' | 'liquor_store';
 export type BuyTiming = 'weekend' | 'day_of';
 
 // Unified category set — matches ItemCategory and inventory_items.category.
