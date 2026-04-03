@@ -69,6 +69,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
         rating: existingRecipe?.rating ?? null,
         would_cook_again: existingRecipe?.would_cook_again ?? null,
         cooked_meal_id: existingRecipe?.cooked_meal_id ?? null,
+        guide_json: existingRecipe?.guide_json ?? null,
       };
 
       if (isEdit && existingRecipe) {
