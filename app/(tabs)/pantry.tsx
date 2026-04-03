@@ -70,6 +70,7 @@ type LocationFilter = 'all' | ItemLocation;
 export default function PantryScreen() {
   const { userId, inventoryItems, upsertInventoryItem: upsertStore, removeInventoryItem: removeFromStore,
           shoppingList, addShoppingItem } = useAppStore();
+  const insets = useSafeAreaInsets();
 
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('all');
   const [addVisible, setAddVisible] = useState(false);
@@ -111,7 +112,7 @@ export default function PantryScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.title}>Pantry</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.addButton} onPress={() => { setEditItem(null); setAddVisible(true); }}>
@@ -669,7 +670,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12,
+    paddingHorizontal: 20, paddingBottom: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },
