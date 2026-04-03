@@ -143,7 +143,7 @@ RULES:
 
 12. ALWAYS include in ingredients (fresh, weekly purchases): fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery items.
 
-13. ingredient_category values — use exactly one of: meat_fish, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces, beverages, alcohol. Use herbs_spices for ALL herbs (fresh or dried) and spices. Use beverages for juice, soft drinks, sparkling water, mixers. Use alcohol for wine, beer, spirits — always set store to liquor_store for alcohol ingredients. Do NOT use dairy_eggs — eggs/dairy are handled by the inventory system.
+13. ingredient_category values — use exactly one of: meat_fish, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces, beverages, alcohol, household. Use herbs_spices for ALL herbs (fresh or dried) and spices. Use beverages for juice, soft drinks, sparkling water, mixers. Use alcohol for wine, beer, spirits — always set store to liquor_store for alcohol ingredients. Use household for cleaning products, laundry items, toiletries, batteries, etc. Do NOT use dairy_eggs — eggs/dairy are handled by the inventory system.
 
 14. For fresh_herbs: always set herb_backup to a short fallback. Note in herb_backup if the herb is hard to find in Christchurch (e.g. tarragon, chervil).
 

@@ -382,7 +382,7 @@ function normalizeCategory(raw: string): ItemCategory {
   const valid = [
     'meat_fish','dairy_eggs','produce','bread_bakery',
     'pantry_dry_goods','herbs_spices','cans_preserves',
-    'oils_vinegars','condiments_sauces','beverages','alcohol',
+    'oils_vinegars','condiments_sauces','beverages','alcohol','household',
   ];
   // Legacy mapping
   if (s === 'fresh_herbs') return 'herbs_spices';

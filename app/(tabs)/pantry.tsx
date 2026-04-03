@@ -28,6 +28,7 @@ const CATEGORIES: { key: ItemCategory; label: string; emoji: string }[] = [
   { key: 'condiments_sauces',label: 'Condiments & Sauces', emoji: '🧴' },
   { key: 'beverages',        label: 'Beverages',          emoji: '🥤' },
   { key: 'alcohol',          label: 'Alcohol',            emoji: '🍷' },
+  { key: 'household',        label: 'Household',          emoji: '🧹' },
 ];
 
 const LOCATIONS: { key: ItemLocation; label: string; emoji: string }[] = [
@@ -650,7 +651,7 @@ function PendingItemRow({ item, onChange, onRemove }: {
 const CANONICAL_CATEGORIES = new Set<string>([
   'meat_fish', 'dairy_eggs', 'produce', 'bread_bakery',
   'pantry_dry_goods', 'herbs_spices', 'cans_preserves',
-  'oils_vinegars', 'condiments_sauces', 'beverages', 'alcohol',
+  'oils_vinegars', 'condiments_sauces', 'beverages', 'alcohol', 'household',
 ]);
 
 function toItemCategory(raw: string): ItemCategory {

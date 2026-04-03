@@ -19,7 +19,7 @@ type IngredientCategory = ShoppingListItem['ingredient_category'];
 const CATEGORY_ORDER: IngredientCategory[] = [
   'meat_fish', 'produce', 'herbs_spices', 'bread_bakery',
   'pantry_dry_goods', 'cans_preserves', 'oils_vinegars', 'condiments_sauces',
-  'beverages', 'alcohol',
+  'beverages', 'alcohol', 'household',
 ];
 
 const CATEGORY_LABELS: Record<IngredientCategory, string> = {
@@ -34,6 +34,7 @@ const CATEGORY_LABELS: Record<IngredientCategory, string> = {
   condiments_sauces:  'Condiments & Sauces',
   beverages:          'Beverages',
   alcohol:            'Alcohol',
+  household:          'Household',
 };
 
 function itemQuantityLabel(item: ShoppingListItem): string {
@@ -382,7 +383,7 @@ const CATEGORY_LABELS_SHORT: Record<ItemCategory, string> = {
   bread_bakery: 'Bread & Bakery', pantry_dry_goods: 'Pantry & Dry Goods',
   herbs_spices: 'Herbs & Spices', cans_preserves: 'Cans & Preserves',
   oils_vinegars: 'Oils & Vinegars', condiments_sauces: 'Condiments & Sauces',
-  beverages: 'Beverages', alcohol: 'Alcohol',
+  beverages: 'Beverages', alcohol: 'Alcohol', household: 'Household',
 };
 
 const STORE_LABELS: Record<Store, string> = {

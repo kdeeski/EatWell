@@ -24,7 +24,8 @@ export type ItemCategory =
   | 'oils_vinegars'
   | 'condiments_sauces'
   | 'beverages'
-  | 'alcohol';
+  | 'alcohol'
+  | 'household';
 
 export type ItemLocation = 'fridge' | 'freezer' | 'pantry' | 'garden';
 
