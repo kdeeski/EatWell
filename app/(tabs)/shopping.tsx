@@ -122,10 +122,18 @@ export default function ShoppingScreen() {
         .filter((p) => p.is_cut_and_come_again && (p.status === 'growing' || p.status === 'planted'))
         .map((p) => p.plant_name.toLowerCase().trim())
     );
+    // Match "fresh mint" → "mint", "fresh dill" → "dill" etc.
+    const matchesGarden = (itemName: string, gardenNames: Set<string>) => {
+      if (gardenNames.has(itemName)) return true;
+      for (const g of gardenNames) {
+        if (itemName.includes(g) || g.includes(itemName)) return true;
+      }
+      return false;
+    };
     const confirmed = new Set<string>();
     items.forEach((item) => {
       const name = item.name.toLowerCase().trim();
-      if (item.from_garden || readyNames.has(name) || cutAndComeNames.has(name)) {
+      if (item.from_garden || matchesGarden(name, readyNames) || matchesGarden(name, cutAndComeNames)) {
         confirmed.add(item.id);
       }
     });
