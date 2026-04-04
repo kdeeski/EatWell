@@ -14,7 +14,6 @@ import type { PlannedMeal, PlannedIngredient } from '../../types';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
-    .filter((i) => !i.from_fridge && !i.from_garden && i.ingredient_category !== 'dairy_eggs')
     .map((i) => `${i.quantity} ${i.unit} ${toTitleCase(i.name)}`.trim())
     .join('\n');
 }
