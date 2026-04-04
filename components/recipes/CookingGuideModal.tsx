@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator,
+  TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCookingGuide } from '../../lib/claude';
@@ -28,9 +28,11 @@ function ComponentCard({
 }: {
   component: CookingGuide['components'][0];
   stashVersion: { description: string; method: string | null } | null;
-  onSave: () => void;
+  onSave: () => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const fromStash = component.steps.length === 0 && stashVersion !== null;
   const steps = fromStash
     ? stashVersion!.method?.split('\n').filter(Boolean) ?? []
@@ -57,8 +59,18 @@ function ComponentCard({
             </View>
           ))}
           {!fromStash && (
-            <TouchableOpacity style={styles.saveItemBtn} onPress={onSave}>
-              <Text style={styles.saveItemBtnText}>Save to Stash →</Text>
+            <TouchableOpacity
+              style={styles.saveItemBtn}
+              disabled={saving || saved}
+              onPress={async () => {
+                setSaving(true);
+                try { await onSave(); setSaved(true); } catch { /* handled in parent */ }
+                setSaving(false);
+              }}
+            >
+              <Text style={styles.saveItemBtnText}>
+                {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save to Stash →'}
+              </Text>
             </TouchableOpacity>
           )}
         </>
@@ -88,24 +100,24 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       .finally(() => setLoading(false));
   }, [visible, mealName, description]);
 
-  const silentlySaveExtras = async (guide: CookingGuide, skipComponent?: string) => {
+  const silentlySaveExtras = async (guide: CookingGuide) => {
     if (!userId) return;
     const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
-    // Save components (skip ones already in stash or the one being saved individually)
+    const existing = new Set(useAppStore.getState().recipes.map((r) => `${r.category}::${r.name.toLowerCase()}`));
     for (const comp of guide.components) {
       if (comp.steps.length === 0) continue; // already in stash
-      if (skipComponent && comp.name === skipComponent) continue;
+      if (existing.has(`component::${comp.name.toLowerCase()}`)) continue;
       try {
         const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: comp.steps.join('\n') });
         addRecipe(saved);
-      } catch { /* already saved is fine */ }
+      } catch { /* ok */ }
     }
-    // Save glossary terms
     for (const term of guide.glossary) {
+      if (existing.has(`glossary::${term.term.toLowerCase()}`)) continue;
       try {
         const saved = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
         addRecipe(saved);
-      } catch { /* already saved is fine */ }
+      } catch { /* ok */ }
     }
   };
 
@@ -117,21 +129,21 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
 
   const handleComponentSave = async (comp: CookingGuide['components'][0]) => {
     if (!userId || !guide) return;
-    try {
-      const saved = await saveRecipe(userId, {
-        name: comp.name, category: 'component', description: comp.description,
-        method: comp.steps.join('\n'), rating: null, would_cook_again: null,
-        cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null,
-      });
+    const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
+    const existing = new Set(recipes.map((r) => `${r.category}::${r.name.toLowerCase()}`));
+
+    if (!existing.has(`component::${comp.name.toLowerCase()}`)) {
+      const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: comp.steps.join('\n') });
       addRecipe(saved);
-      // Also save glossary terms
-      for (const term of guide.glossary) {
+    }
+    for (const term of guide.glossary) {
+      if (!existing.has(`glossary::${term.term.toLowerCase()}`)) {
         try {
-          const g = await saveRecipe(userId, { name: term.term, category: 'glossary', description: term.definition, method: null, rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null });
+          const g = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
           addRecipe(g);
-        } catch { /* ok */ }
+        } catch { /* ok if glossary term conflicts */ }
       }
-    } catch { /* ok */ }
+    }
   };
 
   const recipeNames = new Set(recipes.map((r) => r.name.toLowerCase()));
