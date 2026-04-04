@@ -15,6 +15,7 @@
     "@supabase/supabase-js": "^2.100.1",
     "expo": "~55.0.8",
     "expo-constants": "^55.0.9",
+    "expo-dev-client": "^55.0.22",
     "expo-image-picker": "^55.0.14",
     "expo-keep-awake": "^55.0.6",
     "expo-linking": "^55.0.8",
