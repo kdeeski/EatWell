@@ -3,6 +3,7 @@ import {
   Modal, View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 
 interface Props {
   recipeName: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function CookModeModal({ recipeName, method, onClose }: Props) {
+  useKeepAwake();
   const insets = useSafeAreaInsets();
   const steps = method.split('\n').map((s) => s.trim()).filter(Boolean);
   const [currentStep, setCurrentStep] = useState(0);
