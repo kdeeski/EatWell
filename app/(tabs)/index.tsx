@@ -16,7 +16,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
 
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
@@ -135,6 +135,7 @@ export default function TodayScreen() {
           description={guideTarget.description ?? ''}
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}
+          prefillGuide={recipes.find((r) => r.name.toLowerCase() === guideTarget.meal_name.toLowerCase() && r.guide_json)?.guide_json ?? undefined}
         />
       )}
     </ScrollView>

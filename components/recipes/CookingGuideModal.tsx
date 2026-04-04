@@ -17,6 +17,7 @@ interface Props {
   description: string;
   visible: boolean;
   onClose: () => void;
+  prefillGuide?: CookingGuide; // skip API call when guide already saved in stash
 }
 
 type SavePrefill = { name: string; category: RecipeCategory; description?: string; method?: string; guideJson?: RecipeGuideJson };
@@ -59,7 +60,7 @@ function ComponentCard({
       <TouchableOpacity style={styles.componentHeaderRow} onPress={() => setExpanded((v) => !v)} activeOpacity={0.8}>
         <View style={{ flex: 1 }}>
           <Text style={styles.componentName}>{component.name}</Text>
-          {fromStash && <Text style={styles.stashBadge}>From Your Stash</Text>}
+          {fromStash && <Text style={styles.stashBadge}>From Your Recipe Stash</Text>}
         </View>
         <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
       </TouchableOpacity>
@@ -94,7 +95,7 @@ function ComponentCard({
   );
 }
 
-export default function CookingGuideModal({ mealName, description, visible, onClose }: Props) {
+export default function CookingGuideModal({ mealName, description, visible, onClose, prefillGuide }: Props) {
   const insets = useSafeAreaInsets();
   const { userId, recipes, addRecipe } = useAppStore();
 
@@ -106,6 +107,12 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
 
   useEffect(() => {
     if (!visible) return;
+    if (prefillGuide) {
+      setGuide(prefillGuide);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     setGuide(null);
@@ -113,7 +120,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       .then((g) => setGuide(g))
       .catch((e) => setError(e?.message ?? 'Failed to load cooking guide'))
       .finally(() => setLoading(false));
-  }, [visible, mealName, description]);
+  }, [visible, mealName, description, prefillGuide]);
 
   const silentlySaveExtras = async (guide: CookingGuide) => {
     if (!userId) return;
@@ -180,7 +187,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <Text style={styles.headerBtn}>Close</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle} numberOfLines={1}>{mealName}</Text>
-            {guide ? (
+            {guide && !prefillGuide ? (
               <TouchableOpacity
                 onPress={() => setSavePrefill({
                   name: mealName, category: 'mains', description,

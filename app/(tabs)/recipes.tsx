@@ -82,37 +82,39 @@ export default function RecipesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.heading}>Recipes</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => { setEditRecipe(null); setShowSave(true); }}
-        >
-          <Text style={styles.addBtnText}>+ Add</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Filter pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.pillScroll}
-        contentContainerStyle={styles.pillContent}
-      >
-        {FILTER_LABELS.map((f) => (
+    <View style={styles.container}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: '#F9FAFB' }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.heading}>Recipes</Text>
           <TouchableOpacity
-            key={f.key}
-            style={[styles.pill, activeFilter === f.key && styles.pillActive]}
-            onPress={() => setActiveFilter(f.key)}
+            style={styles.addBtn}
+            onPress={() => { setEditRecipe(null); setShowSave(true); }}
           >
-            <Text style={[styles.pillText, activeFilter === f.key && styles.pillTextActive]}>
-              {f.label}
-            </Text>
+            <Text style={styles.addBtnText}>+ Add</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
+
+        {/* Filter pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.pillScroll}
+          contentContainerStyle={styles.pillContent}
+        >
+          {FILTER_LABELS.map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.pill, activeFilter === f.key && styles.pillActive]}
+              onPress={() => setActiveFilter(f.key)}
+            >
+              <Text style={[styles.pillText, activeFilter === f.key && styles.pillTextActive]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
 
       {/* Recipe list */}
       {filtered.length === 0 ? (
@@ -191,7 +193,7 @@ export default function RecipesScreen() {
           onClose={() => setShowCookMode(false)}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
