@@ -8,7 +8,7 @@ import { getCookingGuide } from '../../lib/claude';
 import type { CookingGuide } from '../../lib/claude';
 import { saveRecipe, updateRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
-import type { RecipeGuideJson } from '../../types';
+import type { RecipeGuideJson, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
 import CookModeModal from './CookModeModal';
 
@@ -19,7 +19,7 @@ interface Props {
   onClose: () => void;
 }
 
-type SavePrefill = { name: string; category: 'mains' | 'component'; description?: string; method?: string; guideJson?: RecipeGuideJson };
+type SavePrefill = { name: string; category: RecipeCategory; description?: string; method?: string; guideJson?: RecipeGuideJson };
 
 function ComponentCard({
   component,
@@ -103,12 +103,13 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
   const silentlySaveExtras = async (guide: CookingGuide) => {
     if (!userId) return;
     const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
-    const existing = new Set(useAppStore.getState().recipes.map((r) => `${r.category}::${r.name.toLowerCase()}`));
+    const existing = new Set(useAppStore.getState().recipes.map((r) => r.name.toLowerCase()));
     for (const comp of guide.components) {
       if (comp.steps.length === 0) continue; // already in stash
-      if (existing.has(`component::${comp.name.toLowerCase()}`)) continue;
+      if (existing.has(comp.name.toLowerCase())) continue;
+      const compCategory = (comp.category as RecipeCategory) ?? 'sauces_dressings';
       try {
-        const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: numberedMethod(comp.steps) });
+        const saved = await saveRecipe(userId, { ...base, name: comp.name, category: compCategory, description: comp.description, method: numberedMethod(comp.steps) });
         addRecipe(saved);
       } catch { /* ok */ }
     }
@@ -130,10 +131,11 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
   const handleComponentSave = async (comp: CookingGuide['components'][0]) => {
     if (!userId || !guide) return;
     const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
-    const existing = new Set(recipes.map((r) => `${r.category}::${r.name.toLowerCase()}`));
+    const existing = new Set(recipes.map((r) => r.name.toLowerCase()));
+    const compCategory = (comp.category as RecipeCategory) ?? 'sauces_dressings';
 
-    if (!existing.has(`component::${comp.name.toLowerCase()}`)) {
-      const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: numberedMethod(comp.steps) });
+    if (!existing.has(comp.name.toLowerCase())) {
+      const saved = await saveRecipe(userId, { ...base, name: comp.name, category: compCategory, description: comp.description, method: numberedMethod(comp.steps) });
       addRecipe(saved);
     }
     for (const term of guide.glossary) {

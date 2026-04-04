@@ -2,7 +2,7 @@
 // Swipe right to replenish (→ shopping list). Swipe left to remove.
 
 import { useState, useRef } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, ActivityIndicator, TextInput, Alert,
@@ -27,7 +27,7 @@ const CATEGORIES: { key: ItemCategory; label: string; emoji: string }[] = [
   { key: 'oils_vinegars',    label: 'Oils & Vinegars',     emoji: '🫒' },
   { key: 'condiments_sauces',label: 'Condiments & Sauces', emoji: '🧴' },
   { key: 'beverages',        label: 'Beverages',          emoji: '🥤' },
-  { key: 'alcohol',          label: 'Alcohol',            emoji: '🍷' },
+  { key: 'alcohol',          label: 'Alcohol',            emoji: '🍾' },
   { key: 'household',        label: 'Household',          emoji: '🧹' },
 ];
 
@@ -114,8 +114,10 @@ export default function PantryScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header + filter bar wrapped in SafeAreaView for top safe area */}
+      <SafeAreaView edges={['top']} style={{ backgroundColor: '#fff' }}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={styles.header}>
         <Text style={styles.title}>Pantry</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.addButton} onPress={() => { setEditItem(null); setAddVisible(true); }}>
@@ -141,6 +143,7 @@ export default function PantryScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+      </SafeAreaView>
 
       {/* List */}
       {filtered.length === 0 ? (
@@ -673,7 +676,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 12,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },

@@ -192,7 +192,7 @@ export async function generateGardenSuggestions(
 
 export interface CookingGuide {
   steps: string[];
-  components: Array<{ name: string; description: string; steps: string[] }>;
+  components: Array<{ name: string; description: string; steps: string[]; category: string }>;
   glossary: Array<{ term: string; definition: string }>;
 }
 

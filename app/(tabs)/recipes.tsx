@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import type { Recipe, RecipeCategory } from '../../types';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
@@ -21,7 +21,6 @@ const FILTER_LABELS: { key: FilterKey; label: string }[] = [
   { key: 'baking',           label: 'Baking' },
   { key: 'marinades_rubs',   label: 'Marinades' },
   { key: 'glossary',         label: 'Glossary' },
-  { key: 'component',        label: 'Components' },
 ];
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
@@ -32,7 +31,6 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   baking: 'Baking',
   marinades_rubs: 'Marinades & Rubs',
   glossary: 'Glossary',
-  component: 'Component',
 };
 
 const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
@@ -43,7 +41,6 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
   baking: '#EA580C',
   marinades_rubs: '#0369A1',
   glossary: '#374151',
-  component: '#0891B2',
 };
 
 export default function RecipesScreen() {
@@ -85,9 +82,9 @@ export default function RecipesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={styles.header}>
         <Text style={styles.heading}>Recipes</Text>
         <TouchableOpacity
           style={styles.addBtn}
@@ -194,7 +191,7 @@ export default function RecipesScreen() {
           onClose={() => setShowCookMode(false)}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -206,6 +203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 12,
     backgroundColor: '#F9FAFB',
   },

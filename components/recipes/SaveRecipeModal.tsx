@@ -16,7 +16,6 @@ const CATEGORIES: { key: RecipeCategory; label: string }[] = [
   { key: 'baking',         label: 'Baking' },
   { key: 'marinades_rubs', label: 'Marinades & Rubs' },
   { key: 'glossary',       label: 'Glossary' },
-  { key: 'component',      label: 'Component' },
 ];
 
 const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
@@ -27,7 +26,6 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
   baking: '#EA580C',
   marinades_rubs: '#0369A1',
   glossary: '#374151',
-  component: '#0891B2',
 };
 
 interface Props {
@@ -97,7 +95,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
     >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
       >
         <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
           {/* Header */}
@@ -196,14 +194,15 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Method</Text>
               <TextInput
-                style={[styles.textInput, styles.multiline]}
+                style={[styles.textInput, styles.multilineMethod]}
                 value={method}
                 onChangeText={setMethod}
                 placeholder="One step per line..."
                 placeholderTextColor="#9CA3AF"
                 multiline
-                numberOfLines={6}
+                numberOfLines={14}
                 textAlignVertical="top"
+                scrollEnabled
               />
             </View>
 
@@ -265,6 +264,10 @@ const styles = StyleSheet.create({
   },
   multiline: {
     minHeight: 90,
+    paddingTop: 12,
+  },
+  multilineMethod: {
+    minHeight: 200,
     paddingTop: 12,
   },
 

@@ -228,7 +228,7 @@ export interface LastNightResponse {
 export type RecipeCategory =
   | 'mains' | 'sauces_dressings' | 'sides'
   | 'desserts' | 'baking' | 'marinades_rubs'
-  | 'glossary' | 'component';
+  | 'glossary';
 
 export interface RecipeGuideJson {
   steps: string[];

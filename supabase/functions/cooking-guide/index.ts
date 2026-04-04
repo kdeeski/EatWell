@@ -53,13 +53,13 @@ Deno.serve(async (req) => {
       max_tokens: 2048,
       system: `You are a culinary guide for EatWell. Given a meal name and description:
 1. Return 6-8 clear cooking steps for the dish
-2. Identify any sub-recipes or components mentioned (dukkah, harissa, beurre blanc, curry paste, etc) and return a name, 1-sentence description, and 3-5 steps to make each
+2. Identify any sub-recipes or components mentioned (dukkah, harissa, beurre blanc, curry paste, etc) and return a name, 1-sentence description, 3-5 steps to make each, and the best category for saving it. Categories: mains, sauces_dressings, sides, desserts, baking, marinades_rubs. Examples: harissa → marinades_rubs, tomato sauce → sauces_dressings, dukkah → marinades_rubs, roasted veg → sides, pastry → baking.
 3. Identify any technique terms (braise, compote, render, fold, julienne, etc) and define them in plain English (1-2 sentences, no jargon in the definition)
 If nothing special return empty arrays for components and glossary.${existingBlock}
 Respond ONLY with valid JSON matching this exact schema:
 {
   "steps": ["string"],
-  "components": [{"name": "string", "description": "string", "steps": ["string"]}],
+  "components": [{"name": "string", "description": "string", "steps": ["string"], "category": "string"}],
   "glossary": [{"term": "string", "definition": "string"}]
 }`,
       messages: [
