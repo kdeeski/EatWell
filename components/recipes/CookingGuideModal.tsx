@@ -108,7 +108,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       if (comp.steps.length === 0) continue; // already in stash
       if (existing.has(`component::${comp.name.toLowerCase()}`)) continue;
       try {
-        const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: comp.steps.join('\n') });
+        const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: numberedMethod(comp.steps) });
         addRecipe(saved);
       } catch { /* ok */ }
     }
@@ -133,7 +133,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     const existing = new Set(recipes.map((r) => `${r.category}::${r.name.toLowerCase()}`));
 
     if (!existing.has(`component::${comp.name.toLowerCase()}`)) {
-      const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: comp.steps.join('\n') });
+      const saved = await saveRecipe(userId, { ...base, name: comp.name, category: 'component', description: comp.description, method: numberedMethod(comp.steps) });
       addRecipe(saved);
     }
     for (const term of guide.glossary) {
@@ -146,6 +146,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     }
   };
 
+  const numberedMethod = (steps: string[]) => steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
   const recipeNames = new Set(recipes.map((r) => r.name.toLowerCase()));
   const getStashVersion = (name: string) => {
     const match = recipes.find((r) => r.name.toLowerCase() === name.toLowerCase());
@@ -166,7 +167,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <TouchableOpacity
                 onPress={() => setSavePrefill({
                   name: mealName, category: 'mains', description,
-                  method: guide.steps.join('\n'),
+                  method: numberedMethod(guide.steps),
                   guideJson: guide,
                 })}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -254,7 +255,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       {showCookMode && guide && (
         <CookModeModal
           recipeName={mealName}
-          method={guide.steps.join('\n')}
+          method={numberedMethod(guide.steps)}
           onClose={() => setShowCookMode(false)}
         />
       )}
