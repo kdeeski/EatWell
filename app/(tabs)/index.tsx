@@ -163,7 +163,7 @@ export default function TodayScreen() {
 
       {guideTarget && (
         <CookingGuideModal
-          mealName={guideTarget.meal_name}
+          mealName={toTitleCase(guideTarget.meal_name)}
           description={guideTarget.description ?? ''}
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}

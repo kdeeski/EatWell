@@ -185,7 +185,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                 placeholder="One item per line..."
                 placeholderTextColor="#9CA3AF"
                 multiline
-                numberOfLines={5}
+                scrollEnabled={false}
                 textAlignVertical="top"
               />
             </View>
@@ -200,9 +200,8 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                 placeholder="One step per line..."
                 placeholderTextColor="#9CA3AF"
                 multiline
-                numberOfLines={14}
+                scrollEnabled={false}
                 textAlignVertical="top"
-                scrollEnabled
               />
             </View>
 

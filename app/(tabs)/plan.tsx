@@ -233,7 +233,7 @@ export default function PlanScreen() {
       {/* Cooking guide modal */}
       {guideTarget && (
         <CookingGuideModal
-          mealName={guideTarget.meal_name}
+          mealName={toTitleCase(guideTarget.meal_name)}
           description={guideTarget.description ?? ''}
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}
