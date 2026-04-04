@@ -18,6 +18,7 @@ function formatIngredients(ingredients: PlannedIngredient[]): string {
 import { useAppStore } from '../../store/useAppStore';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
+import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
 import type { PlannedMeal } from '../../types';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
@@ -29,6 +30,7 @@ export default function TodayScreen() {
   const { plannedMeals, todayCheckin, recipes } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
+  const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
 
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
@@ -125,7 +127,14 @@ export default function TodayScreen() {
                 >
                   <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
                 </TouchableOpacity>
-              ) : null;
+              ) : (
+                <TouchableOpacity
+                  style={styles.stashNudge}
+                  onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
+                >
+                  <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                </TouchableOpacity>
+              );
             })()}
             {tonightsMeal.estimated_prep_minutes ? (
               <Text style={styles.mealMeta}>
@@ -150,6 +159,15 @@ export default function TodayScreen() {
           <Text style={styles.linkText}>See the Full Week →</Text>
         </TouchableOpacity>
       </View>
+
+      {saveForMeal && (
+        <SaveRecipeModal
+          visible
+          prefill={{ name: saveForMeal, category: 'mains' }}
+          onSave={() => setSaveForMeal(null)}
+          onClose={() => setSaveForMeal(null)}
+        />
+      )}
 
       {stashRecipe && (
         <RecipeDetailModal
@@ -236,4 +254,5 @@ const styles = StyleSheet.create({
 
   stashNudge: { marginTop: 4 },
   stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
+  saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
 });

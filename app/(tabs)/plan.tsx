@@ -20,6 +20,7 @@ function formatIngredients(ingredients: PlannedIngredient[]): string {
 }
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
+import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -37,6 +38,7 @@ export default function PlanScreen() {
   const [dirty, setDirty] = useState(false);
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
+  const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -204,7 +206,14 @@ export default function PlanScreen() {
                             >
                               <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
                             </TouchableOpacity>
-                          ) : null;
+                          ) : (
+                            <TouchableOpacity
+                              style={styles.stashNudge}
+                              onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
+                            >
+                              <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                            </TouchableOpacity>
+                          );
                         })()}
                         {isSelected && (
                           <TouchableOpacity
@@ -239,6 +248,16 @@ export default function PlanScreen() {
           onClose={() => setGuideTarget(null)}
           prefillGuide={recipes.find((r) => r.name.toLowerCase() === guideTarget.meal_name.toLowerCase() && r.guide_json)?.guide_json ?? undefined}
           ingredients={formatIngredients(guideTarget.ingredients)}
+        />
+      )}
+
+      {/* Save recipe for a planned meal */}
+      {saveForMeal && (
+        <SaveRecipeModal
+          visible
+          prefill={{ name: saveForMeal, category: 'mains' }}
+          onSave={() => setSaveForMeal(null)}
+          onClose={() => setSaveForMeal(null)}
         />
       )}
 
@@ -375,4 +394,5 @@ const styles = StyleSheet.create({
 
   stashNudge: { marginTop: 8 },
   stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
+  saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
 });
