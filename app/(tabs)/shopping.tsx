@@ -13,6 +13,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem } from '../../lib/data';
 import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
+import { toTitleCase } from '../../lib/titleCase';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -38,8 +39,9 @@ const CATEGORY_LABELS: Record<IngredientCategory, string> = {
 };
 
 function itemQuantityLabel(item: ShoppingListItem): string {
-  if (item.ingredient_category === 'herbs_spices' || item.is_pantry_staple) return item.name;
-  return `${item.name} × ${item.quantity} ${item.unit}`.trim();
+  const name = toTitleCase(item.name);
+  if (item.ingredient_category === 'herbs_spices' || item.is_pantry_staple) return name;
+  return `${name} × ${item.quantity} ${item.unit}`.trim();
 }
 
 // ── Swipeable row (right = have it / from garden, left = need to buy) ─────────
@@ -290,7 +292,7 @@ export default function ShoppingScreen() {
                       <Text style={styles.leafIcon}>🌿</Text>
                     </View>
                     <View style={styles.itemTextBlock}>
-                      <Text style={[styles.itemName, styles.itemNameMuted]}>{item.name}</Text>
+                      <Text style={[styles.itemName, styles.itemNameMuted]}>{toTitleCase(item.name)}</Text>
                       <Text style={styles.herbGardenNote}>From Your Garden</Text>
                     </View>
                   </TouchableOpacity>
@@ -329,7 +331,7 @@ export default function ShoppingScreen() {
                       </View>
                       <View style={styles.itemTextBlock}>
                         <Text style={[styles.itemName, isPantryConfirmed && styles.itemNameMuted]}>
-                          {item.name}
+                          {toTitleCase(item.name)}
                         </Text>
                         {isPantryConfirmed && (
                           <Text style={styles.pantryNote}>
@@ -674,7 +676,7 @@ function ShoppingPendingRow({ item, onChange, onRemove }: {
   const [catOpen, setCatOpen] = useState(false);
   return (
     <View style={modalStyles.pendingRow}>
-      <Text style={modalStyles.pendingName}>{item.name}</Text>
+      <Text style={modalStyles.pendingName}>{toTitleCase(item.name)}</Text>
       <View style={modalStyles.pendingMeta}>
         <TouchableOpacity style={[modalStyles.catPill, { flex: 1 }]} onPress={() => setCatOpen(!catOpen)}>
           <Text style={modalStyles.catPillText}>{CATEGORY_LABELS_SHORT[item.category]} ▾</Text>

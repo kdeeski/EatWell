@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
+import { toTitleCase } from '../../lib/titleCase';
 import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
 import type { PlannedMeal } from '../../types';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
@@ -177,7 +178,7 @@ export default function PlanScreen() {
                           {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
                           {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
                         </View>
-                        <Text style={styles.mealName}>{meal.meal_name}</Text>
+                        <Text style={styles.mealName}>{toTitleCase(meal.meal_name)}</Text>
                         <Text style={styles.mealMeta}>
                           {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
                           {!isSelected ? '  ·  Tap for details' : ''}

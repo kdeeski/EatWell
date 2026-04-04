@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { toTitleCase } from '../../lib/titleCase';
 import { useAppStore } from '../../store/useAppStore';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 import type { PlannedMeal } from '../../types';
@@ -55,7 +56,7 @@ export default function TodayScreen() {
               <Text style={styles.checkinRowLabel}>Last night</Text>
               {lastNight.type === 'planned' && lastNight.meal_name ? (
                 <Text style={styles.checkinRowValue}>
-                  {lastNight.meal_name}
+                  {toTitleCase(lastNight.meal_name)}
                   {lastNight.rating != null
                     ? `  ${RATING_EMOJI[lastNight.rating]} ${RATING_LABELS[lastNight.rating]}`
                     : ''}
@@ -73,7 +74,7 @@ export default function TodayScreen() {
           {tonightPicked && (
             <View style={styles.checkinRow}>
               <Text style={styles.checkinRowLabel}>Tonight</Text>
-              <Text style={styles.checkinRowValue}>{tonightPicked.meal_name}</Text>
+              <Text style={styles.checkinRowValue}>{toTitleCase(tonightPicked.meal_name)}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -95,7 +96,7 @@ export default function TodayScreen() {
         <Text style={styles.sectionLabel}>Tonight</Text>
         {tonightsMeal ? (
           <View style={styles.mealCard}>
-            <Text style={styles.mealName}>{tonightsMeal.meal_name}</Text>
+            <Text style={styles.mealName}>{toTitleCase(tonightsMeal.meal_name)}</Text>
             {tonightsMeal.description ? (
               <Text style={styles.mealDesc}>{tonightsMeal.description}</Text>
             ) : null}

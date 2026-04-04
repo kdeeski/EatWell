@@ -3,6 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { toTitleCase } from '../../lib/titleCase';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, ActivityIndicator, TextInput, Alert,
@@ -69,6 +70,7 @@ interface PendingItem {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 type LocationFilter = 'all' | ItemLocation;
+type CategoryFilter = 'all' | ItemCategory;
 
 export default function PantryScreen() {
   const { userId, inventoryItems, upsertInventoryItem: upsertStore, removeInventoryItem: removeFromStore,
@@ -76,12 +78,16 @@ export default function PantryScreen() {
   const insets = useSafeAreaInsets();
 
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [addVisible, setAddVisible] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [bulkVisible, setBulkVisible] = useState(false);
 
   const filtered = inventoryItems.filter(
-    (i) => !i.depleted && (locationFilter === 'all' || i.location === locationFilter)
+    (i) =>
+      !i.depleted &&
+      (locationFilter === 'all' || i.location === locationFilter) &&
+      (categoryFilter === 'all' || i.category === categoryFilter)
   );
 
   const grouped = CATEGORIES.map((c) => ({
@@ -131,13 +137,28 @@ export default function PantryScreen() {
 
       {/* Location filter */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterBarContent}>
-        {[{ key: 'all', label: 'All', emoji: '📋' }, ...LOCATIONS].map((f) => (
+        {[{ key: 'all', label: 'All' }, ...LOCATIONS.map((l) => ({ key: l.key, label: l.label }))].map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[styles.filterPill, locationFilter === f.key && styles.filterPillActive]}
             onPress={() => setLocationFilter(f.key as LocationFilter)}
           >
             <Text style={[styles.filterPillText, locationFilter === f.key && styles.filterPillTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Category filter */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterBarContent}>
+        {[{ key: 'all', label: 'All Categories' }, ...CATEGORIES.map((c) => ({ key: c.key, label: c.label }))].map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[styles.filterPill, categoryFilter === f.key && styles.filterPillActive]}
+            onPress={() => setCategoryFilter(f.key as CategoryFilter)}
+          >
+            <Text style={[styles.filterPillText, categoryFilter === f.key && styles.filterPillTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>
@@ -233,7 +254,7 @@ function InventoryRow({ item, onReplenish, onRemove, onEdit }: {
       <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
         <TouchableOpacity style={[styles.itemRow, isLowStock && styles.itemRowLowStock]} onPress={onEdit} activeOpacity={0.7}>
           <View style={styles.itemLeft}>
-            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemName}>{toTitleCase(item.name)}</Text>
             {(isLowStock || (item.unit !== 'piece' || item.quantity !== 1)) && (
               <Text style={styles.itemMeta}>
                 {item.quantity} {item.unit}

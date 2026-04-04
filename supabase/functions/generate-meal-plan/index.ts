@@ -153,9 +153,11 @@ RULES:
 
 17. ONLY include a garden item (from_garden: true) if it is genuinely used in the recipe and the user has flagged it as available. Do not pad meals with garden items just because they are available.
 
-18. Keep meal names short (max 5 words) — the cooking description carries the detail.
+18. Meal names: use "with" and "and" as connectors instead of commas (e.g. "Lamb Meatballs with Harissa", "Salmon with Roasted Veg and Lemon Butter"). Max 7 words. Use UK English Title Case: capitalise nouns/verbs/adjectives but NOT joining words (with, and, or, in, on, the, a, of, by).
 
-19. NEVER combine multiple ingredients into one entry (e.g. never "salt and pepper" — always list as two separate ingredients: "salt" and "black pepper"). Every ingredient must be a single item with its own name, quantity, and unit.
+19. Ingredient names: use UK English Title Case (e.g. "Chicken Thighs", "Cherry Tomatoes", "Olive Oil"). Always lowercase joining words.
+
+20. NEVER combine multiple ingredients into one entry (e.g. never "salt and pepper" — always list as two separate ingredients: "salt" and "black pepper"). Every ingredient must be a single item with its own name, quantity, and unit.
 
 20. GARDEN VARIETY RULE — garden produce is a weekly constraint (use what is ready before it spoils), not a theme to build the entire week around. Aim for variety across the week even when garden produce is abundant. A single garden herb should appear in at most 2 meals per week. Do not let garden availability dominate the menu or create repetitive flavour profiles.
 

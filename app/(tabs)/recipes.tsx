@@ -9,6 +9,7 @@ import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
 import CookModeModal from '../../components/recipes/CookModeModal';
 import { deleteRecipe } from '../../lib/data';
+import { toTitleCase } from '../../lib/titleCase';
 
 type FilterKey = 'all' | RecipeCategory;
 
@@ -140,7 +141,7 @@ export default function RecipesScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.rowLeft}>
-                  <Text style={styles.rowName}>{item.name}</Text>
+                  <Text style={styles.rowName}>{toTitleCase(item.name)}</Text>
                   <View style={[styles.rowBadge, { backgroundColor: colour + '22', borderColor: colour + '44' }]}>
                     <Text style={[styles.rowBadgeText, { color: colour }]}>
                       {CATEGORY_LABELS[item.category]}
