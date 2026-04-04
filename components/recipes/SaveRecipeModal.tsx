@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
 import { saveRecipe, updateRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
+import RecipeBrowserModal from './RecipeBrowserModal';
 
 const CATEGORIES: { key: RecipeCategory; label: string }[] = [
   { key: 'mains',          label: 'Mains' },
@@ -50,6 +51,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   const [sourceUrl, setSourceUrl]     = useState(existingRecipe?.source_url ?? '');
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState<string | null>(null);
+  const [showBrowser, setShowBrowser] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) { setError('Name is required'); return; }
@@ -87,8 +89,17 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   };
 
   return (
+    <>
+    {showBrowser && (
+      <RecipeBrowserModal
+        recipeName={name || 'recipe'}
+        visible={showBrowser}
+        onUseUrl={(url) => { setSourceUrl(url); setShowBrowser(false); }}
+        onClose={() => setShowBrowser(false)}
+      />
+    )}
     <Modal
-      visible={visible}
+      visible={visible && !showBrowser}
       animationType="slide"
       presentationStyle="formSheet"
       onRequestClose={onClose}
@@ -207,7 +218,12 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
 
             {/* Source URL */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Source URL</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>Source URL</Text>
+                <TouchableOpacity onPress={() => setShowBrowser(true)}>
+                  <Text style={styles.findOnWebBtn}>Find on web →</Text>
+                </TouchableOpacity>
+              </View>
               <TextInput
                 style={styles.textInput}
                 value={sourceUrl}
@@ -223,6 +239,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
         </View>
       </KeyboardAvoidingView>
     </Modal>
+    </>
   );
 }
 
@@ -248,7 +265,9 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 14, color: '#EF4444', backgroundColor: '#FEF2F2', borderRadius: 8, padding: 12 },
 
   fieldGroup: { gap: 8 },
+  fieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  findOnWebBtn: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
   required: { color: '#EF4444' },
 
   textInput: {
