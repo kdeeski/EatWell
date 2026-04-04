@@ -31,7 +31,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
 interface Props {
   visible: boolean;
   existingRecipe?: Recipe | null;
-  prefill?: Partial<Pick<Recipe, 'name' | 'category' | 'description' | 'method'>>;
+  prefill?: Partial<Pick<Recipe, 'name' | 'category' | 'description' | 'ingredients' | 'method'>>;
   onSave: (recipe: Recipe) => void;
   onClose: () => void;
 }
@@ -45,7 +45,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   const [name, setName]               = useState(existingRecipe?.name ?? prefill?.name ?? '');
   const [category, setCategory]       = useState<RecipeCategory>(existingRecipe?.category ?? prefill?.category ?? 'mains');
   const [description, setDescription] = useState(existingRecipe?.description ?? prefill?.description ?? '');
-  const [ingredients, setIngredients] = useState(existingRecipe?.ingredients ?? '');
+  const [ingredients, setIngredients] = useState(existingRecipe?.ingredients ?? prefill?.ingredients ?? '');
   const [method, setMethod]           = useState(existingRecipe?.method ?? prefill?.method ?? '');
   const [sourceUrl, setSourceUrl]     = useState(existingRecipe?.source_url ?? '');
   const [saving, setSaving]           = useState(false);

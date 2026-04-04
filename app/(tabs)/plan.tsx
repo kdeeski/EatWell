@@ -10,7 +10,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { toTitleCase } from '../../lib/titleCase';
 import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
-import type { PlannedMeal } from '../../types';
+import type { PlannedMeal, PlannedIngredient } from '../../types';
+
+function formatIngredients(ingredients: PlannedIngredient[]): string {
+  return ingredients
+    .filter((i) => !i.from_fridge && !i.from_garden && i.ingredient_category !== 'dairy_eggs')
+    .map((i) => `${i.quantity} ${i.unit} ${toTitleCase(i.name)}`.trim())
+    .join('\n');
+}
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 
 if (Platform.OS === 'android') {
@@ -218,6 +225,7 @@ export default function PlanScreen() {
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}
           prefillGuide={recipes.find((r) => r.name.toLowerCase() === guideTarget.meal_name.toLowerCase() && r.guide_json)?.guide_json ?? undefined}
+          ingredients={formatIngredients(guideTarget.ingredients)}
         />
       )}
 

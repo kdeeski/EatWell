@@ -7,6 +7,14 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
+import type { PlannedIngredient } from '../../types';
+
+function formatIngredients(ingredients: PlannedIngredient[]): string {
+  return ingredients
+    .filter((i) => !i.from_fridge && !i.from_garden && i.ingredient_category !== 'dairy_eggs')
+    .map((i) => `${i.quantity} ${i.unit} ${toTitleCase(i.name)}`.trim())
+    .join('\n');
+}
 import { useAppStore } from '../../store/useAppStore';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 import type { PlannedMeal } from '../../types';
@@ -137,6 +145,7 @@ export default function TodayScreen() {
           visible={!!guideTarget}
           onClose={() => setGuideTarget(null)}
           prefillGuide={recipes.find((r) => r.name.toLowerCase() === guideTarget.meal_name.toLowerCase() && r.guide_json)?.guide_json ?? undefined}
+          ingredients={formatIngredients(guideTarget.ingredients)}
         />
       )}
     </ScrollView>

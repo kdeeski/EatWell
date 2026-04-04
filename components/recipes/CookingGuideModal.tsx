@@ -18,9 +18,10 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   prefillGuide?: CookingGuide; // skip API call when guide already saved in stash
+  ingredients?: string;        // pre-formatted ingredient list for the save modal
 }
 
-type SavePrefill = { name: string; category: RecipeCategory; description?: string; method?: string; guideJson?: RecipeGuideJson };
+type SavePrefill = { name: string; category: RecipeCategory; description?: string; ingredients?: string; method?: string; guideJson?: RecipeGuideJson };
 
 const VALID_CATEGORIES: RecipeCategory[] = ['mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary'];
 
@@ -95,7 +96,7 @@ function ComponentCard({
   );
 }
 
-export default function CookingGuideModal({ mealName, description, visible, onClose, prefillGuide }: Props) {
+export default function CookingGuideModal({ mealName, description, visible, onClose, prefillGuide, ingredients }: Props) {
   const insets = useSafeAreaInsets();
   const { userId, recipes, addRecipe } = useAppStore();
 
@@ -191,6 +192,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <TouchableOpacity
                 onPress={() => setSavePrefill({
                   name: mealName, category: 'mains', description,
+                  ingredients,
                   method: numberedMethod(guide.steps),
                   guideJson: guide,
                 })}
@@ -261,7 +263,6 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               {/* Glossary */}
               {guide.glossary.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Glossary</Text>
                   {guide.glossary.map((item, i) => (
                     <View key={i} style={styles.glossaryRow}>
                       <Text style={styles.glossaryTerm}>{item.term}</Text>
@@ -286,7 +287,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       {savePrefill && (
         <SaveRecipeModal
           visible
-          prefill={{ name: savePrefill.name, category: savePrefill.category, description: savePrefill.description, method: savePrefill.method }}
+          prefill={{ name: savePrefill.name, category: savePrefill.category, description: savePrefill.description, ingredients: savePrefill.ingredients, method: savePrefill.method }}
           onSave={async (recipe) => {
             if (savePrefill.guideJson) {
               try {

@@ -132,7 +132,6 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
 
                 {guide.glossary.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Glossary</Text>
                     {guide.glossary.map((item, i) => (
                       <View key={i} style={styles.glossaryRow}>
                         <Text style={styles.glossaryTerm}>{item.term}</Text>
