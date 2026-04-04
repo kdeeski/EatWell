@@ -21,6 +21,21 @@ interface Props {
 
 type SavePrefill = { name: string; category: RecipeCategory; description?: string; method?: string; guideJson?: RecipeGuideJson };
 
+const VALID_CATEGORIES: RecipeCategory[] = ['mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary'];
+
+function resolveComponentCategory(comp: CookingGuide['components'][0]): RecipeCategory {
+  if (comp.category && VALID_CATEGORIES.includes(comp.category as RecipeCategory)) {
+    return comp.category as RecipeCategory;
+  }
+  // AI returned missing/invalid category — keyword guess from name + description
+  const text = `${comp.name} ${comp.description ?? ''}`.toLowerCase();
+  if (/marinade|rub|spice blend|seasoning|dukkah|chermoula|za'atar/.test(text)) return 'marinades_rubs';
+  if (/cake|bread|pastry|tart|pie|biscuit|cookie|dough|crust/.test(text)) return 'baking';
+  if (/dessert|pudding|ice cream|sorbet|mousse|compote/.test(text)) return 'desserts';
+  if (/side|roast.*(veg|potato|carrot)|salad|slaw/.test(text)) return 'sides';
+  return 'sauces_dressings';
+}
+
 function ComponentCard({
   component,
   stashVersion,
@@ -107,7 +122,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     for (const comp of guide.components) {
       if (comp.steps.length === 0) continue; // already in stash
       if (existing.has(comp.name.toLowerCase())) continue;
-      const compCategory = (comp.category as RecipeCategory) ?? 'sauces_dressings';
+      const compCategory = resolveComponentCategory(comp);
       try {
         const saved = await saveRecipe(userId, { ...base, name: comp.name, category: compCategory, description: comp.description, method: numberedMethod(comp.steps) });
         addRecipe(saved);
@@ -132,7 +147,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     if (!userId || !guide) return;
     const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
     const existing = new Set(recipes.map((r) => r.name.toLowerCase()));
-    const compCategory = (comp.category as RecipeCategory) ?? 'sauces_dressings';
+    const compCategory = resolveComponentCategory(comp);
 
     if (!existing.has(comp.name.toLowerCase())) {
       const saved = await saveRecipe(userId, { ...base, name: comp.name, category: compCategory, description: comp.description, method: numberedMethod(comp.steps) });
