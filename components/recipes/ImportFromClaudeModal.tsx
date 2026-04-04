@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform,
+  TouchableOpacity, KeyboardAvoidingView, Platform, Share,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
@@ -38,7 +37,7 @@ export default function ImportFromClaudeModal({ visible, onClose }: Props) {
   const [showSave, setShowSave] = useState(false);
 
   const handleCopy = async () => {
-    await Clipboard.setStringAsync(PROMPT_TEXT);
+    await Share.share({ message: PROMPT_TEXT });
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -113,7 +112,7 @@ export default function ImportFromClaudeModal({ visible, onClose }: Props) {
                 <View style={styles.stepBody}>
                   <Text style={styles.stepTitle}>Copy the prompt</Text>
                   <Text style={styles.stepDesc}>
-                    Tap below, then paste into Claude with your recipe. Claude will return a JSON block.
+                    Tap below to share the prompt, then paste it into Claude with your recipe. Claude will return a JSON block.
                   </Text>
                   <TouchableOpacity style={styles.promptBox} onPress={handleCopy} activeOpacity={0.8}>
                     <Text style={styles.promptText} numberOfLines={6}>{PROMPT_TEXT}</Text>
@@ -123,7 +122,7 @@ export default function ImportFromClaudeModal({ visible, onClose }: Props) {
                     onPress={handleCopy}
                   >
                     <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
-                      {copied ? 'Copied ✓' : 'Copy Prompt'}
+                      {copied ? 'Shared ✓' : 'Share Prompt'}
                     </Text>
                   </TouchableOpacity>
                 </View>
