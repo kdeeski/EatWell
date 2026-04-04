@@ -32,7 +32,7 @@ function resolveComponentCategory(comp: CookingGuide['components'][0]): RecipeCa
   if (/marinade|rub|spice blend|seasoning|dukkah|chermoula|za'atar/.test(text)) return 'marinades_rubs';
   if (/cake|bread|pastry|tart|pie|biscuit|cookie|dough|crust/.test(text)) return 'baking';
   if (/dessert|pudding|ice cream|sorbet|mousse|compote/.test(text)) return 'desserts';
-  if (/side|roast.*(veg|potato|carrot)|salad|slaw/.test(text)) return 'sides';
+  if (/side|roast|mash|potato|puree|rice|grain|slaw|salad|vegetables?|coleslaw/.test(text)) return 'sides';
   return 'sauces_dressings';
 }
 
