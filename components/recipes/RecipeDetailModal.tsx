@@ -124,7 +124,6 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
 
                 {guide.components.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Components</Text>
                     {guide.components.map((comp, i) => (
                       <GuideComponentCard key={i} component={comp} />
                     ))}

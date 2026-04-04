@@ -247,7 +247,6 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               {/* Components */}
               {guide.components.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Components</Text>
                   {guide.components.map((comp, i) => (
                     <ComponentCard
                       key={i}
