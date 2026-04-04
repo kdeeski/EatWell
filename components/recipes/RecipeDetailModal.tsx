@@ -167,14 +167,18 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
             )}
 
             {/* Source URL */}
-            {recipe.source_url ? (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Source</Text>
-                <TouchableOpacity onPress={() => Linking.openURL(recipe.source_url!)}>
-                  <Text style={styles.linkText}>{recipe.source_url}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+            {recipe.source_url ? (() => {
+              let domain = recipe.source_url;
+              try { domain = new URL(recipe.source_url).hostname.replace(/^www\./, ''); } catch {}
+              return (
+                <View style={styles.section}>
+                  <TouchableOpacity style={styles.sourceLink} onPress={() => Linking.openURL(recipe.source_url!)}>
+                    <Text style={styles.sourceLinkLabel}>View Original Recipe →</Text>
+                    <Text style={styles.sourceLinkDomain}>{domain}</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })() : null}
 
             {/* Delete */}
             <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
@@ -247,4 +251,8 @@ const styles = StyleSheet.create({
 
   deleteBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444' },
   deleteBtnText: { color: '#EF4444', fontSize: 15, fontWeight: '600' },
+
+  sourceLink: { gap: 2 },
+  sourceLinkLabel: { fontSize: 15, fontWeight: '600', color: '#3B7A57' },
+  sourceLinkDomain: { fontSize: 12, color: '#9CA3AF' },
 });

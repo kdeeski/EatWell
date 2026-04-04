@@ -7,7 +7,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
-import type { PlannedIngredient } from '../../types';
+import { findStashMatch } from '../../lib/recipes';
+import type { PlannedIngredient, Recipe } from '../../types';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -16,6 +17,7 @@ function formatIngredients(ingredients: PlannedIngredient[]): string {
 }
 import { useAppStore } from '../../store/useAppStore';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
+import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import type { PlannedMeal } from '../../types';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
@@ -26,6 +28,7 @@ export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const { plannedMeals, todayCheckin, recipes } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
+  const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
 
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
@@ -113,6 +116,17 @@ export default function TodayScreen() {
             >
               <Text style={styles.howToButtonText}>How to cook this →</Text>
             </TouchableOpacity>
+            {(() => {
+              const match = findStashMatch(tonightsMeal.meal_name, recipes);
+              return match ? (
+                <TouchableOpacity
+                  style={styles.stashNudge}
+                  onPress={() => setStashRecipe(match)}
+                >
+                  <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
+                </TouchableOpacity>
+              ) : null;
+            })()}
             {tonightsMeal.estimated_prep_minutes ? (
               <Text style={styles.mealMeta}>
                 ~{tonightsMeal.estimated_prep_minutes} min
@@ -136,6 +150,16 @@ export default function TodayScreen() {
           <Text style={styles.linkText}>See the Full Week →</Text>
         </TouchableOpacity>
       </View>
+
+      {stashRecipe && (
+        <RecipeDetailModal
+          recipe={stashRecipe}
+          onClose={() => setStashRecipe(null)}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          onCookMode={() => {}}
+        />
+      )}
 
       {guideTarget && (
         <CookingGuideModal
@@ -209,4 +233,7 @@ const styles = StyleSheet.create({
 
   howToButton: { marginTop: 8, marginBottom: 4 },
   howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+
+  stashNudge: { marginTop: 4 },
+  stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
 });

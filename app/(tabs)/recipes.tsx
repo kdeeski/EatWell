@@ -10,6 +10,7 @@ import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
 import CookModeModal from '../../components/recipes/CookModeModal';
 import { deleteRecipe } from '../../lib/data';
 import { toTitleCase } from '../../lib/titleCase';
+import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
 
 type FilterKey = 'all' | RecipeCategory;
 
@@ -54,6 +55,7 @@ export default function RecipesScreen() {
   const [showSave, setShowSave] = useState(false);
   const [editRecipe, setEditRecipe] = useState<Recipe | null>(null);
   const [showCookMode, setShowCookMode] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const filtered = activeFilter === 'all'
     ? recipes
@@ -88,12 +90,20 @@ export default function RecipesScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.heading}>Recipes</Text>
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => { setEditRecipe(null); setShowSave(true); }}
-          >
-            <Text style={styles.addBtnText}>+ Add</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.importBtn}
+              onPress={() => setShowImport(true)}
+            >
+              <Text style={styles.importBtnText}>Import</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => { setEditRecipe(null); setShowSave(true); }}
+            >
+              <Text style={styles.addBtnText}>+ Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Filter pills */}
@@ -194,6 +204,12 @@ export default function RecipesScreen() {
           onClose={() => setShowCookMode(false)}
         />
       )}
+
+      {/* Import from Claude modal */}
+      <ImportFromClaudeModal
+        visible={showImport}
+        onClose={() => setShowImport(false)}
+      />
     </View>
   );
 }
@@ -211,6 +227,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
+  headerButtons: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  importBtn: {
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  importBtnText: { color: '#6B7280', fontSize: 14, fontWeight: '600' },
   addBtn: {
     backgroundColor: '#3B7A57',
     borderRadius: 10,

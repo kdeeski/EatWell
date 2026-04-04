@@ -9,8 +9,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { toTitleCase } from '../../lib/titleCase';
+import { findStashMatch } from '../../lib/recipes';
 import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
-import type { PlannedMeal, PlannedIngredient } from '../../types';
+import type { PlannedMeal, PlannedIngredient, Recipe } from '../../types';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -18,6 +19,7 @@ function formatIngredients(ingredients: PlannedIngredient[]): string {
     .join('\n');
 }
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
+import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -34,6 +36,7 @@ export default function PlanScreen() {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
+  const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -192,6 +195,17 @@ export default function PlanScreen() {
                         {isSelected && meal.description ? (
                           <Text style={styles.description}>{meal.description}</Text>
                         ) : null}
+                        {isSelected && (() => {
+                          const match = findStashMatch(meal.meal_name, recipes);
+                          return match ? (
+                            <TouchableOpacity
+                              style={styles.stashNudge}
+                              onPress={() => setStashRecipe(match)}
+                            >
+                              <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
+                            </TouchableOpacity>
+                          ) : null;
+                        })()}
                         {isSelected && (
                           <TouchableOpacity
                             style={styles.howToButton}
@@ -225,6 +239,17 @@ export default function PlanScreen() {
           onClose={() => setGuideTarget(null)}
           prefillGuide={recipes.find((r) => r.name.toLowerCase() === guideTarget.meal_name.toLowerCase() && r.guide_json)?.guide_json ?? undefined}
           ingredients={formatIngredients(guideTarget.ingredients)}
+        />
+      )}
+
+      {/* Stash recipe detail — opened from nudge */}
+      {stashRecipe && (
+        <RecipeDetailModal
+          recipe={stashRecipe}
+          onClose={() => setStashRecipe(null)}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          onCookMode={() => {}}
         />
       )}
 
@@ -347,4 +372,7 @@ const styles = StyleSheet.create({
 
   howToButton: { marginTop: 8 },
   howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+
+  stashNudge: { marginTop: 8 },
+  stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
 });
