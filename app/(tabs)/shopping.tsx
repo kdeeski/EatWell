@@ -18,7 +18,7 @@ import { toTitleCase } from '../../lib/titleCase';
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
 const CATEGORY_ORDER: IngredientCategory[] = [
-  'meat_fish', 'produce', 'herbs_spices', 'bread_bakery',
+  'meat_fish', 'dairy_eggs', 'produce', 'herbs_spices', 'bread_bakery',
   'pantry_dry_goods', 'cans_preserves', 'oils_vinegars', 'condiments_sauces',
   'beverages', 'alcohol', 'household',
 ];

@@ -397,13 +397,23 @@ export async function saveShoppingList(
   weekStartDate: string,
   generated: GeneratedMealPlan
 ): Promise<{ list: ShoppingList; items: ShoppingListItem[] }> {
-  // Delete any existing shopping lists for this meal plan (may be multiple from past bugs)
+  // Rescue any ad-hoc items before wiping the old list
   const { data: existingLists } = await supabase
     .from('shopping_lists')
     .select('id')
     .eq('meal_plan_id', mealPlanId);
 
+  type AdhocRow = Omit<ShoppingListItem, 'id' | 'created_at' | 'shopping_list_id'>;
+  let adhocItems: AdhocRow[] = [];
+
   if (existingLists?.length) {
+    const { data: oldAdhoc } = await supabase
+      .from('shopping_list_items')
+      .select('*')
+      .in('shopping_list_id', existingLists.map((l) => l.id))
+      .eq('is_adhoc', true);
+    adhocItems = (oldAdhoc ?? []).map(({ id, created_at, shopping_list_id, ...rest }) => rest as AdhocRow);
+
     await supabase
       .from('shopping_list_items')
       .delete()
@@ -423,14 +433,18 @@ export async function saveShoppingList(
   for (const meal of generated.meals) {
     for (const ing of meal.ingredients) {
       if (ing.from_garden && ing.ingredient_category !== 'herbs_spices') continue;
-      // dairy_eggs are tracked via inventory, not shopping list
-      if (ing.ingredient_category === 'dairy_eggs') continue;
 
-      const key = `${ing.name}__${ing.ingredient_category}__${ing.from_fridge ? 'fridge' : ing.from_garden ? 'garden' : ing.is_pantry_staple ? 'pantry' : 'fresh'}`;
+      // Normalise name for deduplication so "egg" and "eggs" (or any case variant) merge
+      const normName = ing.name.toLowerCase().trim();
+      const cat = normalizeCategory(ing.ingredient_category ?? 'produce');
+      const key = `${normName}__${cat}`;
+
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;
         existing.quantity += ing.quantity;
         (existing.meal_names as string[]).push(meal.meal_name);
+        // If any entry is not from fridge, the merged item needs buying
+        if (!ing.from_fridge) existing.checked = false;
       } else {
         itemMap.set(key, {
           id: '',
@@ -444,9 +458,10 @@ export async function saveShoppingList(
           is_pantry_staple: ing.is_pantry_staple ?? false,
           from_fridge: ing.from_fridge ?? false,
           from_garden: ing.from_garden ?? false,
-          ingredient_category: normalizeCategory(ing.ingredient_category ?? 'produce'),
+          ingredient_category: cat,
           herb_backup: ing.herb_backup ?? null,
           meal_names: [meal.meal_name],
+          is_adhoc: false,
           created_at: '',
         });
       }
@@ -455,13 +470,34 @@ export async function saveShoppingList(
 
   const itemsToInsert = Array.from(itemMap.values()).map(({ id, created_at, ...rest }) => rest);
 
-  const { data: items, error: itemsError } = await supabase
+  const { data: planItems, error: itemsError } = await supabase
     .from('shopping_list_items')
     .insert(itemsToInsert)
     .select();
   if (itemsError) throw itemsError;
 
-  return { list: list as ShoppingList, items: items as ShoppingListItem[] };
+  // Re-insert ad-hoc items, skipping any whose name matches a newly generated item
+  const newItemNames = new Set(
+    Array.from(itemMap.keys()).map((k) => k.split('__')[0])
+  );
+  const adhocToReinsert = adhocItems.filter(
+    (i) => !newItemNames.has(i.name.toLowerCase().trim())
+  );
+
+  let reinsertedItems: ShoppingListItem[] = [];
+  if (adhocToReinsert.length > 0) {
+    const { data: reinserted, error: reinsertError } = await supabase
+      .from('shopping_list_items')
+      .insert(adhocToReinsert.map((i) => ({ ...i, shopping_list_id: list.id, checked: false })))
+      .select();
+    if (reinsertError) throw reinsertError;
+    reinsertedItems = (reinserted ?? []) as ShoppingListItem[];
+  }
+
+  return {
+    list: list as ShoppingList,
+    items: [...(planItems as ShoppingListItem[]), ...reinsertedItems],
+  };
 }
 
 export async function toggleShoppingItemChecked(
@@ -510,6 +546,7 @@ export async function addAdHocShoppingItem(
       ingredient_category: category,
       herb_backup: null,
       meal_names: [],
+      is_adhoc: true,
     })
     .select()
     .single();
@@ -537,6 +574,7 @@ export async function addAdHocShoppingItems(
       ingredient_category: i.category,
       herb_backup: null,
       meal_names: [],
+      is_adhoc: true,
     })))
     .select();
   if (error) throw error;

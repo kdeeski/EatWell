@@ -182,6 +182,7 @@ export interface ShoppingListItem {
   ingredient_category: IngredientCategory;
   herb_backup: string | null;
   meal_names: string[];
+  is_adhoc: boolean;
   created_at: string;
 }
 
