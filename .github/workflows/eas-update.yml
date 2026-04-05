@@ -7,8 +7,8 @@ on:
       - 'claude/**'
 
 jobs:
-  update:
-    name: Publish EAS Update
+  update_development:
+    name: Publish to development channel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,3 +31,30 @@ jobs:
 
       - name: Publish update
         run: eas update --channel development --auto --non-interactive
+
+  update_production:
+    name: Publish to production channel
+    runs-on: ubuntu-latest
+    needs: update_development
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Publish update
+        run: eas update --channel production --auto --non-interactive
