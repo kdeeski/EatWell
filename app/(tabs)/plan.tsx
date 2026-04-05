@@ -207,22 +207,22 @@ export default function PlanScreen() {
                               <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
                             </TouchableOpacity>
                           ) : (
-                            <TouchableOpacity
-                              style={styles.stashNudge}
-                              onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
-                            >
-                              <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
-                            </TouchableOpacity>
+                            <>
+                              <TouchableOpacity
+                                style={styles.stashNudge}
+                                onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
+                              >
+                                <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.howToButton}
+                                onPress={() => setGuideTarget(meal)}
+                              >
+                                <Text style={styles.howToButtonText}>How to cook this →</Text>
+                              </TouchableOpacity>
+                            </>
                           );
                         })()}
-                        {isSelected && (
-                          <TouchableOpacity
-                            style={styles.howToButton}
-                            onPress={() => setGuideTarget(meal)}
-                          >
-                            <Text style={styles.howToButtonText}>How to cook this →</Text>
-                          </TouchableOpacity>
-                        )}
                       </>
                     ) : (
                       <Text style={styles.nightOff}>Night off</Text>

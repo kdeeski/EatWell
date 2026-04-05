@@ -112,12 +112,6 @@ export default function TodayScreen() {
             {tonightsMeal.description ? (
               <Text style={styles.mealDesc}>{tonightsMeal.description}</Text>
             ) : null}
-            <TouchableOpacity
-              style={styles.howToButton}
-              onPress={() => setGuideTarget(tonightsMeal)}
-            >
-              <Text style={styles.howToButtonText}>How to cook this →</Text>
-            </TouchableOpacity>
             {(() => {
               const match = findStashMatch(tonightsMeal.meal_name, recipes);
               return match ? (
@@ -128,12 +122,20 @@ export default function TodayScreen() {
                   <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity
-                  style={styles.stashNudge}
-                  onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
-                >
-                  <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    style={styles.stashNudge}
+                    onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
+                  >
+                    <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.howToButton}
+                    onPress={() => setGuideTarget(tonightsMeal)}
+                  >
+                    <Text style={styles.howToButtonText}>How to cook this →</Text>
+                  </TouchableOpacity>
+                </>
               );
             })()}
             {tonightsMeal.estimated_prep_minutes ? (

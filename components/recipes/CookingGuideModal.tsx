@@ -52,7 +52,7 @@ function ComponentCard({
   const [saved, setSaved] = useState(false);
   const fromStash = component.steps.length === 0 && stashVersion !== null;
   const steps = fromStash
-    ? stashVersion!.method?.split('\n').filter(Boolean) ?? []
+    ? stashVersion!.method?.split('\n').filter(Boolean).map((s) => s.replace(/^\d+\.\s*/, '')) ?? []
     : component.steps;
   const desc = fromStash ? stashVersion!.description : component.description;
 
