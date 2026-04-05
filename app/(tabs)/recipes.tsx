@@ -50,6 +50,7 @@ export default function RecipesScreen() {
   const { recipes, removeRecipe } = useAppStore();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showSave, setShowSave] = useState(false);
@@ -144,22 +145,48 @@ export default function RecipesScreen() {
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           renderItem={({ item }) => {
             const colour = CATEGORY_COLOURS[item.category];
+            const isExpanded = expandedId === item.id;
+            let sourceDomain: string | null = null;
+            if (item.source_url) {
+              try { sourceDomain = new URL(item.source_url).hostname.replace(/^www\./, ''); } catch {}
+            }
             return (
               <TouchableOpacity
-                style={styles.row}
-                onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                style={[styles.row, isExpanded && styles.rowExpanded]}
+                onPress={() => setExpandedId(isExpanded ? null : item.id)}
                 activeOpacity={0.7}
               >
-                <View style={styles.rowLeft}>
-                  <Text style={styles.rowName}>{toTitleCase(item.name)}</Text>
-                  <View style={[styles.rowBadge, { backgroundColor: colour + '22', borderColor: colour + '44' }]}>
-                    <Text style={[styles.rowBadgeText, { color: colour }]}>
-                      {CATEGORY_LABELS[item.category]}
-                    </Text>
+                <View style={styles.rowTop}>
+                  <View style={styles.rowLeft}>
+                    <Text style={styles.rowName}>{toTitleCase(item.name)}</Text>
+                    <View style={styles.rowMeta}>
+                      <View style={[styles.rowBadge, { backgroundColor: colour + '22', borderColor: colour + '44' }]}>
+                        <Text style={[styles.rowBadgeText, { color: colour }]}>
+                          {CATEGORY_LABELS[item.category]}
+                        </Text>
+                      </View>
+                      {item.rating != null && (
+                        <Text style={styles.rowRating}>{'★'.repeat(item.rating)}</Text>
+                      )}
+                    </View>
                   </View>
+                  <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
                 </View>
-                {item.rating != null && (
-                  <Text style={styles.rowRating}>{'★'.repeat(item.rating)}</Text>
+
+                {isExpanded && (
+                  <View style={styles.rowExpansion}>
+                    {item.description ? (
+                      <Text style={styles.rowDescription}>{item.description}</Text>
+                    ) : null}
+                    <TouchableOpacity
+                      onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.viewRecipeLink}>
+                        {sourceDomain ? `View Recipe → ${sourceDomain}` : 'View Recipe →'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -261,8 +288,6 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 20, paddingTop: 4 },
 
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
@@ -270,7 +295,10 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
   },
+  rowExpanded: { borderColor: '#3B7A57', borderWidth: 2 },
+  rowTop: { flexDirection: 'row', alignItems: 'center' },
   rowLeft: { flex: 1, gap: 6 },
+  rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
   rowBadge: {
     alignSelf: 'flex-start',
@@ -280,7 +308,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   rowBadgeText: { fontSize: 12, fontWeight: '600' },
-  rowRating: { fontSize: 14, color: '#F59E0B', marginLeft: 8 },
+  rowRating: { fontSize: 14, color: '#F59E0B' },
+  chevron: { fontSize: 11, color: '#9CA3AF', marginLeft: 8 },
+  rowExpansion: { marginTop: 12, gap: 10 },
+  rowDescription: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  viewRecipeLink: { fontSize: 14, fontWeight: '600', color: '#3B7A57' },
 
   emptyState: {
     flex: 1,
