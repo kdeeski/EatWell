@@ -48,9 +48,10 @@ export default function ImportFromClaudeModal({ visible, onClose }: Props) {
 
     let parsed: any;
     try {
-      // Strip markdown code fences if present
-      const clean = json.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-      parsed = JSON.parse(clean);
+      // Extract the first {...} block from whatever Claude returned
+      const match = json.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('No JSON object found');
+      parsed = JSON.parse(match[0]);
     } catch {
       setError('Could not parse the JSON. Make sure you copied it correctly.');
       return;
