@@ -202,6 +202,8 @@ export default function ShoppingScreen() {
 
   const handlePantryNeedToBuy = (id: string) => {
     setPantryConfirmed((prev) => { const s = new Set(prev); s.delete(id); return s; });
+    toggleShoppingItemChecked(id, false).catch(console.error);
+    updateShoppingItemInStore(id, { checked: false });
   };
 
   const handleExpandToRecipe = async (item: ShoppingListItem, recipe: typeof recipes[0]) => {
@@ -303,7 +305,7 @@ export default function ShoppingScreen() {
 
             {items.map((item) => {
               const isGardenConfirmed = gardenConfirmed.has(item.id);
-              const isPantryConfirmed = pantryConfirmed.has(item.id);
+              const isPantryConfirmed = pantryConfirmed.has(item.id) || item.checked;
               const isPantrySwipeable = hasPantrySwipe || (cat === 'herbs_spices' && !isGardenConfirmed) || item.is_pantry_staple;
               const isChecked = item.checked || isPantryConfirmed || isGardenConfirmed || item.from_fridge;
               const recipeMatch = !isChecked
@@ -372,7 +374,13 @@ export default function ShoppingScreen() {
                       onSwipeRight={() => handlePantryHaveIt(item)}
                       onSwipeLeft={() => handlePantryNeedToBuy(item.id)}
                     >
-                      <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}>
+                      <TouchableOpacity
+                        onPress={() => isPantryConfirmed ? handlePantryNeedToBuy(item.id) : handlePantryHaveIt(item)}
+                        onLongPress={() => setEditTarget(item)}
+                        delayLongPress={400}
+                        activeOpacity={0.7}
+                        style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}
+                      >
                         <View style={[styles.pantryBox, isPantryConfirmed && styles.pantryBoxConfirmed]}>
                           {isPantryConfirmed && <Text style={styles.confirmTick}>✓</Text>}
                         </View>
