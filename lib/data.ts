@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
+import { normaliseIngredientName } from './recipes';
 import type {
   GardenPlant, GardenHarvest, GardenSuggestion,
   MealPlan, PlannedMeal, ShoppingList, ShoppingListItem,
@@ -434,8 +435,9 @@ export async function saveShoppingList(
     for (const ing of meal.ingredients) {
       if (ing.from_garden && ing.ingredient_category !== 'herbs_spices') continue;
 
-      // Normalise name for deduplication so "egg" and "eggs" (or any case variant) merge
-      const normName = ing.name.toLowerCase().trim();
+      // Normalise name for deduplication so "egg" and "eggs" (or any case variant) merge,
+      // and bare spice names resolve to their ground form ("cumin" → "ground cumin")
+      const normName = normaliseIngredientName(ing.name.toLowerCase().trim());
       const cat = normalizeCategory(ing.ingredient_category ?? 'produce');
       const key = `${normName}__${cat}`;
 
@@ -449,7 +451,7 @@ export async function saveShoppingList(
         itemMap.set(key, {
           id: '',
           shopping_list_id: list.id,
-          name: ing.name,
+          name: normName,
           quantity: ing.quantity,
           unit: ing.unit,
           store: normalizeStore(ing.store),

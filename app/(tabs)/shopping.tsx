@@ -14,6 +14,7 @@ import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loa
 import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 import { toTitleCase } from '../../lib/titleCase';
+import { normaliseIngredientName } from '../../lib/recipes';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -113,7 +114,8 @@ export default function ShoppingScreen() {
   const buildConfirmed = (items: typeof shoppingItems, inv: typeof inventoryItems) => {
     const confirmed = new Set<string>();
     items.forEach((item) => {
-      if (inv.some((p) => p.name === item.name.toLowerCase().trim() && !p.depleted)) {
+      const normItem = normaliseIngredientName(item.name.toLowerCase().trim());
+      if (inv.some((p) => normaliseIngredientName(p.name.toLowerCase().trim()) === normItem && !p.depleted)) {
         confirmed.add(item.id);
       }
     });
