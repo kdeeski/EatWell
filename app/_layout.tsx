@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Image, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/useAppStore';
 import { bootstrapUserData } from '../lib/data';
 import type { Session } from '@supabase/supabase-js';
+
+// Hold the native splash until we're ready to show the app
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
@@ -49,6 +52,13 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Hide the native splash once both update check and session are resolved
+  useEffect(() => {
+    if (updateReady && session !== undefined) {
+      SplashScreen.hideAsync();
+    }
+  }, [updateReady, session]);
+
   useEffect(() => {
     if (session === undefined) return;
     const inAuthGroup = segments[0] === '(auth)';
@@ -80,23 +90,12 @@ export default function RootLayout() {
     ).catch((e) => console.error('Bootstrap chain failed:', e));
   }, [session?.user?.id]);
 
-  if (!updateReady || session === undefined) {
-    return (
-      <View style={splashStyles.container}>
-        <StatusBar style="light" />
-        <Image source={require('../assets/splash-icon.png')} style={splashStyles.logo} resizeMode="contain" />
-        <Text style={splashStyles.appName}>EatWell</Text>
-        <Text style={splashStyles.status}>
-          {!updateReady ? 'Checking for updates…' : 'Loading…'}
-        </Text>
-      </View>
-    );
-  }
+  if (!updateReady || session === undefined) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FAFAF8' } }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="planning" options={{ presentation: 'modal' }} />
@@ -106,28 +105,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-
-const splashStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2D6A4F',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  logo: {
-    width: 96,
-    height: 96,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  status: {
-    fontSize: 14,
-    color: '#A7F3D0',
-    fontWeight: '500',
-  },
-});
