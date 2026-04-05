@@ -15,6 +15,7 @@ export function findStashMatch(mealName: string, recipes: Recipe[]): Recipe | nu
   const meal = norm(mealName);
   return (
     recipes.find((r) => {
+      if (r.category === 'glossary') return false;
       const stash = norm(r.name);
       if (stash.length < 5) return false;
       return meal.includes(stash) || stash.includes(meal);
