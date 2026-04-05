@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import { supabase } from '../lib/supabase';
@@ -79,7 +80,18 @@ export default function RootLayout() {
     ).catch((e) => console.error('Bootstrap chain failed:', e));
   }, [session?.user?.id]);
 
-  if (!updateReady || session === undefined) return null;
+  if (!updateReady || session === undefined) {
+    return (
+      <View style={splashStyles.container}>
+        <StatusBar style="light" />
+        <Image source={require('../assets/splash-icon.png')} style={splashStyles.logo} resizeMode="contain" />
+        <Text style={splashStyles.appName}>EatWell</Text>
+        <Text style={splashStyles.status}>
+          {!updateReady ? 'Checking for updates…' : 'Loading…'}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -95,3 +107,27 @@ export default function RootLayout() {
   );
 }
 
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#2D6A4F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  logo: {
+    width: 96,
+    height: 96,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  status: {
+    fontSize: 14,
+    color: '#A7F3D0',
+    fontWeight: '500',
+  },
+});
