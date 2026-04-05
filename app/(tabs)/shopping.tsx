@@ -14,7 +14,7 @@ import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loa
 import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 import { toTitleCase } from '../../lib/titleCase';
-import { normaliseIngredientName } from '../../lib/recipes';
+import { normaliseIngredientName, findStashMatch, parseRecipeIngredients } from '../../lib/recipes';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -108,6 +108,7 @@ export default function ShoppingScreen() {
     gardenPlants, setGardenPlants,
     upsertInventoryItem: upsertStore,
     updateShoppingItemInStore,
+    recipes, shoppingList, addShoppingItem,
   } = useAppStore();
   const insets = useSafeAreaInsets();
 
@@ -155,6 +156,7 @@ export default function ShoppingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [bulkVisible, setBulkVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<ShoppingListItem | null>(null);
+  const [expandingId, setExpandingId] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     if (!userId) return;
@@ -200,6 +202,24 @@ export default function ShoppingScreen() {
 
   const handlePantryNeedToBuy = (id: string) => {
     setPantryConfirmed((prev) => { const s = new Set(prev); s.delete(id); return s; });
+  };
+
+  const handleExpandToRecipe = async (item: ShoppingListItem, recipe: typeof recipes[0]) => {
+    if (!shoppingList || !recipe.ingredients) return;
+    setExpandingId(item.id);
+    try {
+      const parsed = parseRecipeIngredients(recipe.ingredients);
+      if (parsed.length === 0) return;
+      const added = await addAdHocShoppingItems(shoppingList.id, parsed);
+      added.forEach((i) => addShoppingItem(i));
+      // Mark the original item checked (you're making it, not buying it)
+      await toggleShoppingItemChecked(item.id, true);
+      updateShoppingItemInStore(item.id, { checked: true });
+    } catch (e) {
+      console.error('Failed to expand recipe ingredients', e);
+    } finally {
+      setExpandingId(null);
+    }
   };
 
   if (shoppingItems.length === 0) {
@@ -285,92 +305,121 @@ export default function ShoppingScreen() {
               const isGardenConfirmed = gardenConfirmed.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id);
               const isPantrySwipeable = hasPantrySwipe || (cat === 'herbs_spices' && !isGardenConfirmed) || item.is_pantry_staple;
+              const isChecked = item.checked || isPantryConfirmed || isGardenConfirmed || item.from_fridge;
+              const recipeMatch = !isChecked
+                ? findStashMatch(item.name, recipes.filter((r) => !!r.ingredients))
+                : null;
+
+              const recipeNudge = recipeMatch ? (
+                <TouchableOpacity
+                  style={styles.recipeNudge}
+                  onPress={() => handleExpandToRecipe(item, recipeMatch)}
+                  disabled={expandingId === item.id}
+                >
+                  {expandingId === item.id
+                    ? <ActivityIndicator size="small" color="#0369A1" />
+                    : <Text style={styles.recipeNudgeText}>
+                        You have a recipe for {toTitleCase(recipeMatch.name)} — use your ingredients?
+                      </Text>
+                  }
+                </TouchableOpacity>
+              ) : null;
 
               // Garden-confirmed herb — static badge, no swipe (garden is source of truth)
               if (isGardenConfirmed) {
                 return (
-                  <TouchableOpacity key={item.id} onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowConfirmed]}>
-                    <View style={[styles.leafBox, styles.leafBoxConfirmed]}>
-                      <Text style={styles.leafIcon}>🌿</Text>
-                    </View>
-                    <View style={styles.itemTextBlock}>
-                      <Text style={[styles.itemName, styles.itemNameMuted]}>{toTitleCase(item.name)}</Text>
-                      <Text style={styles.herbGardenNote}>From Your Garden</Text>
-                    </View>
-                  </TouchableOpacity>
+                  <View key={item.id}>
+                    <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowConfirmed]}>
+                      <View style={[styles.leafBox, styles.leafBoxConfirmed]}>
+                        <Text style={styles.leafIcon}>🌿</Text>
+                      </View>
+                      <View style={styles.itemTextBlock}>
+                        <Text style={[styles.itemName, styles.itemNameMuted]}>{toTitleCase(item.name)}</Text>
+                        <Text style={styles.herbGardenNote}>From Your Garden</Text>
+                      </View>
+                    </TouchableOpacity>
+                    {recipeNudge}
+                  </View>
                 );
               }
 
               // Fridge item — static badge, no interaction
               if (item.from_fridge) {
                 return (
-                  <TouchableOpacity key={item.id} onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowFridge]}>
-                    <View style={styles.fridgeBox}>
-                      <Text style={styles.fridgeTick}>✓</Text>
-                    </View>
-                    <Text style={[styles.itemName, styles.itemNameMuted]}>
-                      {itemQuantityLabel(item)}
-                    </Text>
-                    <Text style={styles.fridgeBadge}>In Fridge</Text>
-                  </TouchableOpacity>
+                  <View key={item.id}>
+                    <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowFridge]}>
+                      <View style={styles.fridgeBox}>
+                        <Text style={styles.fridgeTick}>✓</Text>
+                      </View>
+                      <Text style={[styles.itemName, styles.itemNameMuted]}>
+                        {itemQuantityLabel(item)}
+                      </Text>
+                      <Text style={styles.fridgeBadge}>In Fridge</Text>
+                    </TouchableOpacity>
+                    {recipeNudge}
+                  </View>
                 );
               }
 
               // Pantry-style swipeable (including dried herbs/spices not from garden)
               if (isPantrySwipeable) {
                 return (
-                  <SwipeableRow
-                    key={item.id}
-                    item={item}
-                    rightLabel="✓ Have It"
-                    rightColor="#3B7A57"
-                    onSwipeRight={() => handlePantryHaveIt(item)}
-                    onSwipeLeft={() => handlePantryNeedToBuy(item.id)}
-                  >
-                    <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}>
-                      <View style={[styles.pantryBox, isPantryConfirmed && styles.pantryBoxConfirmed]}>
-                        {isPantryConfirmed && <Text style={styles.confirmTick}>✓</Text>}
-                      </View>
-                      <View style={styles.itemTextBlock}>
-                        <Text style={[styles.itemName, isPantryConfirmed && styles.itemNameMuted]}>
-                          {toTitleCase(item.name)}
-                        </Text>
-                        {isPantryConfirmed && (
-                          <Text style={styles.pantryNote}>
-                            {item.name.toLowerCase().startsWith('fresh ') ? 'In Your Fridge' : 'In Your Pantry'}
+                  <View key={item.id}>
+                    <SwipeableRow
+                      item={item}
+                      rightLabel="✓ Have It"
+                      rightColor="#3B7A57"
+                      onSwipeRight={() => handlePantryHaveIt(item)}
+                      onSwipeLeft={() => handlePantryNeedToBuy(item.id)}
+                    >
+                      <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, isPantryConfirmed && styles.itemRowConfirmed]}>
+                        <View style={[styles.pantryBox, isPantryConfirmed && styles.pantryBoxConfirmed]}>
+                          {isPantryConfirmed && <Text style={styles.confirmTick}>✓</Text>}
+                        </View>
+                        <View style={styles.itemTextBlock}>
+                          <Text style={[styles.itemName, isPantryConfirmed && styles.itemNameMuted]}>
+                            {toTitleCase(item.name)}
                           </Text>
+                          {isPantryConfirmed && (
+                            <Text style={styles.pantryNote}>
+                              {item.name.toLowerCase().startsWith('fresh ') ? 'In Your Fridge' : 'In Your Pantry'}
+                            </Text>
+                          )}
+                          {cat === 'herbs_spices' && item.herb_backup && !isPantryConfirmed && (
+                            <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
+                          )}
+                        </View>
+                        {item.buy_timing === 'day_of' && !isPantryConfirmed && (
+                          <Text style={styles.dayOfBadge}>Buy Fresh</Text>
                         )}
-                        {cat === 'herbs_spices' && item.herb_backup && !isPantryConfirmed && (
-                          <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
-                        )}
-                      </View>
-                      {item.buy_timing === 'day_of' && !isPantryConfirmed && (
-                        <Text style={styles.dayOfBadge}>Buy Fresh</Text>
-                      )}
-                    </TouchableOpacity>
-                  </SwipeableRow>
+                      </TouchableOpacity>
+                    </SwipeableRow>
+                    {recipeNudge}
+                  </View>
                 );
               }
 
               // Regular item — checkbox
               return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.itemRow}
-                  onPress={() => toggleShoppingItem(item.id)}
-                  onLongPress={() => setEditTarget(item)}
-                  delayLongPress={400}
-                >
-                  <View style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
-                    {item.checked && <Text style={styles.checkTick}>✓</Text>}
-                  </View>
-                  <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
-                    {itemQuantityLabel(item)}
-                  </Text>
-                  {item.buy_timing === 'day_of' && !item.checked && (
-                    <Text style={styles.dayOfBadge}>Buy fresh</Text>
-                  )}
-                </TouchableOpacity>
+                <View key={item.id}>
+                  <TouchableOpacity
+                    style={styles.itemRow}
+                    onPress={() => toggleShoppingItem(item.id)}
+                    onLongPress={() => setEditTarget(item)}
+                    delayLongPress={400}
+                  >
+                    <View style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
+                      {item.checked && <Text style={styles.checkTick}>✓</Text>}
+                    </View>
+                    <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
+                      {itemQuantityLabel(item)}
+                    </Text>
+                    {item.buy_timing === 'day_of' && !item.checked && (
+                      <Text style={styles.dayOfBadge}>Buy fresh</Text>
+                    )}
+                  </TouchableOpacity>
+                  {recipeNudge}
+                </View>
               );
             })}
           </View>
@@ -791,6 +840,9 @@ const styles = StyleSheet.create({
   itemNameMuted: { color: '#6B7280' },
 
   herbBackup: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+
+  recipeNudge: { paddingHorizontal: 14, paddingVertical: 8, marginBottom: 4 },
+  recipeNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '500' },
   herbGardenNote: { fontSize: 12, color: '#059669', marginTop: 2, fontWeight: '500' },
   pantryNote: { fontSize: 12, color: '#3B7A57', marginTop: 2, fontWeight: '500' },
 

@@ -1,4 +1,4 @@
-import type { Recipe } from '../types';
+import type { Recipe, ItemCategory } from '../types';
 
 /**
  * Spices where the bare name implies the ground form.
@@ -41,4 +41,53 @@ export function findStashMatch(mealName: string, recipes: Recipe[]): Recipe | nu
       return meal.includes(stash) || stash.includes(meal);
     }) ?? null
   );
+}
+
+// ── Ingredient parsing ────────────────────────────────────────────────────────
+
+const MEAT_FISH   = /\b(chicken|beef|lamb|pork|fish|salmon|tuna|prawn|shrimp|bacon|sausage|mince|steak|fillet|chorizo|anchov)\b/i;
+const DAIRY_EGGS  = /\b(butter|cheese|cream|milk|yogurt|yoghurt|egg|parmesan|pecorino|ricotta|feta|mozzarella|cheddar|halloumi)\b/i;
+const HERBS_SPICES = /\b(cumin|paprika|coriander|turmeric|cinnamon|chilli|pepper|salt|oregano|thyme|rosemary|bay|cardamom|clove|nutmeg|saffron|sumac|harissa powder|za.atar|allspice|ginger|fenugreek|mace|cayenne|mustard seed)\b/i;
+const OILS_VINEGARS = /\b(oil|vinegar|olive oil|sesame oil)\b/i;
+const CONDIMENTS  = /\b(harissa|tahini|soy sauce|fish sauce|oyster sauce|miso|worcestershire|hot sauce|ketchup|mustard|mayo|paste|preserve)\b/i;
+const PRODUCE     = /\b(onion|garlic|tomato|lemon|lime|orange|carrot|celery|potato|spinach|kale|mushroom|capsicum|pepper|zucchini|eggplant|avocado|cucumber|lettuce|cabbage|broccoli|cauliflower|asparagus|leek|shallot|ginger root|chilli|feijoa|apple|pear|mango|peach|plum)\b/i;
+const BREAD       = /\b(bread|sourdough|pitta|pita|naan|tortilla|flatbread|couscous|breadcrumb)\b/i;
+const DRY_GOODS   = /\b(flour|sugar|rice|pasta|lentil|chickpea|bean|stock|broth|coconut milk|can|tin|honey|syrup|oat|quinoa|semolina|cornflour|baking)\b/i;
+
+function guessCategory(name: string): ItemCategory {
+  if (MEAT_FISH.test(name))    return 'meat_fish';
+  if (DAIRY_EGGS.test(name))   return 'dairy_eggs';
+  if (HERBS_SPICES.test(name)) return 'herbs_spices';
+  if (PRODUCE.test(name))      return 'produce';
+  if (BREAD.test(name))        return 'pantry_dry_goods';
+  if (OILS_VINEGARS.test(name)) return 'oils_vinegars';
+  if (CONDIMENTS.test(name))   return 'condiments_sauces';
+  if (DRY_GOODS.test(name))    return 'pantry_dry_goods';
+  return 'pantry_dry_goods';
+}
+
+/**
+ * Parse a free-text ingredients block (one ingredient per line) into
+ * structured { name, category } items suitable for the shopping list.
+ *
+ * "150g Chicken Thighs, boneless"  →  { name: "chicken thighs", category: "meat_fish" }
+ * "2 cloves Garlic"                →  { name: "garlic", category: "produce" }
+ * "3 tbsp Olive Oil"               →  { name: "olive oil", category: "oils_vinegars" }
+ */
+export function parseRecipeIngredients(text: string): { name: string; category: ItemCategory }[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      // Strip leading quantity + unit:  "150g", "2 cloves", "3 tbsp", "½ tsp" etc.
+      const withoutQty = line
+        .replace(/^[\d¼½¾⅓⅔.,\/\s]+/, '')          // leading numbers/fractions
+        .replace(/^(g|kg|ml|l|tsp|tbsp|cup|clove[s]?|slice[s]?|sprig[s]?|bunch|handful|pinch|dash|piece[s]?|head|stalk[s]?|sheet[s]?)\s+/i, '')
+        .replace(/,.*$/, '')                         // strip trailing notes
+        .trim();
+      const name = normaliseIngredientName(withoutQty.toLowerCase());
+      return { name, category: guessCategory(name) };
+    })
+    .filter(({ name }) => name.length > 1);
 }
