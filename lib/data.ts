@@ -429,6 +429,13 @@ export async function saveShoppingList(
     .single();
   if (listError) throw listError;
 
+  // Items too universal to buy — available at tap/from kitchen basics
+  const SKIP_INGREDIENTS = new Set([
+    'water', 'salt', 'pepper', 'black pepper', 'white pepper', 'sea salt',
+    'table salt', 'rock salt', 'salt and pepper', 'ground black pepper',
+    'ground pepper', 'cracked pepper', 'freshly ground pepper',
+  ]);
+
   const itemMap = new Map<string, ShoppingListItem>();
 
   for (const meal of generated.meals) {
@@ -438,8 +445,12 @@ export async function saveShoppingList(
       // Normalise name for deduplication so "egg" and "eggs" (or any case variant) merge,
       // and bare spice names resolve to their ground form ("cumin" → "ground cumin")
       const normName = normaliseIngredientName(ing.name.toLowerCase().trim());
+      if (SKIP_INGREDIENTS.has(normName)) continue;
+
       const cat = normalizeCategory(ing.ingredient_category ?? 'produce');
-      const key = `${normName}__${cat}`;
+      // Key by name only (not name+category) so the same ingredient isn't duplicated
+      // if Claude assigns it different categories across different meals
+      const key = normName;
 
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;

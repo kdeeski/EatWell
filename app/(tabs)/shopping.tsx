@@ -309,7 +309,11 @@ export default function ShoppingScreen() {
               const isPantrySwipeable = hasPantrySwipe || (cat === 'herbs_spices' && !isGardenConfirmed) || item.is_pantry_staple;
               const isChecked = item.checked || isPantryConfirmed || isGardenConfirmed || item.from_fridge;
               const recipeMatch = !isChecked
-                ? findStashMatch(item.name, recipes.filter((r) => !!r.ingredients))
+                ? findStashMatch(item.name, recipes.filter((r) => !!r.ingredients), { strict: true })
+                : null;
+              // Recipe exists in stash but has no parsed ingredients — show a softer nudge
+              const recipeMatchNoIngredients = !isChecked && !recipeMatch
+                ? findStashMatch(item.name, recipes, { strict: true })
                 : null;
 
               const recipeNudge = recipeMatch ? (
@@ -325,6 +329,12 @@ export default function ShoppingScreen() {
                       </Text>
                   }
                 </TouchableOpacity>
+              ) : recipeMatchNoIngredients ? (
+                <View style={styles.recipeNudge}>
+                  <Text style={styles.recipeNudgeText}>
+                    You have a recipe for {toTitleCase(recipeMatchNoIngredients.name)} — add ingredients to it to expand your shopping list
+                  </Text>
+                </View>
               ) : null;
 
               // Garden-confirmed herb — static badge, no swipe (garden is source of truth)

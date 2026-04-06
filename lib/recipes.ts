@@ -21,24 +21,32 @@ export function normaliseIngredientName(raw: string): string {
 }
 
 /**
- * Fuzzy-match a planned meal name against the recipe stash.
- * A match is found if either name (normalised) is a substring of the other,
- * and the shorter of the two is at least 5 characters.
+ * Fuzzy-match a name against the recipe stash.
  *
- * Examples:
- *   "Shakshuka" (stash) ↔ "Shakshuka with Sourdough" (plan) → match
- *   "Pulled Pork" (stash) ↔ "Pulled Pork with Coleslaw" (plan) → match
- *   "Pasta" (stash) ↔ "Chicken Pasta Bake" (plan) → no match (too short/generic)
+ * Default (loose) mode — for meal plan matching:
+ *   Either name is a substring of the other, min 5 chars.
+ *   "Shakshuka with Sourdough" matches stash "Shakshuka" ✓
+ *
+ * Strict mode — for shopping list matching:
+ *   Only matches if the item name CONTAINS the recipe name.
+ *   Prevents "lemon" matching "Baked Snapper with Lemon and Capers".
+ *   "harissa paste" contains "harissa" → match ✓
+ *   "lemon" does not contain "baked snapper…" → no match ✓
  */
-export function findStashMatch(mealName: string, recipes: Recipe[]): Recipe | null {
+export function findStashMatch(
+  mealName: string,
+  recipes: Recipe[],
+  options?: { strict?: boolean }
+): Recipe | null {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
   const meal = norm(mealName);
+  const strict = options?.strict ?? false;
   return (
     recipes.find((r) => {
       if (r.category === 'glossary') return false;
       const stash = norm(r.name);
       if (stash.length < 5) return false;
-      return meal.includes(stash) || stash.includes(meal);
+      return strict ? meal.includes(stash) : (meal.includes(stash) || stash.includes(meal));
     }) ?? null
   );
 }
