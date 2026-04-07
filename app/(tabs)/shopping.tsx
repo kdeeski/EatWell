@@ -119,6 +119,8 @@ export default function ShoppingScreen() {
     items.forEach((item) => {
       // Don't auto-confirm pantry staples — they're on the list to be replenished
       if (item.is_pantry_staple) return;
+      // Don't auto-confirm ad-hoc items — they were explicitly added to buy
+      if (item.is_adhoc) return;
       const normItem = normaliseIngredientName(item.name.toLowerCase().trim());
       if (inv.some((p) => !p.depleted && normaliseIngredientName(p.name.toLowerCase().trim()) === normItem)) {
         confirmed.add(item.id);
