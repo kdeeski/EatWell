@@ -240,8 +240,8 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
               );
             })() : null}
 
-            {/* Drink pairing */}
-            <View style={styles.section}>
+            {/* Drink pairing — only for mains/sides/desserts/baking */}
+            {!['glossary', 'sauces_dressings', 'marinades_rubs'].includes(recipe.category) && <View style={styles.section}>
               {wineResult ? (
                 <>
                   <Text style={styles.sectionLabel}>Drink pairing</Text>
@@ -271,7 +271,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
                   <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
                 </TouchableOpacity>
               ) : null}
-            </View>
+            </View>}
 
             {/* Edit / Delete */}
             <View style={styles.actionRow}>
