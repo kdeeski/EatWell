@@ -303,11 +303,6 @@ export default function ShoppingScreen() {
           }}>
             <Text style={styles.addButtonText}>+ Add</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.shopModeButton, shopMode && styles.shopModeButtonActive]} onPress={toggleShopMode}>
-            <Text style={[styles.shopModeText, shopMode && styles.shopModeTextActive]}>
-              {shopMode ? 'Shop Mode ✓' : 'Shop Mode'}
-            </Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
             {refreshing
               ? <ActivityIndicator size="small" color="#3B7A57" />
@@ -497,12 +492,17 @@ export default function ShoppingScreen() {
         );
       })}
 
-      <TouchableOpacity style={styles.doneLink} onPress={handleDoneShopping} disabled={clearingDone}>
-        {clearingDone
-          ? <ActivityIndicator size="small" color="#9CA3AF" />
-          : <Text style={styles.doneLinkText}>Done shopping — clear completed ✓</Text>
-        }
-      </TouchableOpacity>
+      <View style={styles.bottomActions}>
+        <TouchableOpacity style={[styles.shopModeBtn, shopMode && styles.shopModeBtnActive]} onPress={toggleShopMode}>
+          <Text style={styles.shopModeBtnText}>{shopMode ? 'Shop Mode On ✓' : 'Shop Mode'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.clearDoneLink} onPress={handleDoneShopping} disabled={clearingDone}>
+          {clearingDone
+            ? <ActivityIndicator size="small" color="#EF4444" />
+            : <Text style={styles.clearDoneLinkText}>Clear completed items</Text>
+          }
+        </TouchableOpacity>
+      </View>
     </ScrollView>
     </View>
   );
@@ -869,12 +869,12 @@ const styles = StyleSheet.create({
   headingButtons: { flexDirection: 'row', gap: 8 },
   addButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#3B7A57', alignItems: 'center' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  doneLink: { alignItems: 'flex-end', paddingHorizontal: 4, paddingVertical: 16 },
-  doneLinkText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  shopModeButton: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center' },
-  shopModeButtonActive: { backgroundColor: '#3B7A57' },
-  shopModeText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  shopModeTextActive: { color: '#fff' },
+  bottomActions: { paddingTop: 24, paddingBottom: 8, gap: 12 },
+  shopModeBtn: { backgroundColor: '#1C1C1E', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  shopModeBtnActive: { backgroundColor: '#3B7A57' },
+  shopModeBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  clearDoneLink: { alignItems: 'center', paddingVertical: 4 },
+  clearDoneLinkText: { fontSize: 13, color: '#EF4444', fontWeight: '500' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
   refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 
