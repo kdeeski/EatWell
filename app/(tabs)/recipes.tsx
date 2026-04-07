@@ -223,12 +223,14 @@ export default function RecipesScreen() {
                       <Text style={styles.expandedDesc}>{item.description}</Text>
                     ) : null}
 
-                    <TouchableOpacity
-                      onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
-                      hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
-                    >
-                      <Text style={styles.expandedViewFull}>View full recipe →</Text>
-                    </TouchableOpacity>
+                    {item.category !== 'glossary' && (
+                      <TouchableOpacity
+                        onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                        hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+                      >
+                        <Text style={styles.expandedViewFull}>View full recipe →</Text>
+                      </TouchableOpacity>
+                    )}
 
                     {showDrinkPairing && (
                       wineResult ? (
