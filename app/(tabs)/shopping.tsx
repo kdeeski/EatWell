@@ -117,6 +117,8 @@ export default function ShoppingScreen() {
   const buildConfirmed = (items: typeof shoppingItems, inv: typeof inventoryItems) => {
     const confirmed = new Set<string>();
     items.forEach((item) => {
+      // Don't auto-confirm pantry staples — they're on the list to be replenished
+      if (item.is_pantry_staple) return;
       const normItem = normaliseIngredientName(item.name.toLowerCase().trim());
       if (inv.some((p) => normaliseIngredientName(p.name.toLowerCase().trim()) === normItem && !p.depleted)) {
         confirmed.add(item.id);
