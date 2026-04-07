@@ -13,8 +13,15 @@ const GROUND_BY_DEFAULT = new Set([
 
 const QUALIFIERS = /\b(ground|whole|fresh|dried|seeds?|flakes?|crushed|smoked)\b/i;
 
+/** Ingredient aliases: vague or colloquial names → specific default */
+const ALIASES: Record<string, string> = {
+  'rice':         'jasmine rice',
+  'risotto rice': 'arborio rice',
+};
+
 export function normaliseIngredientName(raw: string): string {
   const name = raw.toLowerCase().trim();
+  if (ALIASES[name]) return ALIASES[name];
   if (QUALIFIERS.test(name)) return name; // already qualified — leave it
   if (GROUND_BY_DEFAULT.has(name)) return `ground ${name}`;
   return name;
