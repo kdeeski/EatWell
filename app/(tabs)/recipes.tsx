@@ -152,8 +152,10 @@ export default function RecipesScreen() {
             }
             return (
               <TouchableOpacity
-                style={[styles.row, isExpanded && styles.rowExpanded]}
-                onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                style={styles.row}
+                onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                onLongPress={() => { setEditRecipe(item); setShowSave(true); }}
+                delayLongPress={400}
                 activeOpacity={0.7}
               >
                 <View style={styles.rowTop}>
@@ -168,26 +170,12 @@ export default function RecipesScreen() {
                       {item.rating != null && (
                         <Text style={styles.rowRating}>{'★'.repeat(item.rating)}</Text>
                       )}
+                      {sourceDomain ? (
+                        <Text style={styles.rowDomain}>{sourceDomain}</Text>
+                      ) : null}
                     </View>
                   </View>
-                  <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
                 </View>
-
-                {isExpanded && (
-                  <View style={styles.rowExpansion}>
-                    {item.description ? (
-                      <Text style={styles.rowDescription}>{item.description}</Text>
-                    ) : null}
-                    <TouchableOpacity
-                      onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Text style={styles.viewRecipeLink}>
-                        {sourceDomain ? `View Recipe → ${sourceDomain}` : 'View Recipe →'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
               </TouchableOpacity>
             );
           }}
@@ -309,10 +297,7 @@ const styles = StyleSheet.create({
   },
   rowBadgeText: { fontSize: 12, fontWeight: '600' },
   rowRating: { fontSize: 14, color: '#F59E0B' },
-  chevron: { fontSize: 11, color: '#9CA3AF', marginLeft: 8 },
-  rowExpansion: { marginTop: 12, gap: 10 },
-  rowDescription: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
-  viewRecipeLink: { fontSize: 14, fontWeight: '600', color: '#3B7A57' },
+  rowDomain: { fontSize: 12, color: '#9CA3AF' },
 
   emptyState: {
     flex: 1,

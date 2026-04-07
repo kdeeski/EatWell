@@ -75,9 +75,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
               <Text style={styles.headerBtn}>Close</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle} numberOfLines={1}>{recipe.name}</Text>
-            <TouchableOpacity onPress={onEdit} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={styles.headerBtnRight}>Edit</Text>
-            </TouchableOpacity>
+            <View style={{ minWidth: 48 }} />
           </View>
 
           <ScrollView
@@ -180,10 +178,16 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
               );
             })() : null}
 
-            {/* Delete */}
-            <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
-              <Text style={styles.deleteBtnText}>Delete Recipe</Text>
-            </TouchableOpacity>
+            {/* Edit / Delete */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity onPress={onEdit}>
+                <Text style={styles.actionLink}>Edit recipe</Text>
+              </TouchableOpacity>
+              <Text style={styles.actionDivider}>·</Text>
+              <TouchableOpacity onPress={onDelete}>
+                <Text style={styles.actionLinkDestructive}>Delete recipe</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -249,8 +253,10 @@ const styles = StyleSheet.create({
   cookModeBtn: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
   cookModeBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 
-  deleteBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444' },
-  deleteBtnText: { color: '#EF4444', fontSize: 15, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 8 },
+  actionLink: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  actionLinkDestructive: { fontSize: 13, color: '#EF4444', fontWeight: '500' },
+  actionDivider: { fontSize: 13, color: '#D1D5DB' },
 
   sourceLink: { gap: 2 },
   sourceLinkLabel: { fontSize: 15, fontWeight: '600', color: '#3B7A57' },

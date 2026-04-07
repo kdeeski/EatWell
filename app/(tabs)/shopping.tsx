@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem, deleteShoppingItems } from '../../lib/data';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 import { toTitleCase } from '../../lib/titleCase';
@@ -159,6 +160,17 @@ export default function ShoppingScreen() {
   const [editTarget, setEditTarget] = useState<ShoppingListItem | null>(null);
   const [expandingId, setExpandingId] = useState<string | null>(null);
   const [clearingDone, setClearingDone] = useState(false);
+  const [shopMode, setShopMode] = useState(false);
+
+  const toggleShopMode = async () => {
+    if (shopMode) {
+      deactivateKeepAwake();
+      setShopMode(false);
+    } else {
+      await activateKeepAwakeAsync();
+      setShopMode(true);
+    }
+  };
 
   const handleDoneShopping = () => {
     const doneIds = shoppingItems
@@ -290,6 +302,11 @@ export default function ShoppingScreen() {
             setBulkVisible(true);
           }}>
             <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.shopModeButton, shopMode && styles.shopModeButtonActive]} onPress={toggleShopMode}>
+            <Text style={[styles.shopModeText, shopMode && styles.shopModeTextActive]}>
+              {shopMode ? 'Shop Mode ✓' : 'Shop Mode'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
             {refreshing
@@ -854,6 +871,10 @@ const styles = StyleSheet.create({
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   doneLink: { alignItems: 'flex-end', paddingHorizontal: 4, paddingVertical: 16 },
   doneLinkText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  shopModeButton: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center' },
+  shopModeButtonActive: { backgroundColor: '#3B7A57' },
+  shopModeText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  shopModeTextActive: { color: '#fff' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
   refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 

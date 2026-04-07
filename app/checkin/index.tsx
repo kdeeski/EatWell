@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -223,7 +224,8 @@ export default function CheckinFlow() {
         <View style={{ width: 48 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         {/* Debrief */}
         {step === 'debrief' && (
@@ -386,6 +388,7 @@ export default function CheckinFlow() {
         )}
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
