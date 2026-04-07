@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  LayoutAnimation, Platform, UIManager,
+  LayoutAnimation, Platform, UIManager, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
+import { getWineMatch } from '../../lib/claude';
+import type { WineMatchResult } from '../../lib/claude';
 import type { PlannedMeal, PlannedIngredient, Recipe } from '../../types';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
@@ -31,7 +33,7 @@ const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export default function PlanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, currentMealPlan, setMealPlan, userId, recipes } = useAppStore();
+  const { plannedMeals, currentMealPlan, setMealPlan, userId, recipes, userPreferences } = useAppStore();
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,6 +41,9 @@ export default function PlanScreen() {
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
+  const [wineResult, setWineResult]   = useState<WineMatchResult | null>(null);
+  const [wineLoading, setWineLoading] = useState(false);
+  const [wineError, setWineError]     = useState<string | null>(null);
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -69,6 +74,29 @@ export default function PlanScreen() {
       .then((data) => { if (data) setMealPlan(data.plan, data.meals); })
       .catch((e) => setLoadError(e?.message ?? String(e)));
   }, [userId]);
+
+  // Reset wine result when selected slot changes
+  useEffect(() => {
+    setWineResult(null);
+    setWineError(null);
+  }, [selectedSlot]);
+
+  async function handleWineMatch(meal: PlannedMeal) {
+    setWineLoading(true);
+    setWineError(null);
+    try {
+      const result = await getWineMatch({
+        meal_name: meal.meal_name,
+        description: meal.description ?? undefined,
+        detail_level: userPreferences?.wine_detail_level ?? 'simple',
+      });
+      setWineResult(result);
+    } catch (e: any) {
+      setWineError(e.message ?? 'Could not fetch wine pairing.');
+    } finally {
+      setWineLoading(false);
+    }
+  }
 
   const moveSelected = (direction: -1 | 1) => {
     if (selectedSlot === null) return;
@@ -223,6 +251,38 @@ export default function PlanScreen() {
                             </>
                           );
                         })()}
+                        {isSelected && (
+                          <View style={styles.wineSection}>
+                            {wineResult ? (
+                              <>
+                                {wineResult.pairings.map((p, i) => (
+                                  <View key={i} style={styles.wineCard}>
+                                    <Text style={styles.wineVarietal}>{p.varietal}</Text>
+                                    <Text style={styles.wineReason}>{p.reason}</Text>
+                                    {p.pairing_note ? (
+                                      <Text style={styles.wineNote}>{p.pairing_note}</Text>
+                                    ) : null}
+                                  </View>
+                                ))}
+                                <TouchableOpacity onPress={() => setWineResult(null)}>
+                                  <Text style={styles.wineDismiss}>Clear</Text>
+                                </TouchableOpacity>
+                              </>
+                            ) : (
+                              <TouchableOpacity onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
+                                {wineLoading
+                                  ? <ActivityIndicator size="small" color="#3B7A57" />
+                                  : <Text style={styles.howToButtonText}>Wine match →</Text>
+                                }
+                              </TouchableOpacity>
+                            )}
+                            {wineError ? (
+                              <TouchableOpacity onPress={() => handleWineMatch(meal)}>
+                                <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
+                              </TouchableOpacity>
+                            ) : null}
+                          </View>
+                        )}
                       </>
                     ) : (
                       <Text style={styles.nightOff}>Night off</Text>
@@ -395,4 +455,12 @@ const styles = StyleSheet.create({
   stashNudge: { marginTop: 8 },
   stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+
+  wineSection: { marginTop: 8, gap: 6 },
+  wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 3 },
+  wineVarietal: { fontSize: 13, fontWeight: '700', color: '#1C1C1E' },
+  wineReason: { fontSize: 13, color: '#374151', lineHeight: 18 },
+  wineNote: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 3 },
+  wineDismiss: { fontSize: 12, color: '#9CA3AF' },
+  wineError: { fontSize: 12, color: '#EF4444' },
 });

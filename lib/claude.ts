@@ -232,6 +232,52 @@ export async function getCookingGuide(mealName: string, description: string, exi
   }
 }
 
+// ─── Wine Match ───────────────────────────────────────────────────────────────
+
+export interface WineMatchInput {
+  meal_name: string;
+  description?: string;
+  detail_level: 'simple' | 'detailed';
+}
+
+export interface WinePairing {
+  varietal: string;
+  reason: string;
+  pairing_note?: string;
+}
+
+export interface WineMatchResult {
+  pairings: WinePairing[];
+}
+
+export async function getWineMatch(input: WineMatchInput): Promise<WineMatchResult> {
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/wine-match';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+    return data as WineMatchResult;
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new Error('Wine match timed out — please try again.');
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function categorisePantryItems(
   itemNames: string[]
 ): Promise<CategorisedItem[]> {

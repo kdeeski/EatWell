@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Linking,
+  TouchableOpacity, Linking, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
 import CookModeModal from './CookModeModal';
+import { getWineMatch } from '../../lib/claude';
+import type { WineMatchResult } from '../../lib/claude';
+import { useAppStore } from '../../store/useAppStore';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -61,9 +64,30 @@ function GuideComponentCard({ component }: { component: NonNullable<Recipe['guid
 
 export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, onCookMode }: Props) {
   const insets = useSafeAreaInsets();
+  const { userPreferences } = useAppStore();
   const [showCookMode, setShowCookMode] = useState(false);
+  const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
+  const [wineLoading, setWineLoading] = useState(false);
+  const [wineError, setWineError] = useState<string | null>(null);
   const badgeColour = CATEGORY_COLOURS[recipe.category];
   const guide = recipe.guide_json;
+
+  async function handleWineMatch() {
+    setWineLoading(true);
+    setWineError(null);
+    try {
+      const result = await getWineMatch({
+        meal_name: recipe.name,
+        description: recipe.description ?? undefined,
+        detail_level: userPreferences?.wine_detail_level ?? 'simple',
+      });
+      setWineResult(result);
+    } catch (e: any) {
+      setWineError(e.message ?? 'Could not fetch wine pairing.');
+    } finally {
+      setWineLoading(false);
+    }
+  }
 
   return (
     <>
@@ -178,6 +202,39 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
               );
             })() : null}
 
+            {/* Wine match */}
+            <View style={styles.section}>
+              {wineResult ? (
+                <>
+                  <Text style={styles.sectionLabel}>Wine pairing</Text>
+                  {wineResult.pairings.map((p, i) => (
+                    <View key={i} style={styles.wineCard}>
+                      <Text style={styles.wineVarietal}>{p.varietal}</Text>
+                      <Text style={styles.wineReason}>{p.reason}</Text>
+                      {p.pairing_note ? (
+                        <Text style={styles.wineNote}>{p.pairing_note}</Text>
+                      ) : null}
+                    </View>
+                  ))}
+                  <TouchableOpacity onPress={() => setWineResult(null)}>
+                    <Text style={styles.wineDismiss}>Clear</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity onPress={handleWineMatch} disabled={wineLoading}>
+                  {wineLoading
+                    ? <ActivityIndicator size="small" color="#3B7A57" />
+                    : <Text style={styles.sourceLinkLabel}>Wine match →</Text>
+                  }
+                </TouchableOpacity>
+              )}
+              {wineError ? (
+                <TouchableOpacity onPress={handleWineMatch}>
+                  <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
             {/* Edit / Delete */}
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={onEdit}>
@@ -261,4 +318,11 @@ const styles = StyleSheet.create({
   sourceLink: { gap: 2 },
   sourceLinkLabel: { fontSize: 15, fontWeight: '600', color: '#3B7A57' },
   sourceLinkDomain: { fontSize: 12, color: '#9CA3AF' },
+
+  wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, gap: 4 },
+  wineVarietal: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  wineReason: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  wineNote: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 4 },
+  wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+  wineError: { fontSize: 13, color: '#EF4444', marginTop: 4 },
 });

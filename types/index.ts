@@ -61,6 +61,7 @@ export interface UserPreferences {
   holly_joins_regularly: boolean;
   cooking_notes: string | null;
   garden_location: string;
+  wine_detail_level?: 'simple' | 'detailed';
   created_at: string;
   updated_at: string;
 }

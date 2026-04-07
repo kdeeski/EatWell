@@ -10,7 +10,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { saveUserPreferences } from '../lib/data';
-import type { SpiceLevel, WeekendCooking } from '../types';
+import type { SpiceLevel, WeekendCooking, UserPreferences } from '../types';
+type WineDetailLevel = NonNullable<UserPreferences['wine_detail_level']>;
 
 const CUISINES = [
   'Asian', 'Mediterranean', 'Middle Eastern', 'French', 'Italian',
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
   const [hollyJoins, setHollyJoins]           = useState<boolean>(userPreferences?.holly_joins_regularly ?? true);
   const [cookingNotes, setCookingNotes]       = useState<string>(userPreferences?.cooking_notes ?? '');
   const [gardenLocation, setGardenLocation]   = useState<string>(userPreferences?.garden_location ?? 'Canterbury, New Zealand');
+  const [wineDetailLevel, setWineDetailLevel] = useState<WineDetailLevel>(userPreferences?.wine_detail_level ?? 'simple');
   const [saving, setSaving]                   = useState(false);
 
   const handleSave = async () => {
@@ -52,6 +54,7 @@ export default function SettingsScreen() {
         holly_joins_regularly: hollyJoins,
         cooking_notes: cookingNotes.trim() || null,
         garden_location: gardenLocation.trim() || 'Canterbury, New Zealand',
+        wine_detail_level: wineDetailLevel,
       });
       setUserPreferences(saved);
       router.back();
@@ -192,6 +195,25 @@ export default function SettingsScreen() {
           autoCapitalize="words"
         />
         <Text style={styles.hint}>Used to tailor planting suggestions to your climate.</Text>
+
+        {/* ── Wine Matching ───────────────────────────────────── */}
+        <SectionHeader>Wine Matching</SectionHeader>
+
+        <FieldLabel>Pairing detail</FieldLabel>
+        <View style={styles.pillRow}>
+          {([{ val: 'simple', label: 'Simple' }, { val: 'detailed', label: 'Detailed' }] as { val: WineDetailLevel; label: string }[]).map((opt) => (
+            <TouchableOpacity
+              key={opt.val}
+              style={[styles.pill, wineDetailLevel === opt.val && styles.pillSelectedGreen]}
+              onPress={() => setWineDetailLevel(opt.val)}
+            >
+              <Text style={[styles.pillText, wineDetailLevel === opt.val && styles.pillTextSelected]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.hint}>Simple shows varietal + one-line reason. Detailed adds food-wine interaction notes.</Text>
 
       </ScrollView>
     </View>
