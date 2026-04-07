@@ -191,6 +191,26 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                 </ScrollView>
               </View>
 
+              {/* Source URL */}
+              <View style={styles.fieldGroup}>
+                <View style={styles.fieldLabelRow}>
+                  <Text style={styles.fieldLabel}>Source URL</Text>
+                  <TouchableOpacity onPress={() => setShowBrowser(true)}>
+                    <Text style={styles.findOnWebBtn}>Find on web →</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.textInput}
+                  value={sourceUrl}
+                  onChangeText={setSourceUrl}
+                  placeholder="https://..."
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
               {/* Description */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Description</Text>
@@ -236,25 +256,6 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                 />
               </View>
 
-              {/* Source URL */}
-              <View style={styles.fieldGroup}>
-                <View style={styles.fieldLabelRow}>
-                  <Text style={styles.fieldLabel}>Source URL</Text>
-                  <TouchableOpacity onPress={() => setShowBrowser(true)}>
-                    <Text style={styles.findOnWebBtn}>Find on web →</Text>
-                  </TouchableOpacity>
-                </View>
-                <TextInput
-                  style={styles.textInput}
-                  value={sourceUrl}
-                  onChangeText={setSourceUrl}
-                  placeholder="https://..."
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="url"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>

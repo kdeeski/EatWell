@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
-  ActivityIndicator,
+  ActivityIndicator, Linking,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -213,6 +213,12 @@ export default function RecipesScreen() {
 
                 {isExpanded && (
                   <View style={styles.expandedBody}>
+                    {sourceDomain ? (
+                      <TouchableOpacity onPress={() => Linking.openURL(item.source_url!)} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}>
+                        <Text style={styles.expandedDomain}>{sourceDomain}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
                     {item.description ? (
                       <Text style={styles.expandedDesc}>{item.description}</Text>
                     ) : null}
@@ -385,6 +391,7 @@ const styles = StyleSheet.create({
   rowHint: { fontSize: 12, color: '#9CA3AF' },
 
   expandedBody: { marginTop: 10, gap: 8 },
+  expandedDomain: { fontSize: 13, color: '#3B7A57', fontWeight: '500' },
   expandedDesc: { fontSize: 14, color: '#374151', lineHeight: 21 },
   expandedViewFull: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
   expandedDrinkPairing: { fontSize: 13, fontWeight: '600', color: '#3B7A57', marginTop: 2 },
