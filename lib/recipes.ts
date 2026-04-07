@@ -13,6 +13,17 @@ const GROUND_BY_DEFAULT = new Set([
 
 const QUALIFIERS = /\b(ground|whole|fresh|dried|seeds?|flakes?|crushed|smoked)\b/i;
 
+/**
+ * Herbs where the bare name implies fresh leaves.
+ * "rosemary" → "fresh rosemary", unless already qualified
+ * (e.g. "dried rosemary", "fresh thyme").
+ */
+const FRESH_BY_DEFAULT = new Set([
+  'basil', 'parsley', 'mint', 'chives', 'dill', 'tarragon',
+  'chervil', 'sage', 'thyme', 'rosemary', 'oregano', 'marjoram',
+  'lemongrass', 'kaffir lime leaves',
+]);
+
 /** Ingredient aliases: vague or colloquial names → specific default */
 const ALIASES: Record<string, string> = {
   'rice':         'jasmine rice',
@@ -23,6 +34,7 @@ export function normaliseIngredientName(raw: string): string {
   const name = raw.toLowerCase().trim();
   if (ALIASES[name]) return ALIASES[name];
   if (QUALIFIERS.test(name)) return name; // already qualified — leave it
+  if (FRESH_BY_DEFAULT.has(name)) return `fresh ${name}`;
   if (GROUND_BY_DEFAULT.has(name)) return `ground ${name}`;
   return name;
 }
