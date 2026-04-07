@@ -277,7 +277,8 @@ export default function ShoppingScreen() {
   }, {});
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
+    <View style={styles.screenWrapper}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 100 }]}>
       <View style={styles.headingRow}>
         <Text style={styles.heading}>Shopping</Text>
         <View style={styles.headingButtons}>
@@ -289,12 +290,6 @@ export default function ShoppingScreen() {
             setBulkVisible(true);
           }}>
             <Text style={styles.addButtonText}>+ Add</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.doneButton} onPress={handleDoneShopping} disabled={clearingDone}>
-            {clearingDone
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.doneButtonText}>Done ✓</Text>
-            }
           </TouchableOpacity>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
             {refreshing
@@ -485,6 +480,17 @@ export default function ShoppingScreen() {
         );
       })}
     </ScrollView>
+    <TouchableOpacity
+      style={[styles.fab, { bottom: insets.bottom + 72 }]}
+      onPress={handleDoneShopping}
+      disabled={clearingDone}
+    >
+      {clearingDone
+        ? <ActivityIndicator size="small" color="#fff" />
+        : <Text style={styles.fabText}>Done Shopping ✓</Text>
+      }
+    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -840,6 +846,7 @@ const modalStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  screenWrapper: { flex: 1, backgroundColor: '#FAFAF8' },
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   centered: { justifyContent: 'center', alignItems: 'center', padding: 32 },
   content: { padding: 20 },
@@ -848,8 +855,13 @@ const styles = StyleSheet.create({
   headingButtons: { flexDirection: 'row', gap: 8 },
   addButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#3B7A57', alignItems: 'center' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  doneButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#0369A1', minWidth: 72, alignItems: 'center' },
-  doneButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  fab: {
+    position: 'absolute', right: 20, paddingHorizontal: 20, paddingVertical: 14,
+    borderRadius: 28, backgroundColor: '#0369A1',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6,
+    elevation: 6, minWidth: 160, alignItems: 'center',
+  },
+  fabText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
   refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 

@@ -436,6 +436,12 @@ export async function saveShoppingList(
     'ground pepper', 'cracked pepper', 'freshly ground pepper',
   ]);
 
+  // AI artefact words that indicate a vague/placeholder ingredient name
+  const AI_ARTEFACT = /^(which|any|your choice|optional|to taste|as needed|to serve|for serving|garnish)/i;
+
+  // Names that are clearly meat/fish regardless of what category Claude assigned
+  const FORCE_MEAT_FISH = /\b(fillet|steak|breast|thigh|mince|chicken|beef|lamb|pork|salmon|tuna|snapper|barramundi|cod|hake|prawn|shrimp|scallop|mussel|squid|octopus|anchov|sardine|mackerel|trout|bream|flathead|whiting)\b/i;
+
   const itemMap = new Map<string, ShoppingListItem>();
 
   for (const meal of generated.meals) {
@@ -446,8 +452,12 @@ export async function saveShoppingList(
       // and bare spice names resolve to their ground form ("cumin" → "ground cumin")
       const normName = normaliseIngredientName(ing.name.toLowerCase().trim());
       if (SKIP_INGREDIENTS.has(normName)) continue;
+      if (AI_ARTEFACT.test(normName)) continue;
 
-      const cat = normalizeCategory(ing.ingredient_category ?? 'produce');
+      // Override obviously wrong categories from Claude
+      let cat = normalizeCategory(ing.ingredient_category ?? 'produce');
+      if (FORCE_MEAT_FISH.test(normName)) cat = 'meat_fish';
+
       // Key by name only (not name+category) so the same ingredient isn't duplicated
       // if Claude assigns it different categories across different meals
       const key = normName;
