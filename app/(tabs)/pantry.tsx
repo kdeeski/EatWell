@@ -39,7 +39,7 @@ const LOCATIONS: { key: ItemLocation; label: string; emoji: string }[] = [
   { key: 'garden',  label: 'Garden',  emoji: '🌿' },
 ];
 
-const UNITS = ['g', 'kg', 'ml', 'l', 'bunch', 'pack', 'piece', 'jar', 'can'];
+const UNITS = ['g', 'kg', 'ml', 'l', 'bunch', 'pack', 'each', 'piece', 'jar', 'can'];
 
 const CAT_LABEL: Record<ItemCategory, string> = Object.fromEntries(
   CATEGORIES.map((c) => [c.key, c.label])
@@ -255,13 +255,13 @@ function InventoryRow({ item, onReplenish, onRemove, onEdit }: {
         <TouchableOpacity style={[styles.itemRow, isLowStock && styles.itemRowLowStock]} onPress={onEdit} activeOpacity={0.7}>
           <View style={styles.itemLeft}>
             <Text style={styles.itemName}>{toTitleCase(item.name)}</Text>
-            {(isLowStock || (item.unit !== 'piece' || item.quantity !== 1)) && (
+            {(isLowStock || !(['piece','each'].includes(item.unit) && item.quantity === 1)) && (
               <Text style={styles.itemMeta}>
                 {item.quantity} {item.unit}
                 {isLowStock && <Text style={styles.lowStockText}>  · Low stock</Text>}
               </Text>
             )}
-            {isLowStock && item.unit === 'piece' && item.quantity === 1 && (
+            {isLowStock && ['piece','each'].includes(item.unit) && item.quantity === 1 && (
               <Text style={[styles.itemMeta, styles.lowStockText]}>Low stock</Text>
             )}
           </View>
@@ -296,7 +296,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
     existingItem?.location ?? defaultLocation(existingItem?.category ?? 'pantry_dry_goods')
   );
   const [quantity, setQuantity]   = useState(String(existingItem?.quantity ?? '1'));
-  const [unit, setUnit]           = useState(existingItem?.unit ?? 'piece');
+  const [unit, setUnit]           = useState(existingItem?.unit ?? 'each');
   const [minQty, setMinQty]       = useState(String(existingItem?.min_quantity ?? '0'));
   const [notes, setNotes]         = useState(existingItem?.notes ?? '');
   const [saving, setSaving]       = useState(false);
