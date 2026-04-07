@@ -284,23 +284,8 @@ export default function ShoppingScreen() {
     );
   }
 
-  // Deduplicate by normalised name — keep first occurrence (highest category priority),
-  // sum quantities. Handles legacy duplicates from before the name-only dedup fix.
-  const deduped = (() => {
-    const seen = new Map<string, ShoppingListItem>();
-    for (const item of shoppingItems) {
-      const key = normaliseIngredientName(item.name.toLowerCase().trim());
-      if (seen.has(key)) {
-        seen.get(key)!.quantity += item.quantity;
-      } else {
-        seen.set(key, { ...item });
-      }
-    }
-    return Array.from(seen.values());
-  })();
-
   const itemsByCategory = CATEGORY_ORDER.reduce<Record<string, ShoppingListItem[]>>((acc, cat) => {
-    const group = deduped.filter((i) => (i.ingredient_category ?? 'produce') === cat);
+    const group = shoppingItems.filter((i) => (i.ingredient_category ?? 'produce') === cat);
     if (group.length > 0) acc[cat] = group;
     return acc;
   }, {});
