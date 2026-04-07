@@ -1,13 +1,25 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator,
+  TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
 import { saveRecipe, updateRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
 import RecipeBrowserModal from './RecipeBrowserModal';
+
+const CLAUDE_PROMPT = `Please give me this recipe in the following JSON format (respond with the JSON object only):
+{
+  "name": "Recipe Name",
+  "category": "mains",
+  "description": "One sentence description",
+  "ingredients": "ingredient 1\\ningredient 2\\ningredient 3",
+  "method": "Step 1...\\nStep 2...\\nStep 3..."
+}
+Category must be one of: mains, sauces_dressings, sides, desserts, baking, marinades_rubs, glossary`;
+
+const VALID_CATEGORIES: RecipeCategory[] = ['mains','sauces_dressings','sides','desserts','baking','marinades_rubs','glossary'];
 
 const CATEGORIES: { key: RecipeCategory; label: string }[] = [
   { key: 'mains',          label: 'Mains' },
@@ -52,6 +64,27 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
+  const [showClaudePanel, setShowClaudePanel] = useState(false);
+  const [claudeJson, setClaudeJson]   = useState('');
+  const [claudeError, setClaudeError] = useState<string | null>(null);
+
+  const handleSharePrompt = () => Share.share({ message: CLAUDE_PROMPT });
+
+  const handleLoadFromClaude = () => {
+    setClaudeError(null);
+    const match = claudeJson.match(/\{[\s\S]*\}/);
+    if (!match) { setClaudeError('No JSON found — paste Claude\'s full response.'); return; }
+    let parsed: any;
+    try { parsed = JSON.parse(match[0]); } catch { setClaudeError('Invalid JSON — copy it again from Claude.'); return; }
+    if (!parsed.name?.trim()) { setClaudeError('Missing name field.'); return; }
+    setName(parsed.name.trim());
+    if (VALID_CATEGORIES.includes(parsed.category)) setCategory(parsed.category);
+    if (parsed.description) setDescription(parsed.description);
+    if (parsed.ingredients) setIngredients(parsed.ingredients);
+    if (parsed.method) setMethod(parsed.method);
+    setClaudeJson('');
+    setShowClaudePanel(false);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { setError('Name is required'); return; }
@@ -129,6 +162,40 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
             keyboardShouldPersistTaps="handled"
           >
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            {/* Import from Claude */}
+            {!isEdit && (
+              <View style={styles.claudeSection}>
+                <TouchableOpacity style={styles.claudeToggle} onPress={() => setShowClaudePanel(!showClaudePanel)}>
+                  <Text style={styles.claudeToggleText}>Import from Claude {showClaudePanel ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+                {showClaudePanel && (
+                  <View style={styles.claudePanel}>
+                    <Text style={styles.claudeHint}>1. Share the prompt with Claude, then paste the JSON response below.</Text>
+                    <TouchableOpacity style={styles.sharePromptBtn} onPress={handleSharePrompt}>
+                      <Text style={styles.sharePromptText}>Share Prompt →</Text>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={styles.claudeInput}
+                      value={claudeJson}
+                      onChangeText={setClaudeJson}
+                      placeholder="Paste Claude's JSON response here..."
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      textAlignVertical="top"
+                    />
+                    {claudeError ? <Text style={styles.claudeError}>{claudeError}</Text> : null}
+                    <TouchableOpacity
+                      style={[styles.loadBtn, !claudeJson.trim() && { opacity: 0.4 }]}
+                      onPress={handleLoadFromClaude}
+                      disabled={!claudeJson.trim()}
+                    >
+                      <Text style={styles.loadBtnText}>Load Recipe</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* Name */}
             <View style={styles.fieldGroup}>
@@ -263,6 +330,17 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, gap: 20 },
 
   errorText: { fontSize: 14, color: '#EF4444', backgroundColor: '#FEF2F2', borderRadius: 8, padding: 12 },
+  claudeSection: { marginBottom: 20 },
+  claudeToggle: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#EFF6FF', borderRadius: 10, borderWidth: 1, borderColor: '#BFDBFE' },
+  claudeToggleText: { fontSize: 14, fontWeight: '600', color: '#1D4ED8' },
+  claudePanel: { marginTop: 8, padding: 14, backgroundColor: '#F8FAFF', borderRadius: 10, borderWidth: 1, borderColor: '#BFDBFE', gap: 10 },
+  claudeHint: { fontSize: 13, color: '#374151', lineHeight: 18 },
+  sharePromptBtn: { paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#1D4ED8', borderRadius: 8, alignSelf: 'flex-start' },
+  sharePromptText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  claudeInput: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 10, fontSize: 13, color: '#1C1C1E', minHeight: 100, backgroundColor: '#fff' },
+  claudeError: { fontSize: 13, color: '#EF4444' },
+  loadBtn: { paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#3B7A57', borderRadius: 8, alignItems: 'center' },
+  loadBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
 
   fieldGroup: { gap: 8 },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
