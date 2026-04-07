@@ -321,7 +321,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
       } else {
         saved = await upsertInventoryItem({
           user_id: userId,
-          name: name.trim().toLowerCase(),
+          name: name.trim(),
           category,
           location,
           quantity: parseFloat(quantity) || 0,
