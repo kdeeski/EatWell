@@ -275,7 +275,7 @@ export default function PlanScreen() {
                               <TouchableOpacity onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
                                 {wineLoading
                                   ? <ActivityIndicator size="small" color="#3B7A57" />
-                                  : <Text style={styles.howToButtonText}>Wine match →</Text>
+                                  : <Text style={styles.howToButtonText}>Drink pairing →</Text>
                                 }
                               </TouchableOpacity>
                             )}

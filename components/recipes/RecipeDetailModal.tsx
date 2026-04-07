@@ -240,11 +240,11 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
               );
             })() : null}
 
-            {/* Wine match */}
+            {/* Drink pairing */}
             <View style={styles.section}>
               {wineResult ? (
                 <>
-                  <Text style={styles.sectionLabel}>Wine pairing</Text>
+                  <Text style={styles.sectionLabel}>Drink pairing</Text>
                   {wineResult.pairings.map((p, i) => (
                     <View key={i} style={styles.wineCard}>
                       <Text style={styles.wineVarietal}>{p.varietal}</Text>
@@ -262,7 +262,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
                 <TouchableOpacity onPress={handleWineMatch} disabled={wineLoading}>
                   {wineLoading
                     ? <ActivityIndicator size="small" color="#3B7A57" />
-                    : <Text style={styles.sourceLinkLabel}>Wine match →</Text>
+                    : <Text style={styles.sourceLinkLabel}>Drink pairing →</Text>
                   }
                 </TouchableOpacity>
               )}

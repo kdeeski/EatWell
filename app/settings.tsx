@@ -196,8 +196,8 @@ export default function SettingsScreen() {
         />
         <Text style={styles.hint}>Used to tailor planting suggestions to your climate.</Text>
 
-        {/* ── Wine Matching ───────────────────────────────────── */}
-        <SectionHeader>Wine Matching</SectionHeader>
+        {/* ── Drink Pairing ───────────────────────────────────── */}
+        <SectionHeader>Drink Pairing</SectionHeader>
 
         <FieldLabel>Pairing detail</FieldLabel>
         <View style={styles.pillRow}>
