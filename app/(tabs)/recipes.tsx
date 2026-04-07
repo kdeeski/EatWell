@@ -225,10 +225,15 @@ export default function RecipesScreen() {
 
                     {item.category !== 'glossary' && (
                       <TouchableOpacity
-                        onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                        onPress={() => item.source_url
+                          ? Linking.openURL(item.source_url)
+                          : (() => { setSelectedRecipe(item); setShowDetail(true); })()
+                        }
                         hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                       >
-                        <Text style={styles.expandedViewFull}>View full recipe →</Text>
+                        <Text style={styles.expandedViewFull}>
+                          {item.source_url ? 'View original recipe →' : 'View full recipe →'}
+                        </Text>
                       </TouchableOpacity>
                     )}
 
