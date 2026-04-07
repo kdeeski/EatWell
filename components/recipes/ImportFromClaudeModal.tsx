@@ -26,9 +26,11 @@ Recipe to format:
 interface Props {
   visible: boolean;
   onClose: () => void;
+  /** When provided, parsed data is returned via callback instead of opening SaveRecipeModal */
+  onPrefill?: (data: Partial<Pick<Recipe, 'name' | 'category' | 'description' | 'ingredients' | 'method'>>) => void;
 }
 
-export default function ImportFromClaudeModal({ visible, onClose }: Props) {
+export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: Props) {
   const insets = useSafeAreaInsets();
   const [copied, setCopied] = useState(false);
   const [json, setJson] = useState('');
@@ -66,13 +68,24 @@ export default function ImportFromClaudeModal({ visible, onClose }: Props) {
       ? parsed.category
       : 'mains';
 
-    setPrefill({
+    const data = {
       name: String(parsed.name).trim(),
       category,
       description: parsed.description ? String(parsed.description).trim() : undefined,
       ingredients: parsed.ingredients ? String(parsed.ingredients).trim() : undefined,
       method: parsed.method ? String(parsed.method).trim() : undefined,
-    });
+    };
+
+    if (onPrefill) {
+      // Callback mode — fill parent form and close
+      setJson('');
+      setError(null);
+      onPrefill(data);
+      onClose();
+      return;
+    }
+
+    setPrefill(data);
     setShowSave(true);
   };
 
