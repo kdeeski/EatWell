@@ -479,17 +479,14 @@ export default function ShoppingScreen() {
           </View>
         );
       })}
+
+      <TouchableOpacity style={styles.doneLink} onPress={handleDoneShopping} disabled={clearingDone}>
+        {clearingDone
+          ? <ActivityIndicator size="small" color="#9CA3AF" />
+          : <Text style={styles.doneLinkText}>Done shopping — clear completed ✓</Text>
+        }
+      </TouchableOpacity>
     </ScrollView>
-    <TouchableOpacity
-      style={[styles.fab, { bottom: insets.bottom + 72 }]}
-      onPress={handleDoneShopping}
-      disabled={clearingDone}
-    >
-      {clearingDone
-        ? <ActivityIndicator size="small" color="#fff" />
-        : <Text style={styles.fabText}>Done Shopping ✓</Text>
-      }
-    </TouchableOpacity>
     </View>
   );
 }
@@ -855,13 +852,8 @@ const styles = StyleSheet.create({
   headingButtons: { flexDirection: 'row', gap: 8 },
   addButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#3B7A57', alignItems: 'center' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  fab: {
-    position: 'absolute', right: 20, paddingHorizontal: 20, paddingVertical: 14,
-    borderRadius: 28, backgroundColor: '#0369A1',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6,
-    elevation: 6, minWidth: 160, alignItems: 'center',
-  },
-  fabText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  doneLink: { alignItems: 'flex-end', paddingHorizontal: 4, paddingVertical: 16 },
+  doneLinkText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
   refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 
