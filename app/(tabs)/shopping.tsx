@@ -115,20 +115,12 @@ export default function ShoppingScreen() {
   const insets = useSafeAreaInsets();
 
   const buildConfirmed = (items: typeof shoppingItems, inv: typeof inventoryItems) => {
-    // Strip fresh/dried qualifiers for bare-name matching so "basil" matches
-    // "dried basil" or "fresh basil" in inventory
-    const bareHerb = (s: string) => s.replace(/^(fresh|dried)\s+/i, '').trim();
     const confirmed = new Set<string>();
     items.forEach((item) => {
       // Don't auto-confirm pantry staples — they're on the list to be replenished
       if (item.is_pantry_staple) return;
       const normItem = normaliseIngredientName(item.name.toLowerCase().trim());
-      const bareItem = bareHerb(normItem);
-      if (inv.some((p) => {
-        if (p.depleted) return false;
-        const normInv = normaliseIngredientName(p.name.toLowerCase().trim());
-        return normInv === normItem || bareHerb(normInv) === bareItem;
-      })) {
+      if (inv.some((p) => !p.depleted && normaliseIngredientName(p.name.toLowerCase().trim()) === normItem)) {
         confirmed.add(item.id);
       }
     });
