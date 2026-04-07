@@ -513,7 +513,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
     setSaving(true);
     try {
       const saved = await saveStocktakeItems(userId, valid.map((i) => ({
-        name: i.name.trim().toLowerCase(),
+        name: i.name.trim(),
         category: i.category,
         location: i.location,
         notes: i.notes,
@@ -562,6 +562,8 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
                 textAlignVertical="top"
               />
               {error && <Text style={styles.errorText}>{error}</Text>}
+            </ScrollView>
+            <View style={styles.bulkInputFooter}>
               <TouchableOpacity
                 style={[styles.categoriseButton, !text.trim() && { opacity: 0.4 }]}
                 onPress={categorise}
@@ -569,7 +571,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
               >
                 <Text style={styles.categoriseButtonText}>Categorise</Text>
               </TouchableOpacity>
-            </ScrollView>
+            </View>
           </KeyboardAvoidingView>
         )}
 
@@ -775,7 +777,8 @@ const styles = StyleSheet.create({
   dropdownTextActive: { color: '#3B7A57', fontWeight: '600' },
 
   // Bulk add
-  bulkInputStep: { padding: 20, paddingBottom: 40 },
+  bulkInputStep: { padding: 20, paddingBottom: 8 },
+  bulkInputFooter: { padding: 20, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   bulkInputHint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 16 },
   bulkTextArea: {
     height: 260, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
