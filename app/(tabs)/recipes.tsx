@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -11,6 +12,8 @@ import CookModeModal from '../../components/recipes/CookModeModal';
 import { deleteRecipe } from '../../lib/data';
 import { toTitleCase } from '../../lib/titleCase';
 import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
+import { getWineMatch } from '../../lib/claude';
+import type { WineMatchResult } from '../../lib/claude';
 
 type FilterKey = 'all' | RecipeCategory;
 
@@ -47,7 +50,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
 
 export default function RecipesScreen() {
   const insets = useSafeAreaInsets();
-  const { recipes, removeRecipe } = useAppStore();
+  const { recipes, removeRecipe, userPreferences } = useAppStore();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -57,6 +60,30 @@ export default function RecipesScreen() {
   const [editRecipe, setEditRecipe] = useState<Recipe | null>(null);
   const [showCookMode, setShowCookMode] = useState(false);
   const [showImport, setShowImport] = useState(false);
+
+  // Drink pairing state — keyed by recipe id so results persist when re-expanding
+  const [wineResults, setWineResults] = useState<Record<string, WineMatchResult>>({});
+  const [wineLoading, setWineLoading] = useState<string | null>(null);
+  const [wineErrors, setWineErrors] = useState<Record<string, string>>({});
+
+  const DRINK_PAIRING_CATEGORIES: RecipeCategory[] = ['mains', 'sides', 'desserts', 'baking'];
+
+  async function handleWineMatch(recipe: Recipe) {
+    setWineLoading(recipe.id);
+    setWineErrors((prev) => { const n = { ...prev }; delete n[recipe.id]; return n; });
+    try {
+      const result = await getWineMatch({
+        meal_name: recipe.name,
+        description: recipe.description ?? undefined,
+        detail_level: userPreferences?.wine_detail_level ?? 'simple',
+      });
+      setWineResults((prev) => ({ ...prev, [recipe.id]: result }));
+    } catch (e: any) {
+      setWineErrors((prev) => ({ ...prev, [recipe.id]: e.message ?? 'Could not fetch pairing.' }));
+    } finally {
+      setWineLoading(null);
+    }
+  }
 
   const filtered = activeFilter === 'all'
     ? recipes
@@ -146,14 +173,18 @@ export default function RecipesScreen() {
           renderItem={({ item }) => {
             const colour = CATEGORY_COLOURS[item.category];
             const isExpanded = expandedId === item.id;
+            const showDrinkPairing = DRINK_PAIRING_CATEGORIES.includes(item.category);
+            const wineResult = wineResults[item.id] ?? null;
+            const wineError = wineErrors[item.id] ?? null;
+            const isWineLoading = wineLoading === item.id;
             let sourceDomain: string | null = null;
             if (item.source_url) {
               try { sourceDomain = new URL(item.source_url).hostname.replace(/^www\./, ''); } catch {}
             }
             return (
               <TouchableOpacity
-                style={styles.row}
-                onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                style={[styles.row, isExpanded && styles.rowExpanded]}
+                onPress={() => setExpandedId(isExpanded ? null : item.id)}
                 onLongPress={() => { setEditRecipe(item); setShowSave(true); }}
                 delayLongPress={400}
                 activeOpacity={0.7}
@@ -170,12 +201,65 @@ export default function RecipesScreen() {
                       {item.rating != null && (
                         <Text style={styles.rowRating}>{'★'.repeat(item.rating)}</Text>
                       )}
-                      {sourceDomain ? (
+                      {sourceDomain && !isExpanded ? (
                         <Text style={styles.rowDomain}>{sourceDomain}</Text>
                       ) : null}
+                      {!isExpanded && (
+                        <Text style={styles.rowHint}>· Tap for details</Text>
+                      )}
                     </View>
                   </View>
                 </View>
+
+                {isExpanded && (
+                  <View style={styles.expandedBody}>
+                    {item.description ? (
+                      <Text style={styles.expandedDesc}>{item.description}</Text>
+                    ) : null}
+
+                    <TouchableOpacity
+                      onPress={() => { setSelectedRecipe(item); setShowDetail(true); }}
+                      hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+                    >
+                      <Text style={styles.expandedViewFull}>View full recipe →</Text>
+                    </TouchableOpacity>
+
+                    {showDrinkPairing && (
+                      wineResult ? (
+                        <View style={styles.wineSection}>
+                          {wineResult.pairings.map((p, i) => (
+                            <View key={i} style={styles.wineCard}>
+                              <Text style={styles.wineVarietal}>{p.varietal}</Text>
+                              <Text style={styles.wineReason}>{p.reason}</Text>
+                              {p.pairing_note ? (
+                                <Text style={styles.wineNote}>{p.pairing_note}</Text>
+                              ) : null}
+                            </View>
+                          ))}
+                          <TouchableOpacity onPress={() => setWineResults((prev) => { const n = { ...prev }; delete n[item.id]; return n; })}>
+                            <Text style={styles.wineDismiss}>Clear</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => handleWineMatch(item)}
+                          disabled={isWineLoading}
+                          hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+                        >
+                          {isWineLoading
+                            ? <ActivityIndicator size="small" color="#3B7A57" style={{ alignSelf: 'flex-start', marginTop: 8 }} />
+                            : <Text style={styles.expandedDrinkPairing}>Drink pairing →</Text>
+                          }
+                        </TouchableOpacity>
+                      )
+                    )}
+                    {wineError ? (
+                      <TouchableOpacity onPress={() => handleWineMatch(item)}>
+                        <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                )}
               </TouchableOpacity>
             );
           }}
@@ -298,6 +382,20 @@ const styles = StyleSheet.create({
   rowBadgeText: { fontSize: 12, fontWeight: '600' },
   rowRating: { fontSize: 14, color: '#F59E0B' },
   rowDomain: { fontSize: 12, color: '#9CA3AF' },
+  rowHint: { fontSize: 12, color: '#9CA3AF' },
+
+  expandedBody: { marginTop: 10, gap: 8 },
+  expandedDesc: { fontSize: 14, color: '#374151', lineHeight: 21 },
+  expandedViewFull: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
+  expandedDrinkPairing: { fontSize: 13, fontWeight: '600', color: '#3B7A57', marginTop: 2 },
+
+  wineSection: { gap: 6, marginTop: 2 },
+  wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 3 },
+  wineVarietal: { fontSize: 13, fontWeight: '700', color: '#1C1C1E' },
+  wineReason: { fontSize: 13, color: '#374151', lineHeight: 18 },
+  wineNote: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 3 },
+  wineDismiss: { fontSize: 12, color: '#9CA3AF' },
+  wineError: { fontSize: 12, color: '#EF4444' },
 
   emptyState: {
     flex: 1,
