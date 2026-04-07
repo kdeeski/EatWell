@@ -35,6 +35,7 @@ interface AppState {
   toggleShoppingItem: (id: string) => void;
   addShoppingItem: (item: ShoppingListItem) => void;
   updateShoppingItemInStore: (id: string, updates: Partial<ShoppingListItem>) => void;
+  removeShoppingItems: (ids: string[]) => void;
 
   // ── Garden ────────────────────────────────────────────────────────────────
   gardenPlants: GardenPlant[];
@@ -102,6 +103,10 @@ export const useAppStore = create<AppState>((set) => ({
   updateShoppingItemInStore: (id, updates) =>
     set((state) => ({
       shoppingItems: state.shoppingItems.map((i) => i.id === id ? { ...i, ...updates } : i),
+    })),
+  removeShoppingItems: (ids) =>
+    set((state) => ({
+      shoppingItems: state.shoppingItems.filter((i) => !ids.includes(i.id)),
     })),
 
   // Garden

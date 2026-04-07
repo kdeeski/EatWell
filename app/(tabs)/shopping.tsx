@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem } from '../../lib/data';
+import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem, deleteShoppingItems } from '../../lib/data';
 import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 import { toTitleCase } from '../../lib/titleCase';
@@ -108,6 +108,7 @@ export default function ShoppingScreen() {
     gardenPlants, setGardenPlants,
     upsertInventoryItem: upsertStore,
     updateShoppingItemInStore,
+    removeShoppingItems,
     recipes, shoppingList, addShoppingItem,
   } = useAppStore();
   const insets = useSafeAreaInsets();
@@ -157,6 +158,40 @@ export default function ShoppingScreen() {
   const [bulkVisible, setBulkVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<ShoppingListItem | null>(null);
   const [expandingId, setExpandingId] = useState<string | null>(null);
+  const [clearingDone, setClearingDone] = useState(false);
+
+  const handleDoneShopping = () => {
+    const doneIds = shoppingItems
+      .filter((i) => i.checked || pantryConfirmed.has(i.id) || gardenConfirmed.has(i.id) || i.from_fridge)
+      .map((i) => i.id);
+    if (doneIds.length === 0) {
+      Alert.alert('Nothing to clear', 'Tick off items as you shop, then come back here to clear them.');
+      return;
+    }
+    Alert.alert(
+      'Done Shopping?',
+      `Remove ${doneIds.length} completed item${doneIds.length === 1 ? '' : 's'} from your list? Anything you couldn't get will stay.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Done',
+          style: 'destructive',
+          onPress: async () => {
+            setClearingDone(true);
+            try {
+              await deleteShoppingItems(doneIds);
+              removeShoppingItems(doneIds);
+            } catch (e) {
+              console.error('Failed to clear done items', e);
+              Alert.alert('Error', 'Could not clear items. Try again.');
+            } finally {
+              setClearingDone(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleRefresh = async () => {
     if (!userId) return;
@@ -254,6 +289,12 @@ export default function ShoppingScreen() {
             setBulkVisible(true);
           }}>
             <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.doneButton} onPress={handleDoneShopping} disabled={clearingDone}>
+            {clearingDone
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={styles.doneButtonText}>Done ✓</Text>
+            }
           </TouchableOpacity>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
             {refreshing
@@ -807,6 +848,8 @@ const styles = StyleSheet.create({
   headingButtons: { flexDirection: 'row', gap: 8 },
   addButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#3B7A57', alignItems: 'center' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  doneButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#0369A1', minWidth: 72, alignItems: 'center' },
+  doneButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', minWidth: 70, alignItems: 'center' },
   refreshText: { fontSize: 14, fontWeight: '600', color: '#374151' },
 
