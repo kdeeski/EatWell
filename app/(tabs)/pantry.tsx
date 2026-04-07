@@ -311,6 +311,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
       let saved: InventoryItem;
       if (existingItem) {
         saved = await updateInventoryItem(existingItem.id, {
+          name: name.trim(),
           category,
           location,
           quantity: parseFloat(quantity) || 0,
