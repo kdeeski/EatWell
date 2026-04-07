@@ -726,7 +726,13 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
           <Text style={modalStyles.title}>
             {step === 'input' ? 'Add Items' : step === 'categorising' ? 'Categorising…' : 'Review Items'}
           </Text>
-          <View style={{ width: 60 }} />
+          {step === 'input' ? (
+            <TouchableOpacity onPress={categorise} disabled={!text.trim()}>
+              <Text style={[modalStyles.goBtn, !text.trim() && { opacity: 0.4 }]}>Go</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 60 }} />
+          )}
         </View>
 
         {step === 'input' && (
@@ -745,13 +751,6 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
                 textAlignVertical="top"
               />
               {error && <Text style={modalStyles.error}>{error}</Text>}
-              <TouchableOpacity
-                style={[modalStyles.primaryButton, !text.trim() && { opacity: 0.4 }]}
-                onPress={categorise}
-                disabled={!text.trim()}
-              >
-                <Text style={modalStyles.primaryButtonText}>Categorise</Text>
-              </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
         )}
@@ -836,6 +835,7 @@ const modalStyles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   cancel: { fontSize: 16, color: '#6B7280', width: 60 },
   title: { fontSize: 17, fontWeight: '700', color: '#111827' },
+  goBtn: { fontSize: 16, color: '#3B7A57', fontWeight: '700', width: 60, textAlign: 'right' },
   inputStep: { padding: 20, paddingBottom: 40 },
   hint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 16 },
   textArea: { height: 260, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 14, fontSize: 15, color: '#111827' },

@@ -9,6 +9,7 @@ import CookModeModal from './CookModeModal';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
+import { findStashMatch } from '../../lib/recipes';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -40,22 +41,59 @@ interface Props {
 
 function GuideComponentCard({ component }: { component: NonNullable<Recipe['guide_json']>['components'][0] }) {
   const [expanded, setExpanded] = useState(false);
+  const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
+  const { recipes } = useAppStore();
+  const inStash = component.steps.length === 0;
+
+  function handleExpand() {
+    if (!expanded && inStash && !stashRecipe) {
+      const match = findStashMatch(component.name, recipes, { strict: true });
+      setStashRecipe(match);
+    }
+    setExpanded((v) => !v);
+  }
+
   return (
     <View style={styles.componentCard}>
-      <TouchableOpacity style={styles.componentHeaderRow} onPress={() => setExpanded((v) => !v)} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.componentHeaderRow} onPress={handleExpand} activeOpacity={0.8}>
         <Text style={styles.componentName}>{component.name}</Text>
         <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
       </TouchableOpacity>
-      {!expanded && <Text style={styles.componentHint}>Tap for details</Text>}
+      {!expanded && (
+        <Text style={styles.componentHint}>
+          {inStash ? 'In your stash — tap to view' : 'Tap for details'}
+        </Text>
+      )}
       {expanded && (
         <>
           <Text style={styles.componentDesc}>{component.description}</Text>
-          {component.steps.map((step, i) => (
-            <View key={i} style={styles.stepRow}>
-              <Text style={styles.stepNum}>{i + 1}.</Text>
-              <Text style={styles.stepText}>{step}</Text>
-            </View>
-          ))}
+          {inStash ? (
+            stashRecipe ? (
+              <>
+                {stashRecipe.ingredients ? (
+                  <Text style={styles.preText}>{stashRecipe.ingredients}</Text>
+                ) : null}
+                {stashRecipe.method ? (
+                  <Text style={[styles.preText, { marginTop: 8 }]}>{stashRecipe.method}</Text>
+                ) : null}
+                {stashRecipe.guide_json?.steps.map((step, i) => (
+                  <View key={i} style={styles.stepRow}>
+                    <Text style={styles.stepNum}>{i + 1}.</Text>
+                    <Text style={styles.stepText}>{step}</Text>
+                  </View>
+                ))}
+              </>
+            ) : (
+              <Text style={styles.componentHint}>Recipe not found in stash.</Text>
+            )
+          ) : (
+            component.steps.map((step, i) => (
+              <View key={i} style={styles.stepRow}>
+                <Text style={styles.stepNum}>{i + 1}.</Text>
+                <Text style={styles.stepText}>{step}</Text>
+              </View>
+            ))
+          )}
         </>
       )}
     </View>
@@ -299,6 +337,7 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 11, color: '#9CA3AF' },
   componentHint: { fontSize: 12, color: '#9CA3AF' },
   componentDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  componentStashLink: { fontSize: 14, color: '#3B7A57', fontWeight: '600' },
 
   glossaryRow: { gap: 2 },
   glossaryTerm: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },

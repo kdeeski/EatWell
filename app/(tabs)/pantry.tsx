@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { useAppStore } from '../../store/useAppStore';
 import { categorisePantryItems } from '../../lib/claude';
-import { upsertInventoryItem, updateInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem } from '../../lib/data';
+import { upsertInventoryItem, updateInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem, updateShoppingItem } from '../../lib/data';
+import { normaliseIngredientName } from '../../lib/recipes';
 import type { ItemCategory, ItemLocation, InventoryItem } from '../../types';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ type CategoryFilter = 'all' | ItemCategory;
 
 export default function PantryScreen() {
   const { userId, inventoryItems, upsertInventoryItem: upsertStore, removeInventoryItem: removeFromStore,
-          shoppingList, addShoppingItem } = useAppStore();
+          shoppingList, shoppingItems, addShoppingItem, updateShoppingItemInStore } = useAppStore();
   const insets = useSafeAreaInsets();
 
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('all');
@@ -98,6 +99,31 @@ export default function PantryScreen() {
   const handleReplenish = async (item: InventoryItem) => {
     if (!shoppingList) {
       Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
+      return;
+    }
+    const normName = normaliseIngredientName(item.name);
+    const existing = shoppingItems.find(
+      (s) => normaliseIngredientName(s.name) === normName && !s.checked
+    );
+    if (existing) {
+      Alert.alert(
+        `${item.name} is already on your list`,
+        `Quantity: ${existing.quantity}. Increase to ${existing.quantity + 1}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Increase',
+            onPress: async () => {
+              try {
+                const updated = await updateShoppingItem(existing.id, { quantity: existing.quantity + 1 });
+                updateShoppingItemInStore(existing.id, { quantity: updated.quantity });
+              } catch (e: any) {
+                Alert.alert('Could Not Update', e.message ?? 'Please try again.');
+              }
+            },
+          },
+        ]
+      );
       return;
     }
     try {

@@ -226,7 +226,10 @@ export default function PlanScreen() {
                           <Text style={styles.description}>{meal.description}</Text>
                         ) : null}
                         {isSelected && (() => {
-                          const match = findStashMatch(meal.meal_name, recipes);
+                          const mealRecipes = recipes.filter(
+                            (r) => !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category)
+                          );
+                          const match = findStashMatch(meal.meal_name, mealRecipes);
                           return match ? (
                             <TouchableOpacity
                               style={styles.stashNudge}
