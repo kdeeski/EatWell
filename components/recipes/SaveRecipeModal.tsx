@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, ActivityIndicator,
+  TouchableOpacity, KeyboardAvoidingView, ActivityIndicator, Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
@@ -43,6 +43,18 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   const { userId, addRecipe, updateRecipeInStore } = useAppStore();
 
   const isEdit = !!existingRecipe;
+
+  const handleShareBrief = async (mealName: string) => {
+    const brief = `I'm planning to cook ${mealName}. Please write a recipe for it and format the response as JSON using exactly this structure — no extra fields:
+{
+  "name": "Recipe Name in Title Case",
+  "category": "mains | sauces_dressings | sides | desserts | baking | marinades_rubs | glossary",
+  "description": "One sentence describing the dish and what makes it good.",
+  "ingredients": "150g Chicken Thighs\\n2 cloves Garlic\\n1 tsp Smoked Paprika",
+  "method": "1. First step.\\n2. Second step.\\n3. Third step."
+}`;
+    await Share.share({ message: brief });
+  };
 
   const [name, setName]               = useState(existingRecipe?.name ?? prefill?.name ?? '');
   const [category, setCategory]       = useState<RecipeCategory>(existingRecipe?.category ?? prefill?.category ?? 'mains');
@@ -148,9 +160,16 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                 <View style={styles.fieldLabelRow}>
                   <Text style={styles.fieldLabel}>Name <Text style={styles.required}>*</Text></Text>
                   {!isEdit && (
-                    <TouchableOpacity onPress={() => setShowImport(true)}>
-                      <Text style={styles.importLink}>Import from Claude →</Text>
-                    </TouchableOpacity>
+                    <View style={styles.importLinks}>
+                      {name.trim() && (
+                        <TouchableOpacity onPress={() => handleShareBrief(name.trim())}>
+                          <Text style={styles.importLink}>Ask Claude →</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity onPress={() => setShowImport(true)}>
+                        <Text style={styles.importLink}>Import from Claude →</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </View>
                 <TextInput
@@ -288,6 +307,7 @@ const styles = StyleSheet.create({
   fieldGroup: { gap: 8 },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  importLinks: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   importLink: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
   findOnWebBtn: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
   required: { color: '#EF4444' },

@@ -4,13 +4,13 @@ import {
   TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { getCookingGuide } from '../../lib/claude';
 import type { CookingGuide } from '../../lib/claude';
 import { saveRecipe, updateRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
 import type { RecipeGuideJson, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
-import CookModeModal from './CookModeModal';
 
 interface Props {
   mealName: string;
@@ -104,7 +104,17 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
   const [guide, setGuide]       = useState<CookingGuide | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const [savePrefill, setSavePrefill] = useState<SavePrefill | null>(null);
-  const [showCookMode, setShowCookMode] = useState(false);
+  const [cookMode, setCookMode] = useState(false);
+
+  const toggleCookMode = async () => {
+    if (cookMode) {
+      deactivateKeepAwake();
+      setCookMode(false);
+    } else {
+      await activateKeepAwakeAsync();
+      setCookMode(true);
+    }
+  };
 
   useEffect(() => {
     if (!visible) return;
@@ -234,8 +244,8 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <View style={styles.section}>
                 <View style={styles.sectionLabelRow}>
                   <Text style={styles.sectionLabel}>How to cook it</Text>
-                  <TouchableOpacity style={styles.cookModeBtn} onPress={() => setShowCookMode(true)}>
-                    <Text style={styles.cookModeBtnText}>Cook Mode</Text>
+                  <TouchableOpacity style={[styles.cookModeBtn, cookMode && styles.cookModeBtnActive]} onPress={toggleCookMode}>
+                    <Text style={styles.cookModeBtnText}>{cookMode ? 'Cook Mode On' : 'Cook Mode'}</Text>
                   </TouchableOpacity>
                 </View>
                 {guide.steps.map((step, i) => (
@@ -275,14 +285,6 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
           ) : null}
         </View>
       </Modal>
-
-      {showCookMode && guide && (
-        <CookModeModal
-          recipeName={mealName}
-          method={numberedMethod(guide.steps)}
-          onClose={() => setShowCookMode(false)}
-        />
-      )}
 
       {savePrefill && (
         <SaveRecipeModal
@@ -336,6 +338,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
 
   cookModeBtn: { backgroundColor: '#1C1C1E', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+  cookModeBtnActive: { backgroundColor: '#3B7A57' },
   cookModeBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
 
   stepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
