@@ -9,7 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { saveCheckin, logCookedMeal } from '../../lib/data';
+import { saveCheckin, logCookedMeal, localDateString } from '../../lib/data';
 
 type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
 
@@ -154,13 +154,13 @@ export default function CheckinFlow() {
     setTonightChoice(mealId);
     setSaving(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = localDateString();
 
       // Log cooked meal if they cooked the planned meal
       if (lastNightChoice === lastNightsMeal?.id && userId) {
         await logCookedMeal({
           user_id: userId,
-          cooked_date: yesterday.toISOString().split('T')[0],
+          cooked_date: localDateString(yesterday),
           planned_meal_id: lastNightsMeal.id,
           actual_meal_name: lastNightsMeal.meal_name,
           rating: rating as 1 | 2 | 3 | 4 | 5 | null,
@@ -172,7 +172,7 @@ export default function CheckinFlow() {
       } else if ((lastNightChoice === 'ate_out') && userId) {
         await logCookedMeal({
           user_id: userId,
-          cooked_date: yesterday.toISOString().split('T')[0],
+          cooked_date: localDateString(yesterday),
           planned_meal_id: null,
           actual_meal_name: 'Ate out',
           rating: null,

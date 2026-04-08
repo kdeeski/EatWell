@@ -3,6 +3,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
+
+// Returns YYYY-MM-DD in the device's local timezone (not UTC).
+// toISOString() is UTC and gives the wrong date for NZ users in the morning.
+export function localDateString(date: Date = new Date()): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
 import { normaliseIngredientName } from './recipes';
 import type {
   GardenPlant, GardenHarvest, GardenSuggestion,
@@ -642,7 +652,7 @@ export async function saveCheckin(
 export async function loadTodayCheckin(
   userId: string
 ): Promise<CheckIn | null> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
   const { data, error } = await supabase
     .from('checkins')
     .select('*')
