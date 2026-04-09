@@ -30,6 +30,7 @@ export interface MealPlanInput {
     | 'weekend_cooking'
     | 'holly_joins_regularly'
     | 'cooking_notes'
+    | 'standing_orders'
   > | null;
 }
 

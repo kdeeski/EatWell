@@ -107,6 +107,7 @@ export default function PlanningFlow() {
           weekend_cooking: userPreferences.weekend_cooking,
           holly_joins_regularly: userPreferences.holly_joins_regularly,
           cooking_notes: userPreferences.cooking_notes,
+          standing_orders: userPreferences.standing_orders,
         } : null,
       });
       // Build confirmed garden list for validation

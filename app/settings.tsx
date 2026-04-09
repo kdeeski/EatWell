@@ -36,6 +36,7 @@ export default function SettingsScreen() {
   const [weekendCooking, setWeekendCooking]   = useState<WeekendCooking>(userPreferences?.weekend_cooking ?? 'project');
   const [hollyJoins, setHollyJoins]           = useState<boolean>(userPreferences?.holly_joins_regularly ?? true);
   const [cookingNotes, setCookingNotes]       = useState<string>(userPreferences?.cooking_notes ?? '');
+  const [standingOrders, setStandingOrders]   = useState<string>(userPreferences?.standing_orders ?? '');
   const [gardenLocation, setGardenLocation]   = useState<string>(userPreferences?.garden_location ?? 'Canterbury, New Zealand');
   const [wineDetailLevel, setWineDetailLevel] = useState<WineDetailLevel>(userPreferences?.wine_detail_level ?? 'simple');
   const [saving, setSaving]                   = useState(false);
@@ -53,6 +54,7 @@ export default function SettingsScreen() {
         weekend_cooking: weekendCooking,
         holly_joins_regularly: hollyJoins,
         cooking_notes: cookingNotes.trim() || null,
+        standing_orders: standingOrders.trim() || null,
         garden_location: gardenLocation.trim() || 'Canterbury, New Zealand',
         wine_detail_level: wineDetailLevel,
       });
@@ -181,6 +183,18 @@ export default function SettingsScreen() {
           multiline
           numberOfLines={3}
         />
+
+        <FieldLabel>Standing orders</FieldLabel>
+        <TextInput
+          style={[styles.input, styles.inputMultiline]}
+          value={standingOrders}
+          onChangeText={setStandingOrders}
+          placeholder="Always apply to every meal plan — e.g. family of 4 (2 adults, 2 kids), one child is coeliac so no gluten."
+          placeholderTextColor="#9CA3AF"
+          multiline
+          numberOfLines={4}
+        />
+        <Text style={styles.hint}>These instructions are always included when generating your meal plan.</Text>
 
         {/* ── Garden ──────────────────────────────────────────── */}
         <SectionHeader>Garden</SectionHeader>

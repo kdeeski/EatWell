@@ -57,6 +57,11 @@ Deno.serve(async (req) => {
       if (lines.length) prefsBlock = `\nUSER PREFERENCES:\n${lines.join('\n')}\n`;
     }
 
+    let standingOrdersBlock = '';
+    if (prefs?.standing_orders) {
+      standingOrdersBlock = `\nSTANDING ORDERS (always apply, non-negotiable):\n${prefs.standing_orders}\n`;
+    }
+
     // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
 
     const structurePrompt = `
@@ -76,7 +81,7 @@ ${(input.nightsAway ?? []).join(', ') || 'None'}
 
 HOLLY HOME (include her preferences these nights):
 ${(input.hollyHomeNights ?? []).join(', ') || 'None this week'}
-${prefsBlock}
+${standingOrdersBlock}${prefsBlock}
 TODAY'S DATE: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
 Return ONLY a JSON object with this exact shape — no prose:
