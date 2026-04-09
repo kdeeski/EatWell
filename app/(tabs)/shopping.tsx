@@ -168,10 +168,10 @@ export default function ShoppingScreen() {
 
   const toggleShopMode = async () => {
     if (shopMode) {
-      deactivateKeepAwake();
+      if (Platform.OS !== 'web') deactivateKeepAwake();
       setShopMode(false);
     } else {
-      await activateKeepAwakeAsync();
+      if (Platform.OS !== 'web') await activateKeepAwakeAsync();
       setShopMode(true);
     }
   };

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,8 +10,8 @@ import { useAppStore } from '../store/useAppStore';
 import { bootstrapUserData } from '../lib/data';
 import type { Session } from '@supabase/supabase-js';
 
-// Hold the native splash until we're ready to show the app
-SplashScreen.preventAutoHideAsync();
+// Hold the native splash until we're ready to show the app (no-op on web)
+if (Platform.OS !== 'web') SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
@@ -20,7 +21,8 @@ export default function RootLayout() {
     setMealPlan, setShoppingList, setTodayCheckin, setUserPreferences, setRecipes,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
-  const [updateReady, setUpdateReady] = useState(false);
+  // On web there are no OTA updates — skip the check entirely
+  const [updateReady, setUpdateReady] = useState(Platform.OS === 'web');
   const bootstrapped = useRef(false);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function RootLayout() {
 
   // Hide the native splash once both update check and session are resolved
   useEffect(() => {
-    if (updateReady && session !== undefined) {
+    if (updateReady && session !== undefined && Platform.OS !== 'web') {
       SplashScreen.hideAsync();
     }
   }, [updateReady, session]);

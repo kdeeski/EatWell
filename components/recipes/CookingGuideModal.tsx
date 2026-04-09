@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, Alert,
+  TouchableOpacity, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -108,10 +108,10 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
 
   const toggleCookMode = async () => {
     if (cookMode) {
-      deactivateKeepAwake();
+      if (Platform.OS !== 'web') deactivateKeepAwake();
       setCookMode(false);
     } else {
-      await activateKeepAwakeAsync();
+      if (Platform.OS !== 'web') await activateKeepAwakeAsync();
       setCookMode(true);
     }
   };

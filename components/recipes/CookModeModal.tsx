@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import {
-  Modal, View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  Modal, View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
+
+// Keep screen awake on native only — no equivalent on web
+function KeepAwakeGuard() { useKeepAwake(); return null; }
 
 interface Props {
   recipeName: string;
@@ -12,7 +15,6 @@ interface Props {
 }
 
 export default function CookModeModal({ recipeName, method, onClose }: Props) {
-  useKeepAwake();
   const insets = useSafeAreaInsets();
   const steps = method.split('\n').map((s) => s.trim()).filter(Boolean);
   const [currentStep, setCurrentStep] = useState(0);
@@ -21,6 +23,8 @@ export default function CookModeModal({ recipeName, method, onClose }: Props) {
   const isLast  = currentStep === steps.length - 1;
 
   return (
+    <>
+    {Platform.OS !== 'web' && <KeepAwakeGuard />}
     <Modal
       visible
       animationType="slide"
@@ -72,6 +76,7 @@ export default function CookModeModal({ recipeName, method, onClose }: Props) {
         </View>
       </View>
     </Modal>
+    </>
   );
 }
 
