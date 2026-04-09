@@ -226,6 +226,16 @@ export default function PlanScreen() {
                           <Text style={styles.description}>{meal.description}</Text>
                         ) : null}
                         {isSelected && (() => {
+                          const stash = recipes.find((r) =>
+                            !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category) &&
+                            r.rating != null &&
+                            r.name.toLowerCase() === meal.meal_name.toLowerCase()
+                          );
+                          return stash?.rating != null
+                            ? <Text style={styles.mealRating}>{stash.rating}/5</Text>
+                            : null;
+                        })()}
+                        {isSelected && (() => {
                           const mealRecipes = recipes.filter(
                             (r) => !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category)
                           );
@@ -404,6 +414,7 @@ const styles = StyleSheet.create({
   mealName:    { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 2 },
   mealMeta:    { fontSize: 12, color: '#9CA3AF' },
   description: { fontSize: 14, color: '#374151', lineHeight: 21, marginTop: 8 },
+  mealRating: { fontSize: 12, fontWeight: '600', color: '#F59E0B', marginTop: 4 },
   nightOff:    { fontSize: 14, color: '#D1D5DB', fontStyle: 'italic' },
 
   toolbar: {

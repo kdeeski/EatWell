@@ -9,17 +9,17 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { saveCheckin, logCookedMeal, localDateString } from '../../lib/data';
+import { saveCheckin, logCookedMeal, localDateString, updateRecipe } from '../../lib/data';
+import { findStashMatch } from '../../lib/recipes';
 
 type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
 
 const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
-const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
 
 export default function CheckinFlow() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { plannedMeals, setTodayCheckin, todayCheckin, userId } = useAppStore();
+  const { plannedMeals, setTodayCheckin, todayCheckin, userId, recipes, updateRecipeInStore } = useAppStore();
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
@@ -65,8 +65,7 @@ export default function CheckinFlow() {
   if (todayCheckin?.completed_at && !editing) {
     const tonightMeal = plannedMeals.find((m) => m.id === todayCheckin.tonight_planned_meal_id);
     const lastNight = todayCheckin.last_night_response;
-    const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
-    const RATING_EMOJI = ['', '😐', '🙂', '👍', '😄', '🤩'];
+
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -88,7 +87,7 @@ export default function CheckinFlow() {
                   <Text style={styles.summaryMeal}>{lastNight.meal_name}</Text>
                   {lastNight.rating != null && (
                     <Text style={styles.summaryDetail}>
-                      {RATING_EMOJI[lastNight.rating]} {RATING_LABELS[lastNight.rating]}
+                      {lastNight.rating}/5 · {RATING_LABELS[lastNight.rating]}
                       {lastNight.would_cook_again === true ? '  ·  Would cook again' : ''}
                       {lastNight.would_cook_again === false ? '  ·  Wouldn\'t repeat' : ''}
                     </Text>
@@ -169,6 +168,17 @@ export default function CheckinFlow() {
           voice_note_url: null,
           ate_out: false,
         });
+
+        // Propagate rating to stash recipe if there's a match
+        if (rating != null) {
+          const match = findStashMatch(lastNightsMeal.meal_name, recipes);
+          if (match) {
+            try {
+              const updated = await updateRecipe(match.id, { ...match, rating: rating as 1|2|3|4|5 });
+              updateRecipeInStore(match.id, updated);
+            } catch { /* non-critical */ }
+          }
+        }
       } else if ((lastNightChoice === 'ate_out') && userId) {
         await logCookedMeal({
           user_id: userId,
@@ -280,7 +290,6 @@ export default function CheckinFlow() {
           <View>
             <Text style={styles.stepTitle}>How was {lastNightsMeal?.meal_name}?</Text>
 
-            {/* Star rating */}
             <View style={styles.ratingRow}>
               {[1, 2, 3, 4, 5].map((r) => (
                 <TouchableOpacity
@@ -288,7 +297,7 @@ export default function CheckinFlow() {
                   style={[styles.ratingChip, rating === r && styles.ratingChipSelected]}
                   onPress={() => setRating(r)}
                 >
-                  <Text style={styles.ratingEmoji}>{RATING_EMOJI[r]}</Text>
+                  <Text style={[styles.ratingNum, rating === r && styles.ratingNumSelected]}>{r}</Text>
                   <Text style={[styles.ratingText, rating === r && styles.ratingTextSelected]}>
                     {RATING_LABELS[r]}
                   </Text>
@@ -442,7 +451,8 @@ const styles = StyleSheet.create({
     minWidth: 68,
   },
   ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
-  ratingEmoji: { fontSize: 18, marginBottom: 2 },
+  ratingNum: { fontSize: 18, fontWeight: '700', color: '#374151', marginBottom: 2 },
+  ratingNumSelected: { color: '#FFFFFF' },
   ratingText: { fontSize: 12, color: '#374151' },
   ratingTextSelected: { color: '#FFFFFF', fontWeight: '600' },
 

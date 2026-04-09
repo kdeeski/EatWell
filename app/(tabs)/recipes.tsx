@@ -199,7 +199,7 @@ export default function RecipesScreen() {
                         </Text>
                       </View>
                       {item.rating != null && (
-                        <Text style={styles.rowRating}>{'★'.repeat(item.rating)}</Text>
+                        <Text style={styles.rowRating}>{item.rating}/5</Text>
                       )}
                       {sourceDomain && !isExpanded ? (
                         <Text style={styles.rowDomain}>{sourceDomain}</Text>
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   rowBadgeText: { fontSize: 12, fontWeight: '600' },
-  rowRating: { fontSize: 14, color: '#F59E0B' },
+  rowRating: { fontSize: 12, fontWeight: '600', color: '#F59E0B' },
   rowDomain: { fontSize: 12, color: '#9CA3AF' },
   rowHint: { fontSize: 12, color: '#9CA3AF' },
 

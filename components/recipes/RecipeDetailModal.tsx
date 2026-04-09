@@ -153,7 +153,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
                 </Text>
               </View>
               {recipe.rating != null && (
-                <Text style={styles.rating}>{'★'.repeat(recipe.rating)}</Text>
+                <Text style={styles.rating}>{recipe.rating}/5</Text>
               )}
             </View>
 
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   categoryBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
   categoryBadgeText: { fontSize: 13, fontWeight: '600' },
-  rating: { fontSize: 18, color: '#F59E0B', letterSpacing: 1 },
+  rating: { fontSize: 14, fontWeight: '700', color: '#F59E0B' },
 
   section: { gap: 12 },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
