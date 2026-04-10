@@ -637,6 +637,17 @@ export async function logCookedMeal(
   return data as CookedMeal;
 }
 
+export async function fetchWeekCookedMeals(userId: string, plannedMealIds: string[]): Promise<CookedMeal[]> {
+  if (!plannedMealIds.length) return [];
+  const { data, error } = await supabase
+    .from('cooked_meals')
+    .select('*')
+    .eq('user_id', userId)
+    .in('planned_meal_id', plannedMealIds);
+  if (error) throw error;
+  return (data ?? []) as CookedMeal[];
+}
+
 export async function saveCheckin(
   checkin: Omit<CheckIn, 'id' | 'created_at'>
 ): Promise<CheckIn> {

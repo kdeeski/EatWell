@@ -57,7 +57,7 @@ export function findStashMatch(
   recipes: Recipe[],
   options?: { strict?: boolean }
 ): Recipe | null {
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  const norm = (s: string) => s.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   const meal = norm(mealName);
   const strict = options?.strict ?? false;
   return (

@@ -3,17 +3,17 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  LayoutAnimation, Platform, UIManager, ActivityIndicator,
+  LayoutAnimation, Platform, UIManager, ActivityIndicator, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
-import { reorderPlannedMeals, loadCurrentMealPlan } from '../../lib/data';
+import { reorderPlannedMeals, loadCurrentMealPlan, fetchWeekCookedMeals } from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
-import type { PlannedMeal, PlannedIngredient, Recipe } from '../../types';
+import type { PlannedMeal, PlannedIngredient, Recipe, CookedMeal } from '../../types';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -44,6 +44,7 @@ export default function PlanScreen() {
   const [wineResult, setWineResult]   = useState<WineMatchResult | null>(null);
   const [wineLoading, setWineLoading] = useState(false);
   const [wineError, setWineError]     = useState<string | null>(null);
+  const [cookedMap, setCookedMap]     = useState<Record<string, CookedMeal>>({});
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -80,6 +81,18 @@ export default function PlanScreen() {
     setWineResult(null);
     setWineError(null);
   }, [selectedSlot]);
+
+  // Load cooked meals for the current week
+  useEffect(() => {
+    if (!userId || !plannedMeals.length) return;
+    fetchWeekCookedMeals(userId, plannedMeals.map((m) => m.id))
+      .then((list) => {
+        const map: Record<string, CookedMeal> = {};
+        for (const c of list) { if (c.planned_meal_id) map[c.planned_meal_id] = c; }
+        setCookedMap(map);
+      })
+      .catch(() => {}); // non-critical
+  }, [userId, plannedMeals]);
 
   async function handleWineMatch(meal: PlannedMeal) {
     setWineLoading(true);
@@ -206,101 +219,126 @@ export default function PlanScreen() {
                     {DAY_SHORT[listIndex]}
                   </Text>
 
-                  <View style={[
-                    styles.mealCard,
-                    isSelected && styles.mealCardSelected,
-                    !meal && styles.mealCardEmpty,
-                  ]}>
-                    {meal ? (
-                      <>
-                        <View style={styles.badgeRow}>
-                          {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
-                          {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
-                        </View>
-                        <Text style={styles.mealName}>{toTitleCase(meal.meal_name)}</Text>
-                        <Text style={styles.mealMeta}>
-                          {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
-                          {!isSelected ? '  ·  Tap for details' : ''}
-                        </Text>
-                        {isSelected && meal.description ? (
-                          <Text style={styles.description}>{meal.description}</Text>
-                        ) : null}
-                        {isSelected && (() => {
-                          const stash = recipes.find((r) =>
-                            !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category) &&
-                            r.rating != null &&
-                            r.name.toLowerCase() === meal.meal_name.toLowerCase()
-                          );
-                          return stash?.rating != null
-                            ? <Text style={styles.mealRating}>{stash.rating}/5</Text>
-                            : null;
-                        })()}
-                        {isSelected && (() => {
-                          const mealRecipes = recipes.filter(
-                            (r) => !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category)
-                          );
-                          const match = findStashMatch(meal.meal_name, mealRecipes);
-                          return match ? (
-                            <TouchableOpacity
-                              style={styles.stashNudge}
-                              onPress={() => setStashRecipe(match)}
-                            >
-                              <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
-                            </TouchableOpacity>
-                          ) : (
-                            <>
-                              <TouchableOpacity
-                                style={styles.stashNudge}
-                                onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
-                              >
-                                <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.howToButton}
-                                onPress={() => setGuideTarget(meal)}
-                              >
-                                <Text style={styles.howToButtonText}>How to cook this →</Text>
-                              </TouchableOpacity>
-                            </>
-                          );
-                        })()}
-                        {isSelected && (
-                          <View style={styles.wineSection}>
-                            {wineResult ? (
-                              <>
-                                {wineResult.pairings.map((p, i) => (
-                                  <View key={i} style={styles.wineCard}>
-                                    <Text style={styles.wineVarietal}>{p.varietal}</Text>
-                                    <Text style={styles.wineReason}>{p.reason}</Text>
-                                    {p.pairing_note ? (
-                                      <Text style={styles.wineNote}>{p.pairing_note}</Text>
-                                    ) : null}
-                                  </View>
-                                ))}
-                                <TouchableOpacity onPress={() => setWineResult(null)}>
-                                  <Text style={styles.wineDismiss}>Clear</Text>
-                                </TouchableOpacity>
-                              </>
-                            ) : (
-                              <TouchableOpacity onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
-                                {wineLoading
-                                  ? <ActivityIndicator size="small" color="#3B7A57" />
-                                  : <Text style={styles.howToButtonText}>Drink pairing →</Text>
-                                }
-                              </TouchableOpacity>
+                  {(() => {
+                    const cooked = meal ? (cookedMap[meal.id] ?? null) : null;
+                    return (
+                      <View style={[
+                        styles.mealCard,
+                        isSelected && !cooked && styles.mealCardSelected,
+                        !meal && styles.mealCardEmpty,
+                        cooked && styles.mealCardCooked,
+                      ]}>
+                        {meal ? (
+                          <>
+                            <View style={styles.badgeRow}>
+                              {cooked
+                                ? <Text style={styles.cookedBadge}>Cooked ✓</Text>
+                                : <>
+                                    {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
+                                    {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
+                                  </>
+                              }
+                            </View>
+                            <Text style={[styles.mealName, cooked && styles.mealNameCooked]}>
+                              {toTitleCase(meal.meal_name)}
+                            </Text>
+                            {cooked?.rating != null && (
+                              <Text style={styles.mealRating}>{cooked.rating}/5</Text>
                             )}
-                            {wineError ? (
-                              <TouchableOpacity onPress={() => handleWineMatch(meal)}>
-                                <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
-                              </TouchableOpacity>
+                            <Text style={styles.mealMeta}>
+                              {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
+                              {!isSelected && !cooked ? '  ·  Tap for details' : ''}
+                            </Text>
+                            {isSelected && meal.description ? (
+                              <Text style={styles.description}>{meal.description}</Text>
                             ) : null}
-                          </View>
+                            {isSelected && !cooked && (() => {
+                              const stash = recipes.find((r) =>
+                                !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category) &&
+                                r.rating != null &&
+                                r.name.toLowerCase() === meal.meal_name.toLowerCase()
+                              );
+                              return stash?.rating != null
+                                ? <Text style={styles.mealRating}>{stash.rating}/5</Text>
+                                : null;
+                            })()}
+                            {isSelected && !cooked && (() => {
+                              const mealRecipes = recipes.filter(
+                                (r) => !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category)
+                              );
+                              const match = findStashMatch(meal.meal_name, mealRecipes);
+                              return match ? (
+                                match.source_url ? (
+                                  <TouchableOpacity
+                                    style={styles.stashNudge}
+                                    onPress={() => Linking.openURL(match.source_url!)}
+                                  >
+                                    <Text style={styles.stashNudgeText}>View recipe →</Text>
+                                  </TouchableOpacity>
+                                ) : (
+                                  <TouchableOpacity
+                                    style={styles.stashNudge}
+                                    onPress={() => setStashRecipe(match)}
+                                  >
+                                    <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
+                                  </TouchableOpacity>
+                                )
+                              ) : (
+                                <>
+                                  <TouchableOpacity
+                                    style={styles.stashNudge}
+                                    onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
+                                  >
+                                    <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.howToButton}
+                                    onPress={() => setGuideTarget(meal)}
+                                  >
+                                    <Text style={styles.howToButtonText}>How to cook this →</Text>
+                                  </TouchableOpacity>
+                                </>
+                              );
+                            })()}
+                            {isSelected && !cooked && (
+                              <View style={styles.wineSection}>
+                                {wineResult ? (
+                                  <>
+                                    {wineResult.pairings.map((p, i) => (
+                                      <View key={i} style={styles.wineCard}>
+                                        <Text style={styles.wineVarietal}>{p.varietal}</Text>
+                                        <Text style={styles.wineReason}>{p.reason}</Text>
+                                        {p.pairing_note ? (
+                                          <Text style={styles.wineNote}>{p.pairing_note}</Text>
+                                        ) : null}
+                                      </View>
+                                    ))}
+                                    <TouchableOpacity onPress={() => setWineResult(null)}>
+                                      <Text style={styles.wineDismiss}>Clear</Text>
+                                    </TouchableOpacity>
+                                  </>
+                                ) : (
+                                  <TouchableOpacity onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
+                                    {wineLoading
+                                      ? <ActivityIndicator size="small" color="#3B7A57" />
+                                      : <Text style={styles.howToButtonText}>Drink pairing →</Text>
+                                    }
+                                  </TouchableOpacity>
+                                )}
+                                {wineError ? (
+                                  <TouchableOpacity onPress={() => handleWineMatch(meal)}>
+                                    <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
+                                  </TouchableOpacity>
+                                ) : null}
+                              </View>
+                            )}
+                          </>
+                        ) : (
+                          <Text style={styles.nightOff}>Night off</Text>
                         )}
-                      </>
-                    ) : (
-                      <Text style={styles.nightOff}>Night off</Text>
-                    )}
-                  </View>
+                      </View>
+                    );
+                  })()}
                 </TouchableOpacity>
               );
             })}
@@ -345,8 +383,8 @@ export default function PlanScreen() {
         />
       )}
 
-      {/* Move toolbar — only visible when a meal is selected */}
-      {selectedMeal && (
+      {/* Move toolbar — only visible when a non-cooked meal is selected */}
+      {selectedMeal && !cookedMap[selectedMeal.id] && (
         <View style={styles.toolbar}>
           <View style={styles.toolbarMoveRow}>
             <TouchableOpacity
@@ -400,6 +438,12 @@ const styles = StyleSheet.create({
   },
   mealCardSelected: { borderColor: '#3B7A57', borderWidth: 2 },
   mealCardEmpty:    { backgroundColor: '#F9FAFB', borderColor: '#F3F4F6' },
+  mealCardCooked:   { backgroundColor: '#F3F4F6' },
+  mealNameCooked:   { color: '#9CA3AF' },
+  cookedBadge: {
+    fontSize: 11, fontWeight: '600', color: '#3B7A57', backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
+  },
 
   badgeRow:    { flexDirection: 'row', gap: 6, marginBottom: 4 },
   fishBadge:   {
