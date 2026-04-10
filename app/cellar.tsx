@@ -1,15 +1,17 @@
 // Wine cellar — bottles, vintages, producers
 // Grouped by country → flat list → tap row to edit/delete
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, Platform, KeyboardAvoidingView,
+  Animated, PanResponder,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
-import { saveCellarItem, updateCellarItem, removeCellarItem } from '../lib/data';
+import { saveCellarItem, updateCellarItem, removeCellarItem, addAdHocShoppingItem, updateShoppingItem } from '../lib/data';
+import { normaliseIngredientName } from '../lib/recipes';
 import type { CellarItem } from '../types';
 
 const BOTTLE_SIZES = [375, 750, 1500, 3000];
@@ -37,7 +39,10 @@ interface ModalState {
 export default function CellarScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userId, cellarItems, addCellarItem, updateCellarItemInStore, removeCellarItemFromStore } = useAppStore();
+  const {
+    userId, cellarItems, addCellarItem, updateCellarItemInStore, removeCellarItemFromStore,
+    shoppingList, shoppingItems, addShoppingItem, updateShoppingItemInStore,
+  } = useAppStore();
 
   const [modal, setModal] = useState<ModalState>({ visible: false, item: null });
   const [saving, setSaving] = useState(false);
@@ -121,6 +126,54 @@ export default function CellarScreen() {
     ]);
   };
 
+  const handleRestock = async (item: CellarItem) => {
+    if (!shoppingList) {
+      Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
+      return;
+    }
+    const normName = normaliseIngredientName(item.name);
+    const existing = shoppingItems.find(
+      (s) => normaliseIngredientName(s.name) === normName && !s.checked
+    );
+    if (existing) {
+      Alert.alert(
+        `${item.name} is already on your list`,
+        `Quantity: ${existing.quantity}. Increase to ${existing.quantity + 1}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Increase',
+            onPress: async () => {
+              try {
+                const updated = await updateShoppingItem(existing.id, { quantity: existing.quantity + 1 });
+                updateShoppingItemInStore(existing.id, { quantity: updated.quantity });
+              } catch (e: any) {
+                Alert.alert('Could Not Update', e.message ?? 'Please try again.');
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+    try {
+      const saved = await addAdHocShoppingItem(shoppingList.id, item.name, 'alcohol');
+      addShoppingItem(saved);
+      Alert.alert('Added to Shopping List', `${item.name} added.`);
+    } catch (e: any) {
+      Alert.alert('Could Not Add', e.message ?? 'Please try again.');
+    }
+  };
+
+  const handleRemove = async (item: CellarItem) => {
+    try {
+      await removeCellarItem(item.id);
+      removeCellarItemFromStore(item.id);
+    } catch {
+      Alert.alert('Error', 'Could not remove item.');
+    }
+  };
+
   // Group by country; ungrouped items go to "Other"
   const countries = Array.from(
     new Set(cellarItems.map((i) => i.country?.trim() || 'Other'))
@@ -142,21 +195,23 @@ export default function CellarScreen() {
   const totalBottles = cellarItems.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.headerBtn}>Close</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Wine Cellar</Text>
-          {totalBottles > 0 && (
-            <Text style={styles.headerCount}>{totalBottles} bottle{totalBottles !== 1 ? 's' : ''}</Text>
-          )}
+    <View style={styles.container}>
+      {/* Pinned top section */}
+      <View style={{ paddingTop: insets.top || 16 }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={styles.headerBtn}>Close</Text>
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Wine Cellar</Text>
+            {totalBottles > 0 && (
+              <Text style={styles.headerCount}>{totalBottles} bottle{totalBottles !== 1 ? 's' : ''}</Text>
+            )}
+          </View>
+          <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={styles.headerAdd}>+ Add</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.headerAdd}>+ Add</Text>
-        </TouchableOpacity>
       </View>
 
       {/* List */}
@@ -166,31 +221,19 @@ export default function CellarScreen() {
           <Text style={styles.emptyBody}>Tap "+ Add" to log your first bottle.</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}>
+          <Text style={styles.swipeHint}>Swipe right to restock · Swipe left to remove</Text>
           {grouped.map((group) => (
             <View key={group.country} style={styles.group}>
               <Text style={styles.groupHeader}>{group.country}</Text>
               {group.items.map((item) => (
-                <TouchableOpacity key={item.id} style={styles.row} onPress={() => openEdit(item)} activeOpacity={0.7}>
-                  <View style={styles.rowMain}>
-                    <View style={styles.rowTitleRow}>
-                      {item.producer ? (
-                        <>
-                          <Text style={styles.rowProducer}>{item.producer}</Text>
-                          <Text style={styles.rowName}> {item.name}</Text>
-                        </>
-                      ) : (
-                        <Text style={styles.rowName}>{item.name}</Text>
-                      )}
-                    </View>
-                    {metaLine(item) ? <Text style={styles.rowMeta}>{metaLine(item)}</Text> : null}
-                    {item.notes ? <Text style={styles.rowNotes}>{item.notes}</Text> : null}
-                  </View>
-                  <View style={styles.rowRight}>
-                    <Text style={styles.rowQty}>{item.quantity}</Text>
-                    <Text style={styles.rowQtyLabel}>bottle{item.quantity !== 1 ? 's' : ''}</Text>
-                  </View>
-                </TouchableOpacity>
+                <CellarRow
+                  key={item.id}
+                  item={item}
+                  onRestock={() => handleRestock(item)}
+                  onRemove={() => handleRemove(item)}
+                  onEdit={() => openEdit(item)}
+                />
               ))}
             </View>
           ))}
@@ -335,6 +378,67 @@ export default function CellarScreen() {
   );
 }
 
+// ─── Swipeable cellar row ─────────────────────────────────────────────────────
+
+function CellarRow({ item, onRestock, onRemove, onEdit }: {
+  item: CellarItem;
+  onRestock: () => void;
+  onRemove: () => void;
+  onEdit: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const THRESHOLD = 80;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+        Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8,
+      onPanResponderMove: (_, { dx }) => translateX.setValue(dx),
+      onPanResponderRelease: (_, { dx }) => {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+        if (dx > THRESHOLD) onRestock();
+        else if (dx < -THRESHOLD) onRemove();
+      },
+    })
+  ).current;
+
+  const rightOpacity = translateX.interpolate({ inputRange: [0, THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
+  const leftOpacity  = translateX.interpolate({ inputRange: [-THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
+
+  return (
+    <View style={{ overflow: 'hidden', marginBottom: 6 }}>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { opacity: rightOpacity }]}>
+        <Text style={styles.swipeBgText}>Restock</Text>
+      </Animated.View>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { opacity: leftOpacity }]}>
+        <Text style={styles.swipeBgText}>Remove</Text>
+      </Animated.View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+        <TouchableOpacity style={styles.row} onPress={onEdit} activeOpacity={0.7}>
+          <View style={styles.rowMain}>
+            <View style={styles.rowTitleRow}>
+              {item.producer ? (
+                <>
+                  <Text style={styles.rowProducer}>{item.producer}</Text>
+                  <Text style={styles.rowName}> {item.name}</Text>
+                </>
+              ) : (
+                <Text style={styles.rowName}>{item.name}</Text>
+              )}
+            </View>
+            {metaLine(item) ? <Text style={styles.rowMeta}>{metaLine(item)}</Text> : null}
+            {item.notes ? <Text style={styles.rowNotes}>{item.notes}</Text> : null}
+          </View>
+          <View style={styles.rowRight}>
+            <Text style={styles.rowQty}>{item.quantity}</Text>
+            <Text style={styles.rowQtyLabel}>bottle{item.quantity !== 1 ? 's' : ''}</Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
 
@@ -352,6 +456,12 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
   emptyBody:  { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+
+  swipeHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginBottom: 8 },
+  swipeBg: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', borderRadius: 12 },
+  swipeBgRight: { backgroundColor: '#7C3AED', alignItems: 'flex-start', paddingLeft: 20 },
+  swipeBgLeft:  { backgroundColor: '#EF4444', alignItems: 'flex-end',   paddingRight: 20 },
+  swipeBgText:  { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 
   listContent: { padding: 20, gap: 24 },
   group: { gap: 8 },
