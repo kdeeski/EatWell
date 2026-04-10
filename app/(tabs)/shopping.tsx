@@ -43,7 +43,9 @@ const CATEGORY_LABELS: Record<IngredientCategory, string> = {
 function itemQuantityLabel(item: ShoppingListItem): string {
   const name = toTitleCase(item.name);
   if (item.ingredient_category === 'herbs_spices' || item.is_pantry_staple) return name;
-  return `${name} × ${item.quantity} ${item.unit}`.trim();
+  const unitless = ['each', 'piece', 'item', ''].includes(item.unit?.toLowerCase() ?? '');
+  const qty = unitless ? `${item.quantity}` : `${item.quantity} ${item.unit}`;
+  return `${name} × ${qty}`.trim();
 }
 
 // ── Swipeable row (right = have it / from garden, left = need to buy) ─────────
