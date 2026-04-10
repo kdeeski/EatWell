@@ -228,6 +228,43 @@ export interface LastNightResponse {
   notes?: string | null;
 }
 
+// ─── Bar & Cellar ─────────────────────────────────────────────────────────────
+
+export type SpiritType =
+  | 'whiskey' | 'cognac_brandy' | 'gin' | 'vodka' | 'rum'
+  | 'tequila_mezcal' | 'vermouth_fortified' | 'liqueur_aperitif'
+  | 'bitters' | 'syrup_mixer' | 'other';
+
+export interface BarItem {
+  id: string;
+  user_id: string;
+  name: string;
+  spirit_type: SpiritType;
+  abv: number | null;
+  size_ml: number | null;
+  country: string | null;
+  quantity: number;
+  notes: string | null;
+  depleted: boolean;
+  created_at: string;
+}
+
+export interface CellarItem {
+  id: string;
+  user_id: string;
+  name: string;
+  producer: string | null;
+  varietal: string | null;
+  vintage: number | null;
+  region: string | null;
+  country: string | null;
+  size_ml: number;
+  quantity: number;
+  notes: string | null;
+  depleted: boolean;
+  created_at: string;
+}
+
 // ─── Recipes ─────────────────────────────────────────────────────────────────
 
 export type RecipeCategory =

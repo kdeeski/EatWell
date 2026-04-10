@@ -10,6 +10,8 @@ import type {
   CheckIn,
   UserPreferences,
   Recipe,
+  BarItem,
+  CellarItem,
 } from '../types';
 
 interface AppState {
@@ -62,6 +64,20 @@ interface AppState {
   addRecipe: (recipe: Recipe) => void;
   updateRecipeInStore: (id: string, updates: Partial<Recipe>) => void;
   removeRecipe: (id: string) => void;
+
+  // ── Bar ───────────────────────────────────────────────────────────────────
+  barItems: BarItem[];
+  setBarItems: (items: BarItem[]) => void;
+  addBarItem: (item: BarItem) => void;
+  updateBarItemInStore: (id: string, updates: Partial<BarItem>) => void;
+  removeBarItemFromStore: (id: string) => void;
+
+  // ── Cellar ────────────────────────────────────────────────────────────────
+  cellarItems: CellarItem[];
+  setCellarItems: (items: CellarItem[]) => void;
+  addCellarItem: (item: CellarItem) => void;
+  updateCellarItemInStore: (id: string, updates: Partial<CellarItem>) => void;
+  removeCellarItemFromStore: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -150,4 +166,24 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   removeRecipe: (id) =>
     set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) })),
+
+  // Bar
+  barItems: [],
+  setBarItems: (items) => set({ barItems: items }),
+  addBarItem: (item) =>
+    set((state) => ({ barItems: [...state.barItems, item].sort((a, b) => a.name.localeCompare(b.name)) })),
+  updateBarItemInStore: (id, updates) =>
+    set((state) => ({ barItems: state.barItems.map((i) => i.id === id ? { ...i, ...updates } : i) })),
+  removeBarItemFromStore: (id) =>
+    set((state) => ({ barItems: state.barItems.filter((i) => i.id !== id) })),
+
+  // Cellar
+  cellarItems: [],
+  setCellarItems: (items) => set({ cellarItems: items }),
+  addCellarItem: (item) =>
+    set((state) => ({ cellarItems: [...state.cellarItems, item].sort((a, b) => a.name.localeCompare(b.name)) })),
+  updateCellarItemInStore: (id, updates) =>
+    set((state) => ({ cellarItems: state.cellarItems.map((i) => i.id === id ? { ...i, ...updates } : i) })),
+  removeCellarItemFromStore: (id) =>
+    set((state) => ({ cellarItems: state.cellarItems.filter((i) => i.id !== id) })),
 }));

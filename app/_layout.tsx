@@ -19,6 +19,7 @@ export default function RootLayout() {
   const {
     setUserId, setInventoryItems, setGardenPlants,
     setMealPlan, setShoppingList, setTodayCheckin, setUserPreferences, setRecipes,
+    setBarItems, setCellarItems,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   // On web there are no OTA updates — skip the check entirely
@@ -79,7 +80,7 @@ export default function RootLayout() {
       refresh_token: session.refresh_token!,
     }).then(() =>
       bootstrapUserData(session.user.id, session.user.email ?? '').then(
-        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes }) => {
+        ({ inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes, barItems, cellarItems }) => {
           setInventoryItems(inventoryItems);
           setGardenPlants(gardenPlants);
           if (mealPlanData) setMealPlan(mealPlanData.plan, mealPlanData.meals);
@@ -87,6 +88,8 @@ export default function RootLayout() {
           setTodayCheckin(todayCheckin);
           setUserPreferences(userPreferences);
           setRecipes(recipes);
+          setBarItems(barItems);
+          setCellarItems(cellarItems);
         }
       )
     ).catch((e) => console.error('Bootstrap chain failed:', e));
@@ -103,6 +106,8 @@ export default function RootLayout() {
         <Stack.Screen name="planning" options={{ presentation: 'modal' }} />
         <Stack.Screen name="checkin" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="bar" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="cellar" options={{ presentation: 'modal' }} />
       </Stack>
     </SafeAreaProvider>
   );

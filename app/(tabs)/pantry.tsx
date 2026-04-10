@@ -3,6 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { toTitleCase } from '../../lib/titleCase';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -76,6 +77,7 @@ type LocationFilter = 'all' | ItemLocation;
 type CategoryFilter = 'all' | ItemCategory;
 
 export default function PantryScreen() {
+  const router = useRouter();
   const { userId, inventoryItems, upsertInventoryItem: upsertStore, removeInventoryItem: removeFromStore,
           shoppingList, shoppingItems, addShoppingItem, updateShoppingItemInStore } = useAppStore();
   const insets = useSafeAreaInsets();
@@ -169,7 +171,11 @@ export default function PantryScreen() {
           <TouchableOpacity
             key={f.key}
             style={[styles.filterPill, locationFilter === f.key && styles.filterPillActive]}
-            onPress={() => setLocationFilter(f.key as LocationFilter)}
+            onPress={() => {
+              if (f.key === 'bar') { router.push('/bar'); return; }
+              if (f.key === 'cellar') { router.push('/cellar'); return; }
+              setLocationFilter(f.key as LocationFilter);
+            }}
           >
             <Text style={[styles.filterPillText, locationFilter === f.key && styles.filterPillTextActive]}>
               {f.label}
@@ -713,7 +719,7 @@ function toItemCategory(raw: string): ItemCategory {
 
 function toItemLocation(raw: string): ItemLocation {
   const key = raw.toLowerCase();
-  return (['fridge', 'freezer', 'pantry', 'garden'] as ItemLocation[]).includes(key as ItemLocation)
+  return (['fridge', 'freezer', 'pantry', 'garden', 'bar', 'cellar'] as ItemLocation[]).includes(key as ItemLocation)
     ? (key as ItemLocation)
     : 'pantry';
 }

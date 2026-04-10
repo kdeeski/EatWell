@@ -20,6 +20,7 @@ import type {
   CookedMeal, CheckIn,
   InventoryItem, ItemCategory, ItemLocation, Store,
   UserPreferences, Recipe,
+  BarItem, CellarItem,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
@@ -711,6 +712,96 @@ export async function saveUserPreferences(
   return data as UserPreferences;
 }
 
+// ─── Bar ─────────────────────────────────────────────────────────────────────
+
+export async function loadBarItems(userId: string): Promise<BarItem[]> {
+  const { data, error } = await supabase
+    .from('bar_items')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('depleted', false)
+    .order('name');
+  if (error) throw error;
+  return data as BarItem[];
+}
+
+export async function saveBarItem(
+  userId: string,
+  item: Omit<BarItem, 'id' | 'user_id' | 'created_at' | 'depleted'>
+): Promise<BarItem> {
+  const { data, error } = await supabase
+    .from('bar_items')
+    .insert({ ...item, user_id: userId })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as BarItem;
+}
+
+export async function updateBarItem(id: string, updates: Partial<BarItem>): Promise<BarItem> {
+  const { data, error } = await supabase
+    .from('bar_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as BarItem;
+}
+
+export async function removeBarItem(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('bar_items')
+    .update({ depleted: true })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ─── Cellar ───────────────────────────────────────────────────────────────────
+
+export async function loadCellarItems(userId: string): Promise<CellarItem[]> {
+  const { data, error } = await supabase
+    .from('cellar_items')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('depleted', false)
+    .order('name');
+  if (error) throw error;
+  return data as CellarItem[];
+}
+
+export async function saveCellarItem(
+  userId: string,
+  item: Omit<CellarItem, 'id' | 'user_id' | 'created_at' | 'depleted'>
+): Promise<CellarItem> {
+  const { data, error } = await supabase
+    .from('cellar_items')
+    .insert({ ...item, user_id: userId })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CellarItem;
+}
+
+export async function updateCellarItem(id: string, updates: Partial<CellarItem>): Promise<CellarItem> {
+  const { data, error } = await supabase
+    .from('cellar_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CellarItem;
+}
+
+export async function removeCellarItem(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('cellar_items')
+    .update({ depleted: true })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 export async function bootstrapUserData(userId: string, email: string) {
@@ -719,7 +810,7 @@ export async function bootstrapUserData(userId: string, email: string) {
     console.warn('ensureUserProfile failed (non-fatal):', e)
   );
 
-  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes] =
+  const [inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes, barItems, cellarItems] =
     await Promise.all([
       loadInventoryItems(userId).catch((e) => { console.error('loadInventoryItems failed:', e); return [] as InventoryItem[]; }),
       loadGardenPlants(userId).catch((e) => { console.error('loadGardenPlants failed:', e); return [] as GardenPlant[]; }),
@@ -728,9 +819,11 @@ export async function bootstrapUserData(userId: string, email: string) {
       loadTodayCheckin(userId).catch((e) => { console.error('loadTodayCheckin failed:', e); return null; }),
       loadUserPreferences(userId).catch((e) => { console.error('loadUserPreferences failed:', e); return null; }),
       loadRecipes(userId).catch((e) => { console.error('loadRecipes failed:', e); return [] as Recipe[]; }),
+      loadBarItems(userId).catch((e) => { console.error('loadBarItems failed:', e); return [] as BarItem[]; }),
+      loadCellarItems(userId).catch((e) => { console.error('loadCellarItems failed:', e); return [] as CellarItem[]; }),
     ]);
 
-  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes };
+  return { inventoryItems, gardenPlants, mealPlanData, shoppingData, todayCheckin, userPreferences, recipes, barItems, cellarItems };
 }
 
 // ─── Recipes ──────────────────────────────────────────────────────────────────
