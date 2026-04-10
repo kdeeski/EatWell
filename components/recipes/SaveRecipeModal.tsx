@@ -17,6 +17,7 @@ const CATEGORIES: { key: RecipeCategory; label: string }[] = [
   { key: 'desserts',       label: 'Desserts' },
   { key: 'baking',         label: 'Baking' },
   { key: 'marinades_rubs', label: 'Marinades & Rubs' },
+  { key: 'cocktails',      label: 'Cocktails' },
   { key: 'glossary',       label: 'Glossary' },
 ];
 
@@ -27,6 +28,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
   desserts: '#9333EA',
   baking: '#EA580C',
   marinades_rubs: '#0369A1',
+  cocktails: '#0891B2',
   glossary: '#374151',
 };
 

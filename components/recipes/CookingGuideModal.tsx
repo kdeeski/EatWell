@@ -23,7 +23,7 @@ interface Props {
 
 type SavePrefill = { name: string; category: RecipeCategory; description?: string; ingredients?: string; method?: string; guideJson?: RecipeGuideJson };
 
-const VALID_CATEGORIES: RecipeCategory[] = ['mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary'];
+const VALID_CATEGORIES: RecipeCategory[] = ['mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'cocktails', 'glossary'];
 
 function resolveComponentCategory(comp: CookingGuide['components'][0]): RecipeCategory {
   if (comp.category && VALID_CATEGORIES.includes(comp.category as RecipeCategory)) {

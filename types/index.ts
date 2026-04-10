@@ -27,7 +27,7 @@ export type ItemCategory =
   | 'alcohol'
   | 'household';
 
-export type ItemLocation = 'fridge' | 'freezer' | 'pantry' | 'garden';
+export type ItemLocation = 'fridge' | 'freezer' | 'pantry' | 'garden' | 'bar' | 'cellar';
 
 export interface InventoryItem {
   id: string;
@@ -233,7 +233,7 @@ export interface LastNightResponse {
 export type RecipeCategory =
   | 'mains' | 'sauces_dressings' | 'sides'
   | 'desserts' | 'baking' | 'marinades_rubs'
-  | 'glossary';
+  | 'glossary' | 'cocktails';
 
 export interface RecipeGuideJson {
   steps: string[];

@@ -34,10 +34,12 @@ const CATEGORIES: { key: ItemCategory; label: string; emoji: string }[] = [
 ];
 
 const LOCATIONS: { key: ItemLocation; label: string; emoji: string }[] = [
-  { key: 'fridge',  label: 'Fridge',  emoji: '❄️' },
-  { key: 'freezer', label: 'Freezer', emoji: '🧊' },
-  { key: 'pantry',  label: 'Pantry',  emoji: '🗄️' },
-  { key: 'garden',  label: 'Garden',  emoji: '🌿' },
+  { key: 'fridge',  label: 'Fridge',       emoji: '❄️' },
+  { key: 'freezer', label: 'Freezer',      emoji: '🧊' },
+  { key: 'pantry',  label: 'Pantry',       emoji: '🗄️' },
+  { key: 'bar',     label: 'Bar',          emoji: '🍸' },
+  { key: 'cellar',  label: 'Wine Cellar',  emoji: '🍷' },
+  { key: 'garden',  label: 'Garden',       emoji: '🌿' },
 ];
 
 const UNITS = ['g', 'kg', 'ml', 'l', 'bunch', 'pack', 'each', 'piece', 'jar', 'can'];
