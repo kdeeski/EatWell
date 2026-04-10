@@ -404,7 +404,6 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
               onChangeText={setName}
               placeholder="e.g. chicken breast, cumin"
               placeholderTextColor="#9CA3AF"
-              autoCapitalize="none"
               autoFocus={!existingItem}
             />
 
@@ -665,7 +664,7 @@ function PendingItemRow({ item, onChange, onRemove }: {
   return (
     <View style={styles.pendingRow}>
       <TextInput style={styles.pendingNameInput} value={item.name} onChangeText={(v) => onChange({ name: v })}
-        placeholder="Item name" placeholderTextColor="#9CA3AF" autoCapitalize="none" />
+        placeholder="Item name" placeholderTextColor="#9CA3AF" />
       <View style={styles.pendingRowMeta}>
         <TouchableOpacity style={[styles.catPill, { flex: 1 }]} onPress={() => { setCatOpen(!catOpen); setLocOpen(false); }}>
           <Text style={styles.catPillText}>{CAT_EMOJI[item.category]}  {CAT_LABEL[item.category]} ▾</Text>

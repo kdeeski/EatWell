@@ -1,15 +1,17 @@
 // Bar inventory — spirits, liqueurs, bitters, syrups
 // Spirit type tabs → grouped list → tap row to edit/delete
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, Platform, KeyboardAvoidingView,
+  Animated, PanResponder,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
-import { saveBarItem, updateBarItem, removeBarItem } from '../lib/data';
+import { saveBarItem, updateBarItem, removeBarItem, addAdHocShoppingItem, updateShoppingItem } from '../lib/data';
+import { normaliseIngredientName } from '../lib/recipes';
 import type { BarItem, SpiritType } from '../types';
 
 const SPIRIT_TYPES: { key: SpiritType; label: string; emoji: string }[] = [
@@ -50,7 +52,10 @@ interface ModalState {
 export default function BarScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userId, barItems, addBarItem, updateBarItemInStore, removeBarItemFromStore } = useAppStore();
+  const {
+    userId, barItems, addBarItem, updateBarItemInStore, removeBarItemFromStore,
+    shoppingList, shoppingItems, addShoppingItem, updateShoppingItemInStore,
+  } = useAppStore();
 
   const [activeType, setActiveType] = useState<FilterKey>('all');
   const [modal, setModal] = useState<ModalState>({ visible: false, item: null });
@@ -129,6 +134,54 @@ export default function BarScreen() {
     ]);
   };
 
+  const handleRestock = async (item: BarItem) => {
+    if (!shoppingList) {
+      Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
+      return;
+    }
+    const normName = normaliseIngredientName(item.name);
+    const existing = shoppingItems.find(
+      (s) => normaliseIngredientName(s.name) === normName && !s.checked
+    );
+    if (existing) {
+      Alert.alert(
+        `${item.name} is already on your list`,
+        `Quantity: ${existing.quantity}. Increase to ${existing.quantity + 1}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Increase',
+            onPress: async () => {
+              try {
+                const updated = await updateShoppingItem(existing.id, { quantity: existing.quantity + 1 });
+                updateShoppingItemInStore(existing.id, { quantity: updated.quantity });
+              } catch (e: any) {
+                Alert.alert('Could Not Update', e.message ?? 'Please try again.');
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+    try {
+      const saved = await addAdHocShoppingItem(shoppingList.id, item.name, 'alcohol');
+      addShoppingItem(saved);
+      Alert.alert('Added to Shopping List', `${item.name} added.`);
+    } catch (e: any) {
+      Alert.alert('Could Not Add', e.message ?? 'Please try again.');
+    }
+  };
+
+  const handleRemove = async (item: BarItem) => {
+    try {
+      await removeBarItem(item.id);
+      removeBarItemFromStore(item.id);
+    } catch {
+      Alert.alert('Error', 'Could not remove item.');
+    }
+  };
+
   const filtered = activeType === 'all'
     ? barItems
     : barItems.filter((i) => i.spirit_type === activeType);
@@ -166,7 +219,7 @@ export default function BarScreen() {
             onPress={() => setActiveType(t.key)}
           >
             <Text style={[styles.filterPillText, activeType === t.key && styles.filterPillTextActive]}>
-              {t.emoji} {t.label}
+              {t.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -180,21 +233,18 @@ export default function BarScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}>
+          <Text style={styles.swipeHint}>Swipe right to restock · Swipe left to remove</Text>
           {grouped.map((group) => (
             <View key={group.key} style={styles.group}>
-              <Text style={styles.groupHeader}>{group.emoji}  {group.label}</Text>
+              <Text style={styles.groupHeader}>{group.label}</Text>
               {group.items.map((item) => (
-                <TouchableOpacity key={item.id} style={styles.row} onPress={() => openEdit(item)} activeOpacity={0.7}>
-                  <View style={styles.rowMain}>
-                    <Text style={styles.rowName}>{item.name}</Text>
-                    {metaLine(item) ? <Text style={styles.rowMeta}>{metaLine(item)}</Text> : null}
-                    {item.notes ? <Text style={styles.rowNotes}>{item.notes}</Text> : null}
-                  </View>
-                  <View style={styles.rowRight}>
-                    <Text style={styles.rowQty}>{item.quantity}</Text>
-                    <Text style={styles.rowQtyLabel}>bottle{item.quantity !== 1 ? 's' : ''}</Text>
-                  </View>
-                </TouchableOpacity>
+                <BarRow
+                  key={item.id}
+                  item={item}
+                  onRestock={() => handleRestock(item)}
+                  onRemove={() => handleRemove(item)}
+                  onEdit={() => openEdit(item)}
+                />
               ))}
             </View>
           ))}
@@ -239,7 +289,7 @@ export default function BarScreen() {
                     onPress={() => setSpiritType(t.key)}
                   >
                     <Text style={[styles.typePillText, spiritType === t.key && styles.typePillTextActive]}>
-                      {t.emoji} {t.label}
+                      {t.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -324,6 +374,58 @@ export default function BarScreen() {
   );
 }
 
+// ─── Swipeable bar row ────────────────────────────────────────────────────────
+
+function BarRow({ item, onRestock, onRemove, onEdit }: {
+  item: BarItem;
+  onRestock: () => void;
+  onRemove: () => void;
+  onEdit: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const THRESHOLD = 80;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+        Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8,
+      onPanResponderMove: (_, { dx }) => translateX.setValue(dx),
+      onPanResponderRelease: (_, { dx }) => {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+        if (dx > THRESHOLD) onRestock();
+        else if (dx < -THRESHOLD) onRemove();
+      },
+    })
+  ).current;
+
+  const rightOpacity = translateX.interpolate({ inputRange: [0, THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
+  const leftOpacity  = translateX.interpolate({ inputRange: [-THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
+
+  return (
+    <View style={{ overflow: 'hidden', marginBottom: 6 }}>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { opacity: rightOpacity }]}>
+        <Text style={styles.swipeBgText}>Restock</Text>
+      </Animated.View>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { opacity: leftOpacity }]}>
+        <Text style={styles.swipeBgText}>Remove</Text>
+      </Animated.View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+        <TouchableOpacity style={styles.row} onPress={onEdit} activeOpacity={0.7}>
+          <View style={styles.rowMain}>
+            <Text style={styles.rowName}>{item.name}</Text>
+            {metaLine(item) ? <Text style={styles.rowMeta}>{metaLine(item)}</Text> : null}
+            {item.notes ? <Text style={styles.rowNotes}>{item.notes}</Text> : null}
+          </View>
+          <View style={styles.rowRight}>
+            <Text style={styles.rowQty}>{item.quantity}</Text>
+            <Text style={styles.rowQtyLabel}>bottle{item.quantity !== 1 ? 's' : ''}</Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
 
@@ -338,7 +440,7 @@ const styles = StyleSheet.create({
 
   filterBar: { flexGrow: 0 },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
-  filterPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6' },
+  filterPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', flexShrink: 0 },
   filterPillActive: { backgroundColor: '#3B7A57' },
   filterPillText: { fontSize: 13, fontWeight: '500', color: '#374151' },
   filterPillTextActive: { color: '#FFFFFF' },
@@ -346,6 +448,12 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
   emptyBody:  { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+
+  swipeHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginBottom: 8 },
+  swipeBg: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', borderRadius: 12 },
+  swipeBgRight: { backgroundColor: '#3B7A57', alignItems: 'flex-start', paddingLeft: 20 },
+  swipeBgLeft:  { backgroundColor: '#EF4444', alignItems: 'flex-end',   paddingRight: 20 },
+  swipeBgText:  { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 
   listContent: { padding: 20, gap: 24 },
   group: { gap: 8 },
@@ -385,7 +493,7 @@ const styles = StyleSheet.create({
 
   typeBar: { flexGrow: 0, marginBottom: 4 },
   typeBarContent: { gap: 8, flexDirection: 'row', paddingVertical: 4 },
-  typePill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6' },
+  typePill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0 },
   typePillActive: { backgroundColor: '#1C1C1E' },
   typePillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
   typePillTextActive: { color: '#FFFFFF' },
