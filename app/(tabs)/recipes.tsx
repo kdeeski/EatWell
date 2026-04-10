@@ -9,7 +9,7 @@ import type { Recipe, RecipeCategory } from '../../types';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
 import CookModeModal from '../../components/recipes/CookModeModal';
-import { deleteRecipe } from '../../lib/data';
+import { deleteRecipe, updateRecipe } from '../../lib/data';
 import { toTitleCase } from '../../lib/titleCase';
 import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
 import { getWineMatch } from '../../lib/claude';
@@ -50,7 +50,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
 
 export default function RecipesScreen() {
   const insets = useSafeAreaInsets();
-  const { recipes, removeRecipe, userPreferences } = useAppStore();
+  const { recipes, removeRecipe, userPreferences, updateRecipeInStore, userId } = useAppStore();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -271,6 +271,31 @@ export default function RecipesScreen() {
                         <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
                       </TouchableOpacity>
                     ) : null}
+
+                    {item.category !== 'glossary' && (
+                      <View style={styles.ratingRow}>
+                        <Text style={styles.ratingLabel}>
+                          {item.rating != null ? `Your rating: ${item.rating}/5` : 'Rate this meal:'}
+                        </Text>
+                        <View style={styles.ratingChips}>
+                          {[1, 2, 3, 4, 5].map((r) => (
+                            <TouchableOpacity
+                              key={r}
+                              style={[styles.ratingChip, item.rating === r && styles.ratingChipSelected]}
+                              onPress={async () => {
+                                if (!userId) return;
+                                try {
+                                  const updated = await updateRecipe(item.id, { ...item, rating: r as 1|2|3|4|5 });
+                                  updateRecipeInStore(item.id, updated);
+                                } catch { /* non-critical */ }
+                              }}
+                            >
+                              <Text style={[styles.ratingChipText, item.rating === r && styles.ratingChipTextSelected]}>{r}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    )}
                   </View>
                 )}
               </TouchableOpacity>
@@ -410,6 +435,14 @@ const styles = StyleSheet.create({
   wineNote: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 3 },
   wineDismiss: { fontSize: 12, color: '#9CA3AF' },
   wineError: { fontSize: 12, color: '#EF4444' },
+
+  ratingRow: { marginTop: 12, gap: 6 },
+  ratingLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  ratingChips: { flexDirection: 'row', gap: 6 },
+  ratingChip: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
+  ratingChipText: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  ratingChipTextSelected: { color: '#FFFFFF' },
 
   emptyState: {
     flex: 1,
