@@ -15,12 +15,19 @@ import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, GardenSug
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
 
+export interface RepeatMeal {
+  name: string;
+  rating: number;
+  description: string | null;
+}
+
 export interface MealPlanInput {
   fridgeItems: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[];
   gardenAvailable: string[];       // plant names available to harvest this week
   spontaneousAdditions: string[];  // market finds, neighbour gifts, etc.
   nightsAway: number[];            // day_of_week values (0=Mon) user is away
   hollyHomeNights: number[];       // day_of_week values Holly is home (Phase 2)
+  repeatMeals?: RepeatMeal[];      // high-rated stash meals to rotate in
   preferences?: Pick<UserPreferences,
     | 'cuisine_likes'
     | 'cuisine_dislikes'

@@ -62,6 +62,16 @@ Deno.serve(async (req) => {
       standingOrdersBlock = `\nSTANDING ORDERS (always apply, non-negotiable):\n${prefs.standing_orders}\n`;
     }
 
+    const repeatMeals: Array<{ name: string; rating: number; description: string | null }> = input.repeatMeals ?? [];
+    let repeatMealsBlock = '';
+    if (repeatMeals.length > 0) {
+      const stars = (r: number) => '★'.repeat(r) + '☆'.repeat(5 - r);
+      const lines = repeatMeals.map((m) =>
+        `- ${m.name} (${stars(m.rating)})${m.description ? `: ${m.description}` : ''}`
+      );
+      repeatMealsBlock = `\nREPEAT MEALS (you must include all of these, distributed through the week):\n${lines.join('\n')}\n`;
+    }
+
     // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
 
     const structurePrompt = `
@@ -75,7 +85,7 @@ ${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
 
 SPONTANEOUS ADDITIONS:
 ${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
-
+${repeatMealsBlock}
 NIGHTS AWAY (0=Monday, skip these days):
 ${(input.nightsAway ?? []).join(', ') || 'None'}
 

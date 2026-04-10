@@ -37,6 +37,8 @@ export default function SettingsScreen() {
   const [hollyJoins, setHollyJoins]           = useState<boolean>(userPreferences?.holly_joins_regularly ?? true);
   const [cookingNotes, setCookingNotes]       = useState<string>(userPreferences?.cooking_notes ?? '');
   const [standingOrders, setStandingOrders]   = useState<string>(userPreferences?.standing_orders ?? '');
+  const [rotationRatio, setRotationRatio]     = useState<number>(userPreferences?.rotation_repeat_ratio ?? 0);
+  const [rotationMinRated, setRotationMinRated] = useState<number>(userPreferences?.rotation_min_rated ?? 10);
   const [gardenLocation, setGardenLocation]   = useState<string>(userPreferences?.garden_location ?? 'Canterbury, New Zealand');
   const [wineDetailLevel, setWineDetailLevel] = useState<WineDetailLevel>(userPreferences?.wine_detail_level ?? 'simple');
   const [saving, setSaving]                   = useState(false);
@@ -55,6 +57,8 @@ export default function SettingsScreen() {
         holly_joins_regularly: hollyJoins,
         cooking_notes: cookingNotes.trim() || null,
         standing_orders: standingOrders.trim() || null,
+        rotation_repeat_ratio: rotationRatio,
+        rotation_min_rated: rotationMinRated,
         garden_location: gardenLocation.trim() || 'Canterbury, New Zealand',
         wine_detail_level: wineDetailLevel,
       });
@@ -195,6 +199,50 @@ export default function SettingsScreen() {
           numberOfLines={4}
         />
         <Text style={styles.hint}>These instructions are always included when generating your meal plan.</Text>
+
+        {/* ── Meal Rotation ────────────────────────────────────── */}
+        <SectionHeader>Meal Rotation</SectionHeader>
+
+        <FieldLabel>Repeat ratio</FieldLabel>
+        <View style={styles.pillRow}>
+          {([
+            { val: 0,   label: 'Off' },
+            { val: 0.2, label: '1 in 5' },
+            { val: 0.4, label: '2 in 5' },
+            { val: 0.6, label: '3 in 5' },
+          ] as { val: number; label: string }[]).map((opt) => (
+            <TouchableOpacity
+              key={opt.val}
+              style={[styles.pill, rotationRatio === opt.val && styles.pillSelectedGreen]}
+              onPress={() => setRotationRatio(opt.val)}
+            >
+              <Text style={[styles.pillText, rotationRatio === opt.val && styles.pillTextSelected]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.hint}>How many meals per week to repeat from your highly-rated stash.</Text>
+
+        {rotationRatio > 0 && (
+          <>
+            <FieldLabel>Activate after</FieldLabel>
+            <View style={styles.pillRow}>
+              {([5, 10, 20] as number[]).map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.pill, rotationMinRated === n && styles.pillSelectedGreen]}
+                  onPress={() => setRotationMinRated(n)}
+                >
+                  <Text style={[styles.pillText, rotationMinRated === n && styles.pillTextSelected]}>
+                    {n} rated
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.hint}>Rotation only kicks in once you've rated this many meals.</Text>
+          </>
+        )}
 
         {/* ── Garden ──────────────────────────────────────────── */}
         <SectionHeader>Garden</SectionHeader>

@@ -18,7 +18,7 @@ type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 
 export default function PlanningFlow() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   const [step, setStep] = useState<Step>('fridge');
@@ -86,6 +86,21 @@ export default function PlanningFlow() {
   const handleGenerate = async () => {
     setStep('generating');
     try {
+      // ── Meal rotation: pre-select high-rated repeats client-side ──────────
+      const ratio = userPreferences?.rotation_repeat_ratio ?? 0;
+      const minRated = userPreferences?.rotation_min_rated ?? 10;
+      const ratedRecipes = recipes.filter((r) => r.rating !== null);
+      const highRated = ratedRecipes.filter((r) => r.rating! >= 4);
+      const availableNights = 7 - nightsAway.length;
+      const repeatCount = Math.max(1, Math.round(availableNights * ratio));
+      const repeatMeals =
+        ratio > 0 && ratedRecipes.length >= minRated && highRated.length > 0
+          ? [...highRated]
+              .sort(() => Math.random() - 0.5)
+              .slice(0, Math.min(repeatCount, highRated.length))
+              .map((r) => ({ name: r.name, rating: r.rating!, description: r.description }))
+          : [];
+
       const rawResult = await generateMealPlan({
         fridgeItems,
         gardenAvailable: [
@@ -98,6 +113,7 @@ export default function PlanningFlow() {
           .filter(Boolean),
         nightsAway,
         hollyHomeNights,
+        repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
         preferences: userPreferences ? {
           cuisine_likes: userPreferences.cuisine_likes,
           cuisine_dislikes: userPreferences.cuisine_dislikes,
