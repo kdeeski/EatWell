@@ -174,6 +174,7 @@ export default function PantryScreen() {
             onPress={() => {
               if (f.key === 'bar') { router.push('/bar'); return; }
               if (f.key === 'cellar') { router.push('/cellar'); return; }
+              if (f.key === 'garden') { router.push('/(tabs)/garden'); return; }
               setLocationFilter(f.key as LocationFilter);
             }}
           >
