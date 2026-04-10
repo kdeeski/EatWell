@@ -3,7 +3,7 @@
 // any morning check-in that needs completing, and quick fridge notes.
 
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
@@ -37,9 +37,6 @@ export default function TodayScreen() {
 
   const checkinDone = !!todayCheckin?.completed_at;
   const lastNight   = todayCheckin?.last_night_response ?? null;
-  const tonightPicked = checkinDone
-    ? plannedMeals.find((m) => m.id === todayCheckin?.tonight_planned_meal_id) ?? null
-    : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
@@ -83,12 +80,6 @@ export default function TodayScreen() {
             </View>
           )}
 
-          {tonightPicked && (
-            <View style={styles.checkinRow}>
-              <Text style={styles.checkinRowLabel}>Tonight</Text>
-              <Text style={styles.checkinRowValue}>{toTitleCase(tonightPicked.meal_name)}</Text>
-            </View>
-          )}
         </TouchableOpacity>
       ) : (
         /* ── Pending check-in prompt ── */
@@ -115,12 +106,21 @@ export default function TodayScreen() {
             {(() => {
               const match = findStashMatch(tonightsMeal.meal_name, recipes);
               return match ? (
-                <TouchableOpacity
-                  style={styles.stashNudge}
-                  onPress={() => setStashRecipe(match)}
-                >
-                  <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
-                </TouchableOpacity>
+                match.source_url ? (
+                  <TouchableOpacity
+                    style={styles.stashNudge}
+                    onPress={() => Linking.openURL(match.source_url!)}
+                  >
+                    <Text style={styles.stashNudgeText}>View recipe →</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.stashNudge}
+                    onPress={() => setStashRecipe(match)}
+                  >
+                    <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
+                  </TouchableOpacity>
+                )
               ) : (
                 <>
                   <TouchableOpacity
