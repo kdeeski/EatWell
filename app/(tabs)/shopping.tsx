@@ -40,12 +40,24 @@ const CATEGORY_LABELS: Record<IngredientCategory, string> = {
   household:          'Household',
 };
 
+// Units that carry meaningful information even at qty=1 (measurements).
+// Everything else at qty=1 (bottle, jar, bunch, pack, each, …) → just show name.
+const MEASURED_UNITS = new Set(['g', 'kg', 'ml', 'l', 'oz', 'lb', 'cup', 'tsp', 'tbsp']);
+
 function itemQuantityLabel(item: ShoppingListItem): string {
   const name = toTitleCase(item.name);
   if (item.ingredient_category === 'herbs_spices' || item.is_pantry_staple) return name;
-  const unitless = ['each', 'piece', 'item', ''].includes(item.unit?.toLowerCase() ?? '');
+
+  const unit = (item.unit ?? '').toLowerCase().trim();
+  const isMeasured = MEASURED_UNITS.has(unit);
+
+  // qty=1 with a container/count unit → just the name
+  if (item.quantity === 1 && !isMeasured) return name;
+
+  // qty>1: drop unit if it's each/piece/item/blank (already countable)
+  const unitless = !unit || ['each', 'piece', 'item'].includes(unit);
   const qty = unitless ? `${item.quantity}` : `${item.quantity} ${item.unit}`;
-  return `${name} × ${qty}`.trim();
+  return `${name} × ${qty}`;
 }
 
 // ── Swipeable row (right = have it / from garden, left = need to buy) ─────────
