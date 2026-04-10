@@ -439,8 +439,8 @@ const styles = StyleSheet.create({
   headerAdd:   { fontSize: 16, color: '#3B7A57', fontWeight: '700', minWidth: 48, textAlign: 'right' },
 
   filterBar: { height: 52, backgroundColor: '#FAFAF8', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0 },
+  filterBarContent: { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0, marginRight: 8 },
   filterPillActive: { backgroundColor: '#3B7A57' },
   filterPillText: { fontSize: 13, fontWeight: '500', color: '#374151' },
   filterPillTextActive: { color: '#FFFFFF' },
