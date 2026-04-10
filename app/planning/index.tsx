@@ -13,12 +13,12 @@ import { generateMealPlan } from '../../lib/claude';
 import { saveMealPlan, saveShoppingList, addGardenPlant } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
-type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'generating' | 'done' | 'error';
+type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
 
 export default function PlanningFlow() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   const [step, setStep] = useState<Step>('fridge');
@@ -65,6 +65,12 @@ export default function PlanningFlow() {
   const [spontaneous, setSpontaneous] = useState('');
   const [nightsAway, setNightsAway] = useState<number[]>([]);
   const [hollyHomeNights, setHollyHomeNights] = useState<number[]>([]);
+  const [carryForwardIds, setCarryForwardIds] = useState<string[]>([]);
+
+  const toggleCarryForward = (id: string) =>
+    setCarryForwardIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
 
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -86,6 +92,13 @@ export default function PlanningFlow() {
   const handleGenerate = async () => {
     setStep('generating');
     try {
+      // ── Carry forward: meals selected from previous week ──────────────────
+      const carryForwardMeals = carryForwardIds.length > 0
+        ? plannedMeals
+            .filter((m) => carryForwardIds.includes(m.id))
+            .map((m) => ({ name: m.meal_name, description: m.description }))
+        : undefined;
+
       // ── Meal rotation: pre-select high-rated repeats client-side ──────────
       const ratio = userPreferences?.rotation_repeat_ratio ?? 0;
       const minRated = userPreferences?.rotation_min_rated ?? 10;
@@ -113,6 +126,7 @@ export default function PlanningFlow() {
           .filter(Boolean),
         nightsAway,
         hollyHomeNights,
+        carryForwardMeals,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
         preferences: userPreferences ? {
           cuisine_likes: userPreferences.cuisine_likes,
@@ -337,9 +351,60 @@ export default function PlanningFlow() {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleGenerate}>
-              <Text style={styles.primaryButtonText}>Generate my meal plan</Text>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => setStep(plannedMeals.length > 0 ? 'carry_forward' : 'generating')}
+            >
+              <Text style={styles.primaryButtonText}>
+                {plannedMeals.length > 0 ? 'Next →' : 'Generate my meal plan'}
+              </Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Step: Carry forward */}
+        {step === 'carry_forward' && (
+          <View>
+            <View style={styles.carryForwardHeader}>
+              <Text style={styles.stepTitle}>Anything to carry forward?</Text>
+              <TouchableOpacity onPress={() =>
+                carryForwardIds.length === plannedMeals.length
+                  ? setCarryForwardIds([])
+                  : setCarryForwardIds(plannedMeals.map((m) => m.id))
+              }>
+                <Text style={styles.carryForwardToggleAll}>
+                  {carryForwardIds.length === plannedMeals.length ? 'Clear' : 'Select all'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.stepBody}>Meals from this week you didn't get to — tap any to include in next week's plan.</Text>
+            {plannedMeals.map((meal) => {
+              const selected = carryForwardIds.includes(meal.id);
+              return (
+                <TouchableOpacity
+                  key={meal.id}
+                  style={[styles.tapOption, selected && styles.tapOptionSelected]}
+                  onPress={() => toggleCarryForward(meal.id)}
+                >
+                  <Text style={[styles.tapOptionText, selected && styles.tapOptionTextSelected]}>
+                    {meal.meal_name}
+                  </Text>
+                  {meal.description ? (
+                    <Text style={styles.carryForwardDesc} numberOfLines={2}>{meal.description}</Text>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+            <View style={styles.carryForwardButtons}>
+              <TouchableOpacity style={styles.skipButton} onPress={() => { setCarryForwardIds([]); handleGenerate(); }}>
+                <Text style={styles.skipButtonText}>Skip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.primaryButton, styles.carryForwardDone]} onPress={handleGenerate}>
+                <Text style={styles.primaryButtonText}>
+                  {carryForwardIds.length > 0 ? `Carry ${carryForwardIds.length} forward →` : 'Generate my meal plan'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -463,4 +528,12 @@ const styles = StyleSheet.create({
   doneTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
   doneBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
   centeredButton: { alignSelf: 'stretch' },
+
+  carryForwardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  carryForwardToggleAll: { fontSize: 14, color: '#3B7A57', fontWeight: '600', paddingTop: 6 },
+  carryForwardDesc: { fontSize: 13, color: '#9CA3AF', marginTop: 3, lineHeight: 18 },
+  carryForwardButtons: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  carryForwardDone: { flex: 1, marginTop: 0 },
+  skipButton: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  skipButtonText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
 });

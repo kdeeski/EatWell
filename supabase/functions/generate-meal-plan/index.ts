@@ -62,6 +62,15 @@ Deno.serve(async (req) => {
       standingOrdersBlock = `\nSTANDING ORDERS (always apply, non-negotiable):\n${prefs.standing_orders}\n`;
     }
 
+    const carryForward: Array<{ name: string; description: string | null }> = input.carryForwardMeals ?? [];
+    let carryForwardBlock = '';
+    if (carryForward.length > 0) {
+      const lines = carryForward.map((m) =>
+        `- ${m.name}${m.description ? `: ${m.description}` : ''}`
+      );
+      carryForwardBlock = `\nCARRY FORWARD (must include ALL of these in the plan — user didn't get to cook them last week):\n${lines.join('\n')}\n`;
+    }
+
     const repeatMeals: Array<{ name: string; rating: number; description: string | null }> = input.repeatMeals ?? [];
     let repeatMealsBlock = '';
     if (repeatMeals.length > 0) {
@@ -85,7 +94,7 @@ ${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
 
 SPONTANEOUS ADDITIONS:
 ${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
-${repeatMealsBlock}
+${carryForwardBlock}${repeatMealsBlock}
 NIGHTS AWAY (0=Monday, skip these days):
 ${(input.nightsAway ?? []).join(', ') || 'None'}
 

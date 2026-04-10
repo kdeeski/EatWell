@@ -21,6 +21,11 @@ export interface RepeatMeal {
   description: string | null;
 }
 
+export interface CarryForwardMeal {
+  name: string;
+  description: string | null;
+}
+
 export interface MealPlanInput {
   fridgeItems: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[];
   gardenAvailable: string[];       // plant names available to harvest this week
@@ -28,6 +33,7 @@ export interface MealPlanInput {
   nightsAway: number[];            // day_of_week values (0=Mon) user is away
   hollyHomeNights: number[];       // day_of_week values Holly is home (Phase 2)
   repeatMeals?: RepeatMeal[];      // high-rated stash meals to rotate in
+  carryForwardMeals?: CarryForwardMeal[]; // uncompleted meals from current week
   preferences?: Pick<UserPreferences,
     | 'cuisine_likes'
     | 'cuisine_dislikes'
