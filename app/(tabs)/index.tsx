@@ -37,6 +37,9 @@ export default function TodayScreen() {
 
   const checkinDone = !!todayCheckin?.completed_at;
   const lastNight   = todayCheckin?.last_night_response ?? null;
+  const tonightPicked = checkinDone
+    ? plannedMeals.find((m) => m.id === todayCheckin?.tonight_planned_meal_id) ?? null
+    : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
@@ -80,6 +83,12 @@ export default function TodayScreen() {
             </View>
           )}
 
+          {tonightPicked && (
+            <View style={styles.checkinRow}>
+              <Text style={styles.checkinRowLabel}>Tonight</Text>
+              <Text style={styles.checkinRowValue}>{toTitleCase(tonightPicked.meal_name)}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       ) : (
         /* ── Pending check-in prompt ── */

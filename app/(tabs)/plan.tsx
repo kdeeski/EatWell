@@ -440,10 +440,7 @@ const styles = StyleSheet.create({
   mealCardEmpty:    { backgroundColor: '#F9FAFB', borderColor: '#F3F4F6' },
   mealCardCooked:   { backgroundColor: '#F3F4F6' },
   mealNameCooked:   { color: '#9CA3AF' },
-  cookedBadge: {
-    fontSize: 11, fontWeight: '600', color: '#3B7A57', backgroundColor: '#D1FAE5',
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
-  },
+  cookedBadge:      { fontSize: 11, fontWeight: '600', color: '#9CA3AF' },
 
   badgeRow:    { flexDirection: 'row', gap: 6, marginBottom: 4 },
   fishBadge:   {
