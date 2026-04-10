@@ -192,47 +192,49 @@ export default function BarScreen() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.headerBtn}>Close</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bar</Text>
-        <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.headerAdd}>+ Add</Text>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Pinned top section — header + filter bar never move */}
+      <View style={{ paddingTop: insets.top || 16 }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={styles.headerBtn}>Close</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Bar</Text>
+          <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={styles.headerAdd}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Spirit type filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterBarContent}>
+          <TouchableOpacity
+            style={[styles.filterPill, activeType === 'all' && styles.filterPillActive]}
+            onPress={() => setActiveType('all')}
+          >
+            <Text style={[styles.filterPillText, activeType === 'all' && styles.filterPillTextActive]}>All</Text>
+          </TouchableOpacity>
+          {SPIRIT_TYPES.map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.filterPill, activeType === t.key && styles.filterPillActive]}
+              onPress={() => setActiveType(t.key)}
+            >
+              <Text style={[styles.filterPillText, activeType === t.key && styles.filterPillTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      {/* Spirit type filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterBarContent}>
-        <TouchableOpacity
-          style={[styles.filterPill, activeType === 'all' && styles.filterPillActive]}
-          onPress={() => setActiveType('all')}
-        >
-          <Text style={[styles.filterPillText, activeType === 'all' && styles.filterPillTextActive]}>All</Text>
-        </TouchableOpacity>
-        {SPIRIT_TYPES.map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.filterPill, activeType === t.key && styles.filterPillActive]}
-            onPress={() => setActiveType(t.key)}
-          >
-            <Text style={[styles.filterPillText, activeType === t.key && styles.filterPillTextActive]}>
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* List */}
+      {/* List — flex:1 so it fills all remaining space */}
       {grouped.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Nothing here yet</Text>
           <Text style={styles.emptyBody}>Tap "+ Add" to add your first bottle.</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}>
           <Text style={styles.swipeHint}>Swipe right to restock · Swipe left to remove</Text>
           {grouped.map((group) => (
             <View key={group.key} style={styles.group}>
