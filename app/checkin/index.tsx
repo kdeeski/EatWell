@@ -298,12 +298,12 @@ export default function CheckinFlow() {
                   onPress={() => setRating(r)}
                 >
                   <Text style={[styles.ratingNum, rating === r && styles.ratingNumSelected]}>{r}</Text>
-                  <Text style={[styles.ratingText, rating === r && styles.ratingTextSelected]}>
-                    {RATING_LABELS[r]}
-                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
+            {rating != null && (
+              <Text style={styles.ratingSelectedLabel}>{RATING_LABELS[rating]}</Text>
+            )}
 
             {/* Would cook again */}
             <Text style={styles.subLabel}>Would you cook it again?</Text>
@@ -439,22 +439,21 @@ const styles = StyleSheet.create({
   mealOptionMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
   fishNote: { fontSize: 12, fontWeight: '600', color: '#3B7A57', marginTop: 4 },
 
-  ratingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  ratingRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
   ratingChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    minWidth: 68,
+    justifyContent: 'center',
   },
   ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
-  ratingNum: { fontSize: 18, fontWeight: '700', color: '#374151', marginBottom: 2 },
+  ratingNum: { fontSize: 16, fontWeight: '700', color: '#374151' },
   ratingNumSelected: { color: '#FFFFFF' },
-  ratingText: { fontSize: 12, color: '#374151' },
-  ratingTextSelected: { color: '#FFFFFF', fontWeight: '600' },
+  ratingSelectedLabel: { fontSize: 14, color: '#3B7A57', fontWeight: '600', marginBottom: 16 },
 
   yesNoRow: { flexDirection: 'row', gap: 12, marginBottom: 8 },
   yesNoChip: {
