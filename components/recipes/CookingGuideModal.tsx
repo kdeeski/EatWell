@@ -7,10 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { getCookingGuide } from '../../lib/claude';
 import type { CookingGuide } from '../../lib/claude';
-import { saveRecipe, updateRecipe } from '../../lib/data';
+import { saveRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
-import type { RecipeGuideJson, RecipeCategory } from '../../types';
-import SaveRecipeModal from './SaveRecipeModal';
+import type { RecipeCategory } from '../../types';
 
 interface Props {
   mealName: string;
@@ -18,10 +17,8 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   prefillGuide?: CookingGuide; // skip API call when guide already saved in stash
-  ingredients?: string;        // pre-formatted ingredient list for the save modal
+  ingredients?: string;        // pre-formatted ingredient list
 }
-
-type SavePrefill = { name: string; category: RecipeCategory; description?: string; ingredients?: string; method?: string; guideJson?: RecipeGuideJson };
 
 const VALID_CATEGORIES: RecipeCategory[] = ['mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary'];
 
@@ -103,7 +100,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
   const [loading, setLoading]   = useState(true);
   const [guide, setGuide]       = useState<CookingGuide | null>(null);
   const [error, setError]       = useState<string | null>(null);
-  const [savePrefill, setSavePrefill] = useState<SavePrefill | null>(null);
+  const [mainSaved, setMainSaved] = useState(false);
   const [cookMode, setCookMode] = useState(false);
 
   const toggleCookMode = async () => {
@@ -127,8 +124,30 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     setLoading(true);
     setError(null);
     setGuide(null);
+    setMainSaved(false);
     getCookingGuide(mealName, description, recipes.map((r) => r.name))
-      .then((g) => setGuide(g))
+      .then(async (g) => {
+        setGuide(g);
+        // Auto-save main recipe + sub-components silently (skip if already in stash)
+        if (userId) {
+          const existing = new Set(useAppStore.getState().recipes.map((r) => r.name.toLowerCase()));
+          if (!existing.has(mealName.toLowerCase())) {
+            const method = g.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+            try {
+              const saved = await saveRecipe(userId, {
+                name: mealName, category: 'mains', description,
+                ingredients: ingredients ?? null, method, guide_json: g,
+                rating: null, would_cook_again: null, cooked_meal_id: null, source_url: null,
+              });
+              addRecipe(saved);
+              setMainSaved(true);
+            } catch { /* non-critical */ }
+          } else {
+            setMainSaved(true); // already in stash
+          }
+          await silentlySaveExtras(g);
+        }
+      })
       .catch((e) => setError(e?.message ?? 'Failed to load cooking guide'))
       .finally(() => setLoading(false));
   }, [visible, mealName, description, prefillGuide]);
@@ -153,12 +172,6 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
         addRecipe(saved);
       } catch { /* ok */ }
     }
-  };
-
-  const handleMainSaved = async () => {
-    if (!guide) return;
-    setSavePrefill(null);
-    await silentlySaveExtras(guide);
   };
 
   const handleComponentSave = async (comp: CookingGuide['components'][0]) => {
@@ -198,21 +211,10 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <Text style={styles.headerBtn}>Close</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle} numberOfLines={1}>{mealName}</Text>
-            {guide && !prefillGuide ? (
-              <TouchableOpacity
-                onPress={() => setSavePrefill({
-                  name: mealName, category: 'mains', description,
-                  ingredients,
-                  method: numberedMethod(guide.steps),
-                  guideJson: guide,
-                })}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text style={styles.headerSaveBtn}>Save</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={{ minWidth: 48 }} />
-            )}
+            {mainSaved
+              ? <Text style={styles.headerSaveBtn}>Saved ✓</Text>
+              : <View style={{ minWidth: 48 }} />
+            }
           </View>
 
           {loading ? (
@@ -286,22 +288,6 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
         </View>
       </Modal>
 
-      {savePrefill && (
-        <SaveRecipeModal
-          visible
-          prefill={{ name: savePrefill.name, category: savePrefill.category, description: savePrefill.description, ingredients: savePrefill.ingredients, method: savePrefill.method }}
-          onSave={async (recipe) => {
-            if (savePrefill.guideJson) {
-              try {
-                const updated = await updateRecipe(recipe.id, { guide_json: savePrefill.guideJson });
-                useAppStore.getState().updateRecipeInStore(recipe.id, updated);
-              } catch { /* non-critical */ }
-            }
-            await handleMainSaved();
-          }}
-          onClose={() => setSavePrefill(null)}
-        />
-      )}
     </>
   );
 }
