@@ -58,14 +58,36 @@ export function findStashMatch(
   options?: { strict?: boolean }
 ): Recipe | null {
   const norm = (s: string) => s.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+
+  // Words too generic to drive a match on their own
+  const STOP = new Set(['with', 'and', 'the', 'for', 'from', 'over', 'onto', 'into']);
+  const sigWords = (s: string): Set<string> =>
+    new Set(s.split(' ').filter((w) => w.length >= 3 && !STOP.has(w)));
+
   const meal = norm(mealName);
   const strict = options?.strict ?? false;
+
   return (
     recipes.find((r) => {
       if (r.category === 'glossary') return false;
       const stash = norm(r.name);
       if (stash.length < 5) return false;
-      return strict ? meal.includes(stash) : (meal.includes(stash) || stash.includes(meal));
+
+      // Primary: substring match (one name fully contains the other)
+      if (strict ? meal.includes(stash) : (meal.includes(stash) || stash.includes(meal))) return true;
+
+      // Fallback (loose mode only): significant word overlap
+      // e.g. "Risotto with Roasted Feijoa" ↔ "Roasted Feijoa and Pecorino Risotto"
+      if (!strict) {
+        const mealWords  = sigWords(meal);
+        const stashWords = sigWords(stash);
+        let shared = 0;
+        for (const w of mealWords) { if (stashWords.has(w)) shared++; }
+        const minSize = Math.min(mealWords.size, stashWords.size);
+        if (minSize >= 2 && shared >= 2 && shared / minSize >= 0.6) return true;
+      }
+
+      return false;
     }) ?? null
   );
 }
