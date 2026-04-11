@@ -84,15 +84,26 @@ export default function PlanScreen() {
 
   // Load cooked meals for the current week
   useEffect(() => {
-    if (!userId || !plannedMeals.length) return;
-    fetchWeekCookedMeals(userId, plannedMeals.map((m) => m.id))
+    if (!userId || !currentMealPlan) return;
+    fetchWeekCookedMeals(userId, currentMealPlan.week_start_date)
       .then((list) => {
         const map: Record<string, CookedMeal> = {};
-        for (const c of list) { if (c.planned_meal_id) map[c.planned_meal_id] = c; }
+        for (const c of list) {
+          if (c.planned_meal_id) {
+            // Precise FK match (normal case after reorder fix)
+            map[c.planned_meal_id] = c;
+          } else {
+            // planned_meal_id was nulled by a pre-fix reorder — match by name
+            const match = plannedMeals.find(
+              (m) => m.meal_name.toLowerCase() === c.actual_meal_name.toLowerCase()
+            );
+            if (match) map[match.id] = c;
+          }
+        }
         setCookedMap(map);
       })
-      .catch(() => {}); // non-critical
-  }, [userId, plannedMeals]);
+      .catch((e) => console.warn('[plan] fetchWeekCookedMeals failed:', e));
+  }, [userId, currentMealPlan?.id]);
 
   async function handleWineMatch(meal: PlannedMeal) {
     setWineLoading(true);

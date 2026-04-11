@@ -318,36 +318,21 @@ export async function saveMealPlan(
 }
 
 export async function reorderPlannedMeals(
-  mealPlanId: string,
-  originalIds: string[],
+  _mealPlanId: string,
+  _originalIds: string[],
   meals: PlannedMeal[]
 ): Promise<PlannedMeal[]> {
-  // INSERT new rows first — if this fails, the original rows are untouched.
-  // No unique constraint on (meal_plan_id, day_of_week) so no conflict.
-  const { data: newMeals, error: insError } = await supabase
-    .from('planned_meals')
-    .insert(meals.map((m) => ({
-      meal_plan_id: mealPlanId,
-      day_of_week: m.day_of_week,
-      meal_name: m.meal_name,
-      description: m.description,
-      is_fish: m.is_fish,
-      needs_recipe: m.needs_recipe,
-      estimated_prep_minutes: m.estimated_prep_minutes,
-      ingredients: m.ingredients,
-      holly_included: m.holly_included,
-    })))
-    .select();
-  if (insError) throw insError;
-
-  // DELETE old rows only after INSERT succeeds.
-  const { error: delError } = await supabase
-    .from('planned_meals')
-    .delete()
-    .in('id', originalIds);
-  if (delError) throw delError;
-
-  return newMeals as PlannedMeal[];
+  // UPDATE day_of_week in-place, preserving UUIDs.
+  // Critical: INSERT+DELETE would null out cooked_meals.planned_meal_id FKs (ON DELETE SET NULL),
+  // breaking the cooked-meal lock UI. Updating in-place keeps the FKs intact.
+  for (const m of meals) {
+    const { error } = await supabase
+      .from('planned_meals')
+      .update({ day_of_week: m.day_of_week })
+      .eq('id', m.id);
+    if (error) throw error;
+  }
+  return meals;
 }
 
 // ─── Shopping List ────────────────────────────────────────────────────────────
@@ -638,13 +623,19 @@ export async function logCookedMeal(
   return data as CookedMeal;
 }
 
-export async function fetchWeekCookedMeals(userId: string, plannedMealIds: string[]): Promise<CookedMeal[]> {
-  if (!plannedMealIds.length) return [];
+export async function fetchWeekCookedMeals(userId: string, weekStartDate: string): Promise<CookedMeal[]> {
+  // Query by date range so results survive reorders (which used to null planned_meal_id FKs).
+  const start = new Date(weekStartDate + 'T12:00:00');
+  const end   = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const endDateStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+
   const { data, error } = await supabase
     .from('cooked_meals')
     .select('*')
     .eq('user_id', userId)
-    .in('planned_meal_id', plannedMealIds);
+    .gte('cooked_date', weekStartDate)
+    .lte('cooked_date', endDateStr);
   if (error) throw error;
   return (data ?? []) as CookedMeal[];
 }
