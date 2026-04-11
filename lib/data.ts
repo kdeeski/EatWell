@@ -243,10 +243,47 @@ export async function markSuggestionAddedToGarden(id: string): Promise<void> {
 
 // ─── Meal Plans ───────────────────────────────────────────────────────────────
 
+export function getThisWeekMonday(): string {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+}
+
+export async function loadMealPlanForWeek(
+  userId: string,
+  weekStartDate: string
+): Promise<{ plan: MealPlan; meals: PlannedMeal[] } | null> {
+  const { data: plans, error } = await supabase
+    .from('meal_plans')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('week_start_date', weekStartDate)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  if (!plans || plans.length === 0) return null;
+  const plan = plans[0] as MealPlan;
+  const { data: meals, error: mealsError } = await supabase
+    .from('planned_meals')
+    .select('*')
+    .eq('meal_plan_id', plan.id)
+    .order('day_of_week');
+  if (mealsError) throw mealsError;
+  return { plan, meals: (meals ?? []) as PlannedMeal[] };
+}
+
 export async function loadCurrentMealPlan(
   userId: string
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] } | null> {
-  // Use plain array + [0] instead of maybeSingle() to avoid edge-case errors.
+  // Prefer this week's plan; fall back to most recent if none exists yet.
+  const thisWeekPlan = await loadMealPlanForWeek(userId, getThisWeekMonday());
+  if (thisWeekPlan) {
+    console.log(`loadCurrentMealPlan: plan ${thisWeekPlan.plan.id} (${thisWeekPlan.plan.week_start_date}), ${thisWeekPlan.meals.length} meals`);
+    return thisWeekPlan;
+  }
+
+  // Fallback: most recently created plan (e.g. on first launch with an old plan)
   const { data: plans, error: planError } = await supabase
     .from('meal_plans')
     .select('*')
@@ -255,7 +292,7 @@ export async function loadCurrentMealPlan(
     .order('created_at', { ascending: false })
     .limit(1);
 
-  if (planError) throw planError; // surface the actual error instead of silent null
+  if (planError) throw planError;
   if (!plans || plans.length === 0) return null;
 
   const plan = plans[0] as MealPlan;

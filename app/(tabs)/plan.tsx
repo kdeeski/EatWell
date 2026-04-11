@@ -1,19 +1,24 @@
 // This Week screen — tap a meal to select it, then use ▲▼ to move it.
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   LayoutAnimation, Platform, UIManager, ActivityIndicator, Linking,
+  Animated, PanResponder, Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
-import { reorderPlannedMeals, loadCurrentMealPlan, fetchWeekCookedMeals } from '../../lib/data';
+import {
+  reorderPlannedMeals, loadCurrentMealPlan, fetchWeekCookedMeals,
+  loadMealPlanForWeek, getThisWeekMonday,
+} from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
-import type { PlannedMeal, PlannedIngredient, Recipe, CookedMeal } from '../../types';
+import type { MealPlan, PlannedMeal, PlannedIngredient, Recipe, CookedMeal } from '../../types';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -29,6 +34,20 @@ if (Platform.OS === 'android') {
 }
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function getWeekStart(offset: number): string {
+  const d = new Date(getThisWeekMonday() + 'T12:00:00');
+  d.setDate(d.getDate() + offset * 7);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatWeekRange(weekStart: string): string {
+  const d   = new Date(weekStart + 'T12:00:00');
+  const end = new Date(d);
+  end.setDate(d.getDate() + 6);
+  const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d.getDate()} ${M[d.getMonth()]} – ${end.getDate()} ${M[end.getMonth()]}`;
+}
 
 export default function PlanScreen() {
   const router = useRouter();
@@ -46,6 +65,12 @@ export default function PlanScreen() {
   const [wineError, setWineError]     = useState<string | null>(null);
   const [cookedMap, setCookedMap]     = useState<Record<string, CookedMeal>>({});
 
+  // Week navigation
+  const [weekOffset, setWeekOffset]   = useState(0); // 0 = current week
+  const [weekCache, setWeekCache]     = useState<Record<string, { plan: MealPlan | null; meals: PlannedMeal[]; cookedMap: Record<string, CookedMeal> } | null>>({});
+  const [weekLoading, setWeekLoading] = useState(false);
+  const swipeX = useRef(new Animated.Value(0)).current;
+
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
       const meal = plannedMeals.find((m) => m.day_of_week === i);
@@ -60,6 +85,15 @@ export default function PlanScreen() {
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
 
+  // Derived values for whichever week is being viewed
+  const isCurrentWeek   = weekOffset === 0;
+  const viewedWeekStart = useMemo(() => getWeekStart(weekOffset), [weekOffset]);
+  const displayedMeals  = isCurrentWeek ? plannedMeals : (weekCache[viewedWeekStart]?.meals ?? []);
+  const displayedCooked = isCurrentWeek ? cookedMap    : (weekCache[viewedWeekStart]?.cookedMap ?? {});
+  const displayedSlots  = isCurrentWeek
+    ? slots
+    : Array.from({ length: 7 }, (_, i) => displayedMeals.find(m => m.day_of_week === i)?.id ?? null);
+
   // Sync slots when plannedMeals changes (e.g. after bootstrap or save)
   useEffect(() => {
     if (saving) return; // don't clobber in-flight reorder
@@ -69,12 +103,46 @@ export default function PlanScreen() {
     }));
   }, [plannedMeals]);
 
-  useEffect(() => {
-    if (currentMealPlan || !userId) return;
+  // Reload when the tab gains focus; auto-switch to new week on Monday mornings
+  useFocusEffect(useCallback(() => {
+    if (!userId) return;
+    const thisMonday = getThisWeekMonday();
+    if (currentMealPlan?.week_start_date === thisMonday) return; // already on this week
+    setWeekOffset(0); // reset navigation back to current week
     loadCurrentMealPlan(userId)
       .then((data) => { if (data) setMealPlan(data.plan, data.meals); })
       .catch((e) => setLoadError(e?.message ?? String(e)));
-  }, [userId]);
+  }, [userId, currentMealPlan?.week_start_date]));
+
+  // Load data for non-current weeks on demand and cache locally
+  useEffect(() => {
+    if (isCurrentWeek || !userId) return;
+    if (weekCache[viewedWeekStart] !== undefined) return; // already loaded or confirmed empty
+    setWeekLoading(true);
+    Promise.all([
+      loadMealPlanForWeek(userId, viewedWeekStart),
+      fetchWeekCookedMeals(userId, viewedWeekStart),
+    ])
+      .then(([planData, cookedList]) => {
+        const map: Record<string, CookedMeal> = {};
+        for (const c of cookedList) {
+          if (c.planned_meal_id) {
+            map[c.planned_meal_id] = c;
+          } else {
+            const match = planData?.meals.find(
+              m => m.meal_name.toLowerCase() === c.actual_meal_name.toLowerCase()
+            );
+            if (match) map[match.id] = c;
+          }
+        }
+        setWeekCache(prev => ({
+          ...prev,
+          [viewedWeekStart]: { plan: planData?.plan ?? null, meals: planData?.meals ?? [], cookedMap: map },
+        }));
+      })
+      .catch(e => console.warn('[plan] loadMealPlanForWeek failed:', e))
+      .finally(() => setWeekLoading(false));
+  }, [isCurrentWeek, viewedWeekStart, userId]);
 
   // Reset wine result when selected slot changes
   useEffect(() => {
@@ -104,6 +172,28 @@ export default function PlanScreen() {
       })
       .catch((e) => console.warn('[plan] fetchWeekCookedMeals failed:', e));
   }, [userId, currentMealPlan?.id]);
+
+  const { width: SCREEN_WIDTH } = Dimensions.get('window');
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder:  (_, { dx, dy }) =>
+      Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 15,
+    onPanResponderGrant:   () => swipeX.setValue(0),
+    onPanResponderMove:    (_, { dx }) => swipeX.setValue(dx),
+    onPanResponderRelease: (_, { dx, vx }) => {
+      const goLeft  = dx < -60 || (dx < 0 && vx < -0.5);
+      const goRight = dx >  60 || (dx > 0 && vx >  0.5);
+      if (goLeft && weekOffset < 1) {
+        Animated.timing(swipeX, { toValue: -SCREEN_WIDTH, duration: 200, useNativeDriver: true })
+          .start(() => { swipeX.setValue(0); setWeekOffset(o => o + 1); });
+      } else if (goRight) {
+        Animated.timing(swipeX, { toValue: SCREEN_WIDTH, duration: 200, useNativeDriver: true })
+          .start(() => { swipeX.setValue(0); setWeekOffset(o => o - 1); });
+      } else {
+        Animated.spring(swipeX, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  }), [weekOffset]);
 
   async function handleWineMatch(meal: PlannedMeal) {
     setWineLoading(true);
@@ -180,58 +270,80 @@ export default function PlanScreen() {
     }
   };
 
-  const hasPlan = plannedMeals.length > 0;
+  const hasPlan = displayedMeals.length > 0;
   const selectedMeal = selectedSlot !== null
-    ? plannedMeals.find((m) => m.id === slots[selectedSlot]) ?? null
+    ? displayedMeals.find((m) => m.id === displayedSlots[selectedSlot]) ?? null
     : null;
   const canMoveUp   = selectedSlot !== null && selectedSlot > 0 && !!selectedMeal;
-  const canMoveDown = selectedSlot !== null && selectedSlot < slots.length - 1 && !!selectedMeal;
+  const canMoveDown = selectedSlot !== null && selectedSlot < displayedSlots.length - 1 && !!selectedMeal;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} {...panResponder.panHandlers}>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: swipeX }] }}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
-        <Text style={styles.heading}>This Week</Text>
+        <View style={styles.weekHeader}>
+          <Text style={styles.heading}>{formatWeekRange(viewedWeekStart)}</Text>
+          <View style={styles.weekHeaderRight}>
+            {weekLoading && <ActivityIndicator size="small" color="#9CA3AF" style={{ marginRight: 8 }} />}
+            {!isCurrentWeek && (
+              <TouchableOpacity onPress={() => setWeekOffset(0)}>
+                <Text style={styles.thisWeekLink}>This Week</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         {!hasPlan ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No plan yet</Text>
-            <Text style={styles.emptyBody}>
-              Time to plan the week. The app will look at what's in your fridge,
-              what's in the garden, and build meals around it.
-            </Text>
-            {loadError && (
-              <Text style={styles.errorText}>{loadError}</Text>
+            {isCurrentWeek ? (
+              <>
+                <Text style={styles.emptyTitle}>No plan yet</Text>
+                <Text style={styles.emptyBody}>
+                  Time to plan the week. The app will look at what's in your fridge,
+                  what's in the garden, and build meals around it.
+                </Text>
+                {loadError && (
+                  <Text style={styles.errorText}>{loadError}</Text>
+                )}
+                <TouchableOpacity style={styles.planButton} onPress={() => router.push('/planning')}>
+                  <Text style={styles.planButtonText}>Plan This Week</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emptyTitle}>No plan</Text>
+                <Text style={styles.emptyBody}>No meals were planned for this week.</Text>
+              </>
             )}
-            <TouchableOpacity style={styles.planButton} onPress={() => router.push('/planning')}>
-              <Text style={styles.planButtonText}>Plan This Week</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <>
-            <Text style={styles.hint}>
-              {selectedMeal ? `"${selectedMeal.meal_name}" selected` : 'Tap a meal to move it'}
-            </Text>
+            {isCurrentWeek && (
+              <Text style={styles.hint}>
+                {selectedMeal ? `"${selectedMeal.meal_name}" selected` : 'Tap a meal to move it'}
+              </Text>
+            )}
 
-            {slots.map((mealId, listIndex) => {
-              const meal       = mealId ? plannedMeals.find((m) => m.id === mealId) ?? null : null;
-              const isSelected = selectedSlot === listIndex;
+            {displayedSlots.map((mealId, listIndex) => {
+              const meal       = mealId ? displayedMeals.find((m) => m.id === mealId) ?? null : null;
+              const isSelected = isCurrentWeek && selectedSlot === listIndex;
 
               return (
                 <TouchableOpacity
                   key={listIndex}
                   style={styles.dayRow}
                   onPress={() => {
-                    if (!meal) return;
+                    if (!meal || !isCurrentWeek) return;
                     setSelectedSlot(isSelected ? null : listIndex);
                   }}
-                  activeOpacity={meal ? 0.7 : 1}
+                  activeOpacity={meal && isCurrentWeek ? 0.7 : 1}
                 >
                   <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
                     {DAY_SHORT[listIndex]}
                   </Text>
 
                   {(() => {
-                    const cooked = meal ? (cookedMap[meal.id] ?? null) : null;
+                    const cooked = meal ? (displayedCooked[meal.id] ?? null) : null;
                     return (
                       <View style={[
                         styles.mealCard,
@@ -258,7 +370,7 @@ export default function PlanScreen() {
                             )}
                             <Text style={styles.mealMeta}>
                               {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
-                              {!isSelected && !cooked ? '  ·  Tap for details' : ''}
+                              {isCurrentWeek && !isSelected && !cooked ? '  ·  Tap for details' : ''}
                             </Text>
                             {isSelected && meal.description ? (
                               <Text style={styles.description}>{meal.description}</Text>
@@ -354,12 +466,15 @@ export default function PlanScreen() {
               );
             })}
 
-            <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
-              <Text style={styles.replanButtonText}>Replan the Week</Text>
-            </TouchableOpacity>
+            {isCurrentWeek && (
+              <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
+                <Text style={styles.replanButtonText}>Replan the Week</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
       </ScrollView>
+      </Animated.View>
 
       {/* Cooking guide modal */}
       {guideTarget && (
@@ -394,8 +509,8 @@ export default function PlanScreen() {
         />
       )}
 
-      {/* Move toolbar — only visible when a non-cooked meal is selected */}
-      {selectedMeal && !cookedMap[selectedMeal.id] && (
+      {/* Move toolbar — only visible on current week when a non-cooked meal is selected */}
+      {isCurrentWeek && selectedMeal && !displayedCooked[selectedMeal.id] && (
         <View style={styles.toolbar}>
           <View style={styles.toolbarMoveRow}>
             <TouchableOpacity
@@ -429,8 +544,11 @@ export default function PlanScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   content:   { padding: 20, paddingBottom: 20 },
-  heading:   { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
+  heading:   { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
   hint:      { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
+  weekHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  weekHeaderRight: { flexDirection: 'row', alignItems: 'center' },
+  thisWeekLink:    { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
 
   emptyState: { alignItems: 'center', paddingTop: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },

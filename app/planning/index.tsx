@@ -13,7 +13,7 @@ import { generateMealPlan } from '../../lib/claude';
 import { saveMealPlan, saveShoppingList, addGardenPlant } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
-type Step = 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
+type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
 
 export default function PlanningFlow() {
   const router = useRouter();
@@ -21,7 +21,16 @@ export default function PlanningFlow() {
   const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
-  const [step, setStep] = useState<Step>('fridge');
+  const [step, setStep] = useState<Step>(() => {
+    // Show week picker on Friday, Saturday, or Sunday so the user can choose this or next week
+    const adjusted = (new Date().getDay() + 6) % 7; // 0=Mon … 6=Sun
+    return adjusted >= 4 ? 'week_picker' : 'fridge';
+  });
+  // 0 = this week, 1 = next week (only selectable on Fri/Sat/Sun via week_picker)
+  const [targetWeekOffset, setTargetWeekOffset] = useState<0 | 1>(() => {
+    const adjusted = (new Date().getDay() + 6) % 7;
+    return adjusted === 6 ? 1 : 0; // Sunday defaults to next week
+  });
   const [generatingMessage, setGeneratingMessage] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -167,17 +176,16 @@ export default function PlanningFlow() {
           })),
       };
 
-      // Get Monday of the current week as the week start date
       const now = new Date();
-      const dayOfWeek = now.getDay();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
       const localDate = (d: Date) => {
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${day}`;
       };
+      // Calculate target week's Monday using the chosen offset (0 = this week, 1 = next week)
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + targetWeekOffset * 7);
       const weekStartDate = localDate(monday);
       const todayStr = localDate(now);
 
@@ -205,7 +213,11 @@ export default function PlanningFlow() {
 
       // Save to Supabase and update the app store
       const { plan, meals } = await saveMealPlan(userId!, weekStartDate, result);
-      setMealPlan(plan, meals);
+      // Only update the plan tab store entry when targeting this week.
+      // Targeting next week keeps this week's plan (and cooked locks) intact on the plan tab.
+      if (targetWeekOffset === 0) {
+        setMealPlan(plan, meals);
+      }
 
       const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result);
       setShoppingList(shoppingData.list, shoppingData.items);
@@ -230,6 +242,37 @@ export default function PlanningFlow() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+
+        {/* Step: Week picker — shown on Fri/Sat/Sun */}
+        {step === 'week_picker' && (
+          <View>
+            <Text style={styles.stepTitle}>Which week are you planning?</Text>
+            <Text style={styles.stepBody}>Choose the week you'd like to generate meals for.</Text>
+            {([0, 1] as const).map((offset) => {
+              const mon = new Date();
+              mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + offset * 7);
+              const sun = new Date(mon);
+              sun.setDate(mon.getDate() + 6);
+              const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const label = offset === 0 ? 'This week' : 'Next week';
+              const range = `${mon.getDate()} ${MONTHS[mon.getMonth()]} – ${sun.getDate()} ${MONTHS[sun.getMonth()]}`;
+              const selected = targetWeekOffset === offset;
+              return (
+                <TouchableOpacity
+                  key={offset}
+                  style={[styles.tapOption, selected && styles.tapOptionSelected]}
+                  onPress={() => setTargetWeekOffset(offset)}
+                >
+                  <Text style={[styles.tapOptionText, selected && styles.tapOptionTextSelected]}>{label}</Text>
+                  <Text style={[styles.carryForwardDesc, selected && { color: '#065F46' }]}>{range}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('fridge')}>
+              <Text style={styles.primaryButtonText}>Continue →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Step: Fridge confirmation */}
         {step === 'fridge' && (
@@ -432,7 +475,11 @@ export default function PlanningFlow() {
         {step === 'done' && (
           <View style={styles.centeredBlock}>
             <Text style={styles.doneTitle}>Plan ready</Text>
-            <Text style={styles.doneBody}>Your week is planned. Check the shopping list — it's organised by store and timing.</Text>
+            <Text style={styles.doneBody}>
+              {targetWeekOffset === 1
+                ? "Next week's plan is ready. Check the shopping list — it's updated for next week."
+                : "Your week is planned. Check the shopping list — it's organised by store and timing."}
+            </Text>
             <TouchableOpacity style={[styles.primaryButton, styles.centeredButton]} onPress={() => router.replace('/(tabs)/plan')}>
               <Text style={styles.primaryButtonText}>See the plan →</Text>
             </TouchableOpacity>
