@@ -1,7 +1,7 @@
 // Bar inventory — spirits, liqueurs, bitters, syrups
 // Spirit type tabs → grouped list → tap row to edit/delete
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, Platform, KeyboardAvoidingView,
@@ -58,6 +58,7 @@ export default function BarScreen() {
   } = useAppStore();
 
   const [activeType, setActiveType] = useState<FilterKey>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState<ModalState>({ visible: false, item: null });
   const [saving, setSaving] = useState(false);
 
@@ -182,9 +183,19 @@ export default function BarScreen() {
     }
   };
 
-  const filtered = activeType === 'all'
-    ? barItems
-    : barItems.filter((i) => i.spirit_type === activeType);
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return barItems.filter((item) => {
+      const matchesType = activeType === 'all' || item.spirit_type === activeType;
+      if (!matchesType) return false;
+      if (!q) return true;
+      return (
+        item.name.toLowerCase().includes(q) ||
+        (item.notes ?? '').toLowerCase().includes(q) ||
+        (item.country ?? '').toLowerCase().includes(q)
+      );
+    });
+  }, [barItems, activeType, searchQuery]);
 
   const grouped = SPIRIT_TYPES.map((t) => ({
     ...t,
@@ -203,6 +214,25 @@ export default function BarScreen() {
           <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Text style={styles.headerAdd}>+ Add</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Search */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search bar..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="never"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity style={styles.searchClear} onPress={() => setSearchQuery('')}>
+              <Text style={styles.searchClearText}>×</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Spirit type filter */}
@@ -439,6 +469,11 @@ const styles = StyleSheet.create({
   headerBtn:   { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
   headerAdd:   { fontSize: 16, color: '#3B7A57', fontWeight: '700', minWidth: 48, textAlign: 'right' },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchClear: { paddingLeft: 8, paddingVertical: 8 },
+  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
 
   filterBar: { height: 52, backgroundColor: '#FAFAF8', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },

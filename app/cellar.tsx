@@ -1,7 +1,7 @@
 // Wine cellar — bottles, vintages, producers
 // Grouped by country → flat list → tap row to edit/delete
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, Platform, KeyboardAvoidingView,
@@ -46,6 +46,7 @@ export default function CellarScreen() {
 
   const [modal, setModal] = useState<ModalState>({ visible: false, item: null });
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form state
   const [name, setName]         = useState('');
@@ -174,14 +175,26 @@ export default function CellarScreen() {
     }
   };
 
+  const filteredCellar = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return cellarItems;
+    return cellarItems.filter((item) =>
+      item.name.toLowerCase().includes(q) ||
+      (item.producer ?? '').toLowerCase().includes(q) ||
+      (item.varietal ?? '').toLowerCase().includes(q) ||
+      (item.country ?? '').toLowerCase().includes(q) ||
+      (item.notes ?? '').toLowerCase().includes(q)
+    );
+  }, [cellarItems, searchQuery]);
+
   // Group by country; ungrouped items go to "Other"
   const countries = Array.from(
-    new Set(cellarItems.map((i) => i.country?.trim() || 'Other'))
+    new Set(filteredCellar.map((i) => i.country?.trim() || 'Other'))
   ).sort((a, b) => a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b));
 
   const grouped = countries.map((c) => ({
     country: c,
-    items: cellarItems
+    items: filteredCellar
       .filter((i) => (i.country?.trim() || 'Other') === c)
       .sort((a, b) => {
         // Sort by vintage desc (newest first), then name
@@ -212,6 +225,25 @@ export default function CellarScreen() {
             <Text style={styles.headerAdd}>+ Add</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Search */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search cellar..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="never"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity style={styles.searchClear} onPress={() => setSearchQuery('')}>
+              <Text style={styles.searchClearText}>×</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* List */}
@@ -219,6 +251,11 @@ export default function CellarScreen() {
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Cellar is empty</Text>
           <Text style={styles.emptyBody}>Tap "+ Add" to log your first bottle.</Text>
+        </View>
+      ) : grouped.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No matches</Text>
+          <Text style={styles.emptyBody}>Try a different search term.</Text>
         </View>
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}>
@@ -452,6 +489,11 @@ const styles = StyleSheet.create({
   headerTitle:  { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
   headerCount:  { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
   headerAdd:    { fontSize: 16, color: '#7C3AED', fontWeight: '700', minWidth: 48, textAlign: 'right' },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchClear: { paddingLeft: 8, paddingVertical: 8 },
+  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },

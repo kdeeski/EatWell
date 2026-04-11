@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
-  ActivityIndicator, Linking,
+  ActivityIndicator, Linking, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -55,6 +55,7 @@ export default function RecipesScreen() {
   const { recipes, removeRecipe, userPreferences, updateRecipeInStore, userId } = useAppStore();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showDetail, setShowDetail] = useState(false);
@@ -86,9 +87,18 @@ export default function RecipesScreen() {
     }
   }
 
-  const filtered = activeFilter === 'all'
-    ? recipes
-    : recipes.filter((r) => r.category === activeFilter);
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return recipes.filter((r) => {
+      const matchesCat = activeFilter === 'all' || r.category === activeFilter;
+      if (!matchesCat) return false;
+      if (!q) return true;
+      return (
+        r.name.toLowerCase().includes(q) ||
+        (r.description ?? '').toLowerCase().includes(q)
+      );
+    });
+  }, [recipes, activeFilter, searchQuery]);
 
   const handleDelete = async (recipe: Recipe) => {
     setShowDetail(false);
@@ -130,6 +140,25 @@ export default function RecipesScreen() {
           </View>
         </View>
 
+        {/* Search */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search recipes..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="never"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity style={styles.searchClear} onPress={() => setSearchQuery('')}>
+              <Text style={styles.searchClearText}>×</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Filter pills */}
         <ScrollView
           horizontal
@@ -156,7 +185,9 @@ export default function RecipesScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No recipes yet</Text>
           <Text style={styles.emptyBody}>
-            {activeFilter === 'all'
+            {searchQuery.trim()
+              ? `No recipes match "${searchQuery.trim()}".`
+              : activeFilter === 'all'
               ? 'Your recipe stash is empty — save meals you love or add your own.'
               : `No ${FILTER_LABELS.find((f) => f.key === activeFilter)?.label ?? ''} recipes saved yet.`}
           </Text>
@@ -367,6 +398,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   addBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchClear: { paddingLeft: 8, paddingVertical: 8 },
+  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
 
   pillScroll: { flexGrow: 0, backgroundColor: '#F9FAFB' },
   pillContent: { paddingHorizontal: 20, paddingBottom: 12, gap: 8 },

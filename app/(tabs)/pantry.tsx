@@ -1,7 +1,7 @@
 // Pantry screen — unified inventory. Location separates WHERE from WHAT.
 // Swipe right to replenish (→ shopping list). Swipe left to remove.
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { toTitleCase } from '../../lib/titleCase';
@@ -84,16 +84,21 @@ export default function PantryScreen() {
 
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [addVisible, setAddVisible] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [bulkVisible, setBulkVisible] = useState(false);
 
-  const filtered = inventoryItems.filter(
-    (i) =>
-      !i.depleted &&
-      (locationFilter === 'all' || i.location === locationFilter) &&
-      (categoryFilter === 'all' || i.category === categoryFilter)
-  );
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return inventoryItems.filter((i) => {
+      if (i.depleted) return false;
+      if (locationFilter !== 'all' && i.location !== locationFilter) return false;
+      if (categoryFilter !== 'all' && i.category !== categoryFilter) return false;
+      if (q && !i.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [inventoryItems, locationFilter, categoryFilter, searchQuery]);
 
   const grouped = CATEGORIES.map((c) => ({
     ...c,
@@ -163,6 +168,25 @@ export default function PantryScreen() {
             <Text style={styles.bulkAddButtonText}>Bulk Add</Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Search */}
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search pantry..."
+          placeholderTextColor="#9CA3AF"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+          clearButtonMode="never"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity style={styles.searchClear} onPress={() => setSearchQuery('')}>
+            <Text style={styles.searchClearText}>×</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Location filter */}
@@ -740,6 +764,11 @@ const styles = StyleSheet.create({
   addButtonText: { color: '#374151', fontWeight: '600', fontSize: 14 },
   bulkAddButton: { backgroundColor: '#3B7A57', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   bulkAddButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchClear: { paddingLeft: 8, paddingVertical: 8 },
+  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
 
   filterBar: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },

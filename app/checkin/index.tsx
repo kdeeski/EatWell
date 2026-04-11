@@ -62,7 +62,7 @@ export default function CheckinFlow() {
   };
 
   // If already completed today, show summary (unless editing)
-  if (todayCheckin?.completed_at && !editing) {
+  if (todayCheckin?.completed_at && !editing && todayCheckin.checkin_date === localDateString()) {
     const tonightMeal = plannedMeals.find((m) => m.id === todayCheckin.tonight_planned_meal_id);
     const lastNight = todayCheckin.last_night_response;
 

@@ -170,6 +170,7 @@ export default function ShoppingScreen() {
   const [pantryConfirmed, setPantryConfirmed] = useState<Set<string>>(() =>
     buildConfirmed(shoppingItems, inventoryItems)
   );
+  const pantryInFlight = useRef<Set<string>>(new Set());
   const [gardenConfirmed, setGardenConfirmed] = useState<Set<string>>(() =>
     buildGardenConfirmed(shoppingItems, gardenPlants)
   );
@@ -242,13 +243,15 @@ export default function ShoppingScreen() {
   };
 
   const handlePantryHaveIt = async (item: ShoppingListItem) => {
+    if (pantryInFlight.current.has(item.id)) return;
+    pantryInFlight.current.add(item.id);
     setPantryConfirmed((prev) => new Set([...prev, item.id]));
     toggleShoppingItemChecked(item.id, true).catch(console.error);
     if (userId) {
       try {
         const saved = await upsertInventoryItem({
           user_id: userId,
-          name: item.name.toLowerCase().trim(),
+          name: item.name.trim(),
           category: item.ingredient_category === 'herbs_spices' ? 'herbs_spices' : 'pantry_dry_goods',
           location: item.ingredient_category === 'herbs_spices' && item.name.toLowerCase().startsWith('fresh ') ? 'fridge' : 'pantry',
           quantity: item.quantity,
@@ -261,7 +264,11 @@ export default function ShoppingScreen() {
         upsertStore(saved);
       } catch (e) {
         console.error('Failed to save to inventory', e);
+      } finally {
+        pantryInFlight.current.delete(item.id);
       }
+    } else {
+      pantryInFlight.current.delete(item.id);
     }
   };
 

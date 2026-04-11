@@ -78,7 +78,7 @@ export async function saveStocktakeItems(
   const date = new Date().toISOString().split('T')[0];
   const rows = items.map((i) => ({
     user_id: userId,
-    name: i.name.toLowerCase().trim(),
+    name: i.name.trim(),
     category: i.category,
     location: i.location,
     quantity: 1,
@@ -577,7 +577,7 @@ export async function addAdHocShoppingItem(
     .from('shopping_list_items')
     .insert({
       shopping_list_id: shoppingListId,
-      name: name.toLowerCase().trim(),
+      name: name.trim(),
       quantity: 1,
       unit: 'item',
       store: category === 'meat_fish' ? 'butcher' : 'supermarket',
@@ -605,7 +605,7 @@ export async function addAdHocShoppingItems(
     .from('shopping_list_items')
     .insert(items.map((i) => ({
       shopping_list_id: shoppingListId,
-      name: i.name.toLowerCase().trim(),
+      name: i.name.trim(),
       quantity: 1,
       unit: 'item',
       store: i.category === 'meat_fish' ? 'butcher' : 'supermarket',
