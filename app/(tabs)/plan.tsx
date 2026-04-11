@@ -217,13 +217,13 @@ export default function PlanScreen() {
         setWeekOffset(newOffset);
       };
       if (goLeft && offset < 1) {
-        Animated.timing(swipeX, { toValue: -SCREEN_WIDTH, duration: 200, useNativeDriver: true })
+        Animated.timing(swipeX, { toValue: -SCREEN_WIDTH, duration: 200, useNativeDriver: false })
           .start(() => commitSwipe(offset + 1));
       } else if (goRight) {
-        Animated.timing(swipeX, { toValue: SCREEN_WIDTH, duration: 200, useNativeDriver: true })
+        Animated.timing(swipeX, { toValue: SCREEN_WIDTH, duration: 200, useNativeDriver: false })
           .start(() => commitSwipe(offset - 1));
       } else {
-        Animated.spring(swipeX, { toValue: 0, useNativeDriver: true }).start();
+        Animated.spring(swipeX, { toValue: 0, useNativeDriver: false }).start();
       }
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
