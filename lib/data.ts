@@ -283,11 +283,15 @@ export async function loadCurrentMealPlan(
     return thisWeekPlan;
   }
 
-  // Fallback: most recently created plan (e.g. on first launch with an old plan)
+  // Fallback: most recently created plan that is NOT in the future.
+  // This prevents a future-week plan (generated for next week on a Sunday) from
+  // being displayed as "this week" when there is no current-week plan yet.
+  const thisMonday = getThisWeekMonday();
   const { data: plans, error: planError } = await supabase
     .from('meal_plans')
     .select('*')
     .eq('user_id', userId)
+    .lte('week_start_date', thisMonday)
     .order('week_start_date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(1);

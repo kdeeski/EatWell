@@ -69,7 +69,11 @@ export default function PlanScreen() {
   const [weekOffset, setWeekOffset]   = useState(0); // 0 = current week
   const [weekCache, setWeekCache]     = useState<Record<string, { plan: MealPlan | null; meals: PlannedMeal[]; cookedMap: Record<string, CookedMeal> } | null>>({});
   const [weekLoading, setWeekLoading] = useState(false);
-  const swipeX = useRef(new Animated.Value(0)).current;
+  const [weekError, setWeekError]     = useState<string | null>(null);
+  const weekOffsetRef = useRef(weekOffset);
+  weekOffsetRef.current = weekOffset;
+  const swipeX       = useRef(new Animated.Value(0)).current;
+  const swipeOpacity = useRef(new Animated.Value(1)).current;
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -88,11 +92,19 @@ export default function PlanScreen() {
   // Derived values for whichever week is being viewed
   const isCurrentWeek   = weekOffset === 0;
   const viewedWeekStart = useMemo(() => getWeekStart(weekOffset), [weekOffset]);
-  const displayedMeals  = isCurrentWeek ? plannedMeals : (weekCache[viewedWeekStart]?.meals ?? []);
-  const displayedCooked = isCurrentWeek ? cookedMap    : (weekCache[viewedWeekStart]?.cookedMap ?? {});
-  const displayedSlots  = isCurrentWeek
+
+  // Use live store data for the current week ONLY when the stored plan's week actually matches the
+  // calendar week we're viewing. If the store holds a different week (e.g. the user generated
+  // next week's plan but hasn't planned this week yet), fall through to weekCache so the display
+  // is correct and a fresh fetch is triggered.
+  const currentWeekIsInStore = isCurrentWeek && currentMealPlan?.week_start_date === viewedWeekStart;
+  const displayedMeals  = currentWeekIsInStore ? plannedMeals : (weekCache[viewedWeekStart]?.meals ?? []);
+  const displayedCooked = currentWeekIsInStore ? cookedMap    : (weekCache[viewedWeekStart]?.cookedMap ?? {});
+  const displayedSlots  = currentWeekIsInStore
     ? slots
     : Array.from({ length: 7 }, (_, i) => displayedMeals.find(m => m.day_of_week === i)?.id ?? null);
+  // true while the fetch is in-flight and we have no data yet
+  const weekDataPending = !currentWeekIsInStore && weekCache[viewedWeekStart] === undefined;
 
   // Sync slots when plannedMeals changes (e.g. after bootstrap or save)
   useEffect(() => {
@@ -114,10 +126,13 @@ export default function PlanScreen() {
       .catch((e) => setLoadError(e?.message ?? String(e)));
   }, [userId, currentMealPlan?.week_start_date]));
 
-  // Load data for non-current weeks on demand and cache locally
+  // Load week data on demand — runs for any week not already served from store or cache
   useEffect(() => {
-    if (isCurrentWeek || !userId) return;
-    if (weekCache[viewedWeekStart] !== undefined) return; // already loaded or confirmed empty
+    setWeekError(null); // clear any previous error when the viewed week changes
+    setSelectedSlot(null); // deselect when navigating weeks
+    if (!userId) return;
+    if (currentWeekIsInStore) return; // store already has the right week
+    if (weekCache[viewedWeekStart] !== undefined) return; // already loaded (could be null = no plan)
     setWeekLoading(true);
     Promise.all([
       loadMealPlanForWeek(userId, viewedWeekStart),
@@ -140,9 +155,18 @@ export default function PlanScreen() {
           [viewedWeekStart]: { plan: planData?.plan ?? null, meals: planData?.meals ?? [], cookedMap: map },
         }));
       })
-      .catch(e => console.warn('[plan] loadMealPlanForWeek failed:', e))
+      .catch(e => {
+        console.warn('[plan] loadMealPlanForWeek failed:', e);
+        setWeekError(e?.message ?? 'Could not load this week. Check your connection.');
+        // Remove from cache so a retry attempt will re-fetch
+        setWeekCache(prev => {
+          const next = { ...prev };
+          delete next[viewedWeekStart];
+          return next;
+        });
+      })
       .finally(() => setWeekLoading(false));
-  }, [isCurrentWeek, viewedWeekStart, userId]);
+  }, [currentWeekIsInStore, viewedWeekStart, userId]);
 
   // Reset wine result when selected slot changes
   useEffect(() => {
@@ -174,6 +198,8 @@ export default function PlanScreen() {
   }, [userId, currentMealPlan?.id]);
 
   const { width: SCREEN_WIDTH } = Dimensions.get('window');
+  // PanResponder uses refs for mutable values so it never needs to be recreated.
+  // Recreating it on every weekOffset change tears down the gesture system mid-interaction.
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => false,
     onMoveShouldSetPanResponder:  (_, { dx, dy }) =>
@@ -181,19 +207,30 @@ export default function PlanScreen() {
     onPanResponderGrant:   () => swipeX.setValue(0),
     onPanResponderMove:    (_, { dx }) => swipeX.setValue(dx),
     onPanResponderRelease: (_, { dx, vx }) => {
+      const offset  = weekOffsetRef.current;
       const goLeft  = dx < -60 || (dx < 0 && vx < -0.5);
       const goRight = dx >  60 || (dx > 0 && vx >  0.5);
-      if (goLeft && weekOffset < 1) {
+      const commitSwipe = (newOffset: number) => {
+        // Fade out, snap position back to centre, update state, then fade in.
+        // This prevents the old-content flash that occurs when swipeX resets before
+        // the new week has rendered.
+        swipeOpacity.setValue(0);
+        swipeX.setValue(0);
+        setWeekOffset(newOffset);
+        Animated.timing(swipeOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+      };
+      if (goLeft && offset < 1) {
         Animated.timing(swipeX, { toValue: -SCREEN_WIDTH, duration: 200, useNativeDriver: true })
-          .start(() => { swipeX.setValue(0); setWeekOffset(o => o + 1); });
+          .start(() => commitSwipe(offset + 1));
       } else if (goRight) {
         Animated.timing(swipeX, { toValue: SCREEN_WIDTH, duration: 200, useNativeDriver: true })
-          .start(() => { swipeX.setValue(0); setWeekOffset(o => o - 1); });
+          .start(() => commitSwipe(offset - 1));
       } else {
         Animated.spring(swipeX, { toValue: 0, useNativeDriver: true }).start();
       }
     },
-  }), [weekOffset]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), []); // intentionally empty — all mutable state accessed via refs
 
   async function handleWineMatch(meal: PlannedMeal) {
     setWineLoading(true);
@@ -279,12 +316,14 @@ export default function PlanScreen() {
 
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      <Animated.View style={{ flex: 1, transform: [{ translateX: swipeX }] }}>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: swipeX }], opacity: swipeOpacity }}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
         <View style={styles.weekHeader}>
           <Text style={styles.heading}>{formatWeekRange(viewedWeekStart)}</Text>
           <View style={styles.weekHeaderRight}>
-            {weekLoading && <ActivityIndicator size="small" color="#9CA3AF" style={{ marginRight: 8 }} />}
+            {(weekLoading || weekDataPending) && (
+              <ActivityIndicator size="small" color="#9CA3AF" style={{ marginRight: 8 }} />
+            )}
             {!isCurrentWeek && (
               <TouchableOpacity onPress={() => setWeekOffset(0)}>
                 <Text style={styles.thisWeekLink}>This Week</Text>
@@ -293,7 +332,32 @@ export default function PlanScreen() {
           </View>
         </View>
 
-        {!hasPlan ? (
+        {(weekLoading || weekDataPending) ? (
+          // Data is on its way — show a full-screen spinner so no empty/stale content flashes
+          <View style={styles.weekLoadingState}>
+            <ActivityIndicator size="large" color="#3B7A57" />
+          </View>
+        ) : weekError ? (
+          // Network or DB error loading this week's data
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Couldn't load this week</Text>
+            <Text style={styles.errorText}>{weekError}</Text>
+            <TouchableOpacity
+              style={styles.planButton}
+              onPress={() => {
+                setWeekError(null);
+                // Remove the failed entry from cache so the effect re-fetches
+                setWeekCache(prev => {
+                  const next = { ...prev };
+                  delete next[viewedWeekStart];
+                  return next;
+                });
+              }}
+            >
+              <Text style={styles.planButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !hasPlan ? (
           <View style={styles.emptyState}>
             {isCurrentWeek ? (
               <>
@@ -550,6 +614,7 @@ const styles = StyleSheet.create({
   weekHeaderRight: { flexDirection: 'row', alignItems: 'center' },
   thisWeekLink:    { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
 
+  weekLoadingState: { alignItems: 'center', paddingTop: 80 },
   emptyState: { alignItems: 'center', paddingTop: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },
   emptyBody:  { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
