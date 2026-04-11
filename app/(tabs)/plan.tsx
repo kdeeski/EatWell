@@ -379,7 +379,7 @@ export default function PlanScreen() {
           onClose={() => setStashRecipe(null)}
           onEdit={() => {}}
           onDelete={() => {}}
-          onCookMode={() => {}}
+          
         />
       )}
 

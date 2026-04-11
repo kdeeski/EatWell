@@ -8,7 +8,6 @@ import { useAppStore } from '../../store/useAppStore';
 import type { Recipe, RecipeCategory } from '../../types';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
-import CookModeModal from '../../components/recipes/CookModeModal';
 import { deleteRecipe, updateRecipe } from '../../lib/data';
 import { toTitleCase } from '../../lib/titleCase';
 import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
@@ -61,7 +60,6 @@ export default function RecipesScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [showSave, setShowSave] = useState(false);
   const [editRecipe, setEditRecipe] = useState<Recipe | null>(null);
-  const [showCookMode, setShowCookMode] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
   // Drink pairing state — keyed by recipe id so results persist when re-expanding
@@ -109,11 +107,6 @@ export default function RecipesScreen() {
     setShowSave(true);
   };
 
-  const handleCookMode = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setShowDetail(false);
-    setShowCookMode(true);
-  };
 
   return (
     <View style={styles.container}>
@@ -314,7 +307,6 @@ export default function RecipesScreen() {
           onClose={() => { setShowDetail(false); setSelectedRecipe(null); }}
           onEdit={() => handleEdit(selectedRecipe)}
           onDelete={() => handleDelete(selectedRecipe)}
-          onCookMode={() => handleCookMode(selectedRecipe)}
         />
       )}
 
@@ -336,14 +328,6 @@ export default function RecipesScreen() {
         />
       )}
 
-      {/* Cook mode modal */}
-      {showCookMode && selectedRecipe?.method && (
-        <CookModeModal
-          recipeName={selectedRecipe.name}
-          method={selectedRecipe.method}
-          onClose={() => setShowCookMode(false)}
-        />
-      )}
 
       {/* Import from Claude modal */}
       <ImportFromClaudeModal

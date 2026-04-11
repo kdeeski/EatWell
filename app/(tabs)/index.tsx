@@ -186,7 +186,7 @@ export default function TodayScreen() {
           onClose={() => setStashRecipe(null)}
           onEdit={() => {}}
           onDelete={() => {}}
-          onCookMode={() => {}}
+          
         />
       )}
 

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Linking, ActivityIndicator,
+  TouchableOpacity, Linking, ActivityIndicator, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import type { Recipe, RecipeCategory } from '../../types';
-import CookModeModal from './CookModeModal';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
@@ -36,7 +36,6 @@ interface Props {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onCookMode: () => void;
 }
 
 function GuideComponentCard({ component }: { component: NonNullable<Recipe['guide_json']>['components'][0] }) {
@@ -100,15 +99,25 @@ function GuideComponentCard({ component }: { component: NonNullable<Recipe['guid
   );
 }
 
-export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, onCookMode }: Props) {
+export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const { userPreferences } = useAppStore();
-  const [showCookMode, setShowCookMode] = useState(false);
+  const [screenOn, setScreenOn] = useState(false);
   const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
   const [wineLoading, setWineLoading] = useState(false);
   const [wineError, setWineError] = useState<string | null>(null);
   const badgeColour = CATEGORY_COLOURS[recipe.category];
   const guide = recipe.guide_json;
+
+  async function toggleScreenOn() {
+    if (screenOn) {
+      if (Platform.OS !== 'web') deactivateKeepAwake();
+      setScreenOn(false);
+    } else {
+      if (Platform.OS !== 'web') await activateKeepAwakeAsync();
+      setScreenOn(true);
+    }
+  }
 
   async function handleWineMatch() {
     setWineLoading(true);
@@ -170,8 +179,8 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
                 <View style={styles.section}>
                   <View style={styles.sectionLabelRow}>
                     <Text style={styles.sectionLabel}>How to cook it</Text>
-                    <TouchableOpacity style={styles.cookModePill} onPress={() => setShowCookMode(true)}>
-                      <Text style={styles.cookModePillText}>Cook Mode</Text>
+                    <TouchableOpacity style={[styles.cookModePill, screenOn && styles.cookModePillActive]} onPress={toggleScreenOn}>
+                      <Text style={styles.cookModePillText}>{screenOn ? 'Screen On ✓' : 'Keep Screen On'}</Text>
                     </TouchableOpacity>
                   </View>
                   {guide.steps.map((step, i) => (
@@ -219,8 +228,8 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
                 ) : null}
 
                 {recipe.method ? (
-                  <TouchableOpacity style={styles.cookModeBtn} onPress={onCookMode}>
-                    <Text style={styles.cookModeBtnText}>Cook Mode</Text>
+                  <TouchableOpacity style={[styles.cookModeBtn, screenOn && styles.cookModeBtnActive]} onPress={toggleScreenOn}>
+                    <Text style={styles.cookModeBtnText}>{screenOn ? 'Screen On ✓' : 'Keep Screen On'}</Text>
                   </TouchableOpacity>
                 ) : null}
               </>
@@ -287,13 +296,6 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete, o
         </View>
       </Modal>
 
-      {showCookMode && guide && (
-        <CookModeModal
-          recipeName={recipe.name}
-          method={guide.steps.join('\n')}
-          onClose={() => setShowCookMode(false)}
-        />
-      )}
     </>
   );
 }
@@ -344,9 +346,11 @@ const styles = StyleSheet.create({
   glossaryDef: { fontSize: 14, color: '#374151', lineHeight: 20 },
 
   cookModePill: { backgroundColor: '#1C1C1E', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+  cookModePillActive: { backgroundColor: '#3B7A57' },
   cookModePillText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
 
   cookModeBtn: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  cookModeBtnActive: { backgroundColor: '#166534' },
   cookModeBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 8 },
