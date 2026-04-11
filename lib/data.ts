@@ -584,13 +584,21 @@ export async function updateShoppingItem(
   id: string,
   updates: Partial<Pick<ShoppingListItem, 'name' | 'quantity' | 'unit' | 'store' | 'ingredient_category' | 'buy_timing'>>
 ): Promise<ShoppingListItem> {
-  const { data, error } = await supabase
+  // Separate the UPDATE from the SELECT. Chaining .update().select().single()
+  // can return "Cannot coerce the result to a single JSON object" on PostgREST
+  // because the implicit SELECT may see all visible rows, not just the one updated.
+  const { error: updateError } = await supabase
     .from('shopping_list_items')
     .update(updates)
+    .eq('id', id);
+  if (updateError) throw updateError;
+
+  const { data, error: selectError } = await supabase
+    .from('shopping_list_items')
+    .select('*')
     .eq('id', id)
-    .select()
     .single();
-  if (error) throw error;
+  if (selectError) throw selectError;
   return data as ShoppingListItem;
 }
 

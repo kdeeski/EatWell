@@ -72,8 +72,7 @@ export default function PlanScreen() {
   const [weekError, setWeekError]     = useState<string | null>(null);
   const weekOffsetRef = useRef(weekOffset);
   weekOffsetRef.current = weekOffset;
-  const swipeX       = useRef(new Animated.Value(0)).current;
-  const swipeOpacity = useRef(new Animated.Value(1)).current;
+  const swipeX = useRef(new Animated.Value(0)).current;
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -211,13 +210,11 @@ export default function PlanScreen() {
       const goLeft  = dx < -60 || (dx < 0 && vx < -0.5);
       const goRight = dx >  60 || (dx > 0 && vx >  0.5);
       const commitSwipe = (newOffset: number) => {
-        // Fade out, snap position back to centre, update state, then fade in.
-        // This prevents the old-content flash that occurs when swipeX resets before
-        // the new week has rendered.
-        swipeOpacity.setValue(0);
+        // Reset position then update state. The weekDataPending spinner renders
+        // immediately on the next frame, so the user sees a loader rather than
+        // stale content while the new week's data is fetched.
         swipeX.setValue(0);
         setWeekOffset(newOffset);
-        Animated.timing(swipeOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
       };
       if (goLeft && offset < 1) {
         Animated.timing(swipeX, { toValue: -SCREEN_WIDTH, duration: 200, useNativeDriver: true })
@@ -316,7 +313,7 @@ export default function PlanScreen() {
 
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      <Animated.View style={{ flex: 1, transform: [{ translateX: swipeX }], opacity: swipeOpacity }}>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: swipeX }] }}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
         <View style={styles.weekHeader}>
           <Text style={styles.heading}>{formatWeekRange(viewedWeekStart)}</Text>
