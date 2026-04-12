@@ -142,6 +142,43 @@ export default function PlanningFlow() {
               .map((r) => ({ name: r.name, rating: r.rating!, description: r.description }))
           : [];
 
+      // ── Compute target week dates and locked days BEFORE generating ──────────
+      const now = new Date();
+      const localDate = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      // Calculate target week's Monday using the chosen offset (0 = this week, 1 = next week)
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + targetWeekOffset * 7);
+      const weekStartDate = localDate(monday);
+      const todayStr = localDate(now);
+
+      // Determine which days already have a cooked meal so they can be locked.
+      // Claude skips these days (via nightsAway) and saveMealPlan preserves their
+      // planned_meal rows, keeping cooked_meals.planned_meal_id FK links intact.
+      let lockedDays: number[] = [];
+      if (userId) {
+        const [existingPlan, cookedList] = await Promise.all([
+          loadMealPlanForWeek(userId, weekStartDate),
+          fetchWeekCookedMeals(userId, weekStartDate),
+        ]);
+        if (existingPlan && cookedList.length > 0) {
+          lockedDays = existingPlan.meals
+            .filter((m) =>
+              cookedList.some(
+                (c) =>
+                  c.planned_meal_id === m.id ||
+                  (c.actual_meal_name?.toLowerCase() ?? '') === m.meal_name.toLowerCase()
+              )
+            )
+            .map((m) => m.day_of_week);
+        }
+      }
+      const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
+
       const rawResult = await generateMealPlan({
         fridgeItems,
         gardenAvailable: [
@@ -194,42 +231,6 @@ export default function PlanningFlow() {
             })),
           })),
       };
-
-      const now = new Date();
-      const localDate = (d: Date) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
-      // Calculate target week's Monday using the chosen offset (0 = this week, 1 = next week)
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + targetWeekOffset * 7);
-      const weekStartDate = localDate(monday);
-      const todayStr = localDate(now);
-
-      // Determine which days already have a cooked meal so they can be locked.
-      // Claude skips these days (via nightsAway) and saveMealPlan preserves their
-      // planned_meal rows, keeping cooked_meals.planned_meal_id FK links intact.
-      let lockedDays: number[] = [];
-      if (userId) {
-        const [existingPlan, cookedList] = await Promise.all([
-          loadMealPlanForWeek(userId, weekStartDate),
-          fetchWeekCookedMeals(userId, weekStartDate),
-        ]);
-        if (existingPlan && cookedList.length > 0) {
-          lockedDays = existingPlan.meals
-            .filter((m) =>
-              cookedList.some(
-                (c) =>
-                  c.planned_meal_id === m.id ||
-                  (c.actual_meal_name?.toLowerCase() ?? '') === m.meal_name.toLowerCase()
-              )
-            )
-            .map((m) => m.day_of_week);
-        }
-      }
-      const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
 
       // Save garden extras to garden_plants if not already tracked
       const extraNames = gardenExtras.split(',').map((s) => s.trim()).filter(Boolean);
