@@ -187,6 +187,8 @@ RULES:
 
 21. USER PREFERENCES — if USER PREFERENCES are provided in the prompt, treat them as personalisation constraints: lean toward cuisine_likes, avoid cuisine_dislikes, never use proteins_excluded, match spice_level (mild = subtle seasoning, medium = balanced, bold = heat welcome), respect weeknight_max_minutes for Mon–Thu prep times, apply weekend cooking style (project = longer/complex welcome on Sat–Sun, quick = keep it simple all week), and follow any personal cooking_notes. These preferences narrow and personalise choices — do not override safety rules above.
 
+22. CARRY FORWARD — if a "CARRY FORWARD" section appears in the prompt, you MUST include every meal listed in the final plan. Assign each carry-forward meal to any available day (not a night-away day). Use the exact meal name as given — do not rename or paraphrase. This is a hard rule that overrides variety/rotation preferences. If there are more carry-forward meals than available nights, include as many as will fit.
+
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
     });
