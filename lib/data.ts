@@ -508,7 +508,8 @@ export async function saveShoppingList(
   userId: string,
   mealPlanId: string,
   weekStartDate: string,
-  generated: GeneratedMealPlan
+  generated: GeneratedMealPlan,
+  knownItems?: { fridge: string[]; pantry: string[] }
 ): Promise<{ list: ShoppingList; items: ShoppingListItem[] }> {
   // Rescue any ad-hoc items before wiping the old list
   const { data: existingLists } = await supabase
@@ -599,6 +600,27 @@ export async function saveShoppingList(
           is_adhoc: false,
           created_at: '',
         });
+      }
+    }
+  }
+
+  // Cross-reference against the user's actual inventory to fix missed from_fridge /
+  // is_pantry_staple flags from Claude. Uses substring matching so "mushrooms" in
+  // inventory matches "button mushrooms" or "sliced mushrooms" from Claude.
+  if (knownItems) {
+    const normFridge  = knownItems.fridge.map((n) => normaliseIngredientName(n.toLowerCase().trim()));
+    const normPantry  = knownItems.pantry.map((n) => normaliseIngredientName(n.toLowerCase().trim()));
+    const fuzzyMatch  = (inventory: string[], itemName: string) =>
+      inventory.some((inv) => inv.length >= 3 && (inv.includes(itemName) || itemName.includes(inv)));
+
+    for (const item of itemMap.values()) {
+      if (item.from_fridge) continue; // Claude already got it right
+      if (fuzzyMatch(normFridge, item.name)) {
+        item.from_fridge = true;
+        item.checked     = true;
+      } else if (!item.is_pantry_staple && fuzzyMatch(normPantry, item.name)) {
+        item.is_pantry_staple = true;
+        item.checked          = true;
       }
     }
   }

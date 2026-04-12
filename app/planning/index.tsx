@@ -262,7 +262,18 @@ export default function PlanningFlow() {
         setMealPlan(plan, meals);
       }
 
-      const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result);
+      // Build known-items lists so saveShoppingList can fix any missed from_fridge /
+      // is_pantry_staple flags from Claude.
+      const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
+      const knownItems = {
+        fridge: [
+          ...fridgeItems.map((i) => i.name),
+          ...fridgeExtras.split(',').map((s) => s.trim()).filter(Boolean),
+          ...spontaneous.split(',').map((s) => s.trim()).filter(Boolean),
+        ],
+        pantry: pantryItems.map((i) => i.name),
+      };
+      const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result, knownItems);
       setShoppingList(shoppingData.list, shoppingData.items);
 
       setStep('done');
