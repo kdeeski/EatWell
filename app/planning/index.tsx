@@ -223,7 +223,7 @@ export default function PlanningFlow() {
               cookedList.some(
                 (c) =>
                   c.planned_meal_id === m.id ||
-                  c.actual_meal_name.toLowerCase() === m.meal_name.toLowerCase()
+                  (c.actual_meal_name?.toLowerCase() ?? '') === m.meal_name.toLowerCase()
               )
             )
             .map((m) => m.day_of_week);

@@ -364,13 +364,21 @@ export async function saveMealPlan(
     holly_included: m.holly_included,
   }));
 
-  const { data: meals, error: mealsError } = await supabase
+  if (mealsToInsert.length > 0) {
+    const { error: insertError } = await supabase.from('planned_meals').insert(mealsToInsert);
+    if (insertError) throw insertError;
+  }
+
+  // Always fetch the full plan — partial replans preserve locked-day rows so
+  // the return value must include both new and pre-existing meals.
+  const { data: allMeals, error: mealsError } = await supabase
     .from('planned_meals')
-    .insert(mealsToInsert)
-    .select();
+    .select('*')
+    .eq('meal_plan_id', plan.id)
+    .order('day_of_week');
   if (mealsError) throw mealsError;
 
-  return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
+  return { plan: plan as MealPlan, meals: (allMeals ?? []) as PlannedMeal[] };
 }
 
 // Add a single meal into another week's plan without running the full AI wizard.
