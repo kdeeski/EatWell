@@ -374,12 +374,12 @@ export default function PlanScreen() {
             ) : weekOffset === 1 ? (
               <>
                 <Text style={styles.emptyTitle}>No plan yet</Text>
-                <Text style={styles.emptyBody}>Nothing planned for next week yet.</Text>
+                <Text style={styles.emptyBody}>Nothing planned for this week yet.</Text>
                 <TouchableOpacity
                   style={styles.planButton}
                   onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '1' } })}
                 >
-                  <Text style={styles.planButtonText}>Plan Next Week</Text>
+                  <Text style={styles.planButtonText}>Plan the Week</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -556,7 +556,7 @@ export default function PlanScreen() {
                               >
                                 {pushing === meal.id
                                   ? <ActivityIndicator size="small" color="#9CA3AF" />
-                                  : <Text style={styles.pushNextWeekText}>→ Next week</Text>
+                                  : <Text style={styles.pushNextWeekText}>→ Add to next week</Text>
                                 }
                               </TouchableOpacity>
                             )}
@@ -586,7 +586,7 @@ export default function PlanScreen() {
                 onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '1' } })}
               >
                 <Text style={styles.replanButtonText}>
-                  {displayedMeals.length > 0 ? 'Replan Next Week' : 'Plan Next Week'}
+                  {displayedMeals.length > 0 ? 'Replan the Week' : 'Plan the Week'}
                 </Text>
               </TouchableOpacity>
             )}

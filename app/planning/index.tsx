@@ -52,6 +52,20 @@ export default function PlanningFlow() {
 
   const generatingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Belt-and-suspenders: Expo Router may resolve params after the first render,
+  // so the useState initializer can see weekOffsetParam as undefined even when a
+  // param was passed. This effect corrects the state as soon as params arrive.
+  useEffect(() => {
+    if (weekOffsetParam === '0') {
+      setTargetWeekOffset(0);
+      setStep((s) => s === 'week_picker' ? 'fridge' : s);
+    } else if (weekOffsetParam === '1') {
+      setTargetWeekOffset(1);
+      setStep((s) => s === 'week_picker' ? 'fridge' : s);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekOffsetParam]);
+
   useEffect(() => {
     if (step === 'generating') {
       setGeneratingMessage(0);
