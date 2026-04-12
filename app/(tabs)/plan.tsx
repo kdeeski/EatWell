@@ -14,7 +14,7 @@ import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import {
   reorderPlannedMeals, loadCurrentMealPlan, fetchWeekCookedMeals,
-  loadMealPlanForWeek, getThisWeekMonday,
+  loadMealPlanForWeek, getThisWeekMonday, pushMealToNextWeek,
 } from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
@@ -70,6 +70,7 @@ export default function PlanScreen() {
   const [weekCache, setWeekCache]     = useState<Record<string, { plan: MealPlan | null; meals: PlannedMeal[]; cookedMap: Record<string, CookedMeal> } | null>>({});
   const [weekLoading, setWeekLoading] = useState(false);
   const [weekError, setWeekError]     = useState<string | null>(null);
+  const [pushing, setPushing]         = useState<string | null>(null); // meal id being pushed to next week
   const weekOffsetRef = useRef(weekOffset);
   weekOffsetRef.current = weekOffset;
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -370,6 +371,17 @@ export default function PlanScreen() {
                   <Text style={styles.planButtonText}>Plan This Week</Text>
                 </TouchableOpacity>
               </>
+            ) : weekOffset === 1 ? (
+              <>
+                <Text style={styles.emptyTitle}>No plan yet</Text>
+                <Text style={styles.emptyBody}>Nothing planned for next week yet.</Text>
+                <TouchableOpacity
+                  style={styles.planButton}
+                  onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '1' } })}
+                >
+                  <Text style={styles.planButtonText}>Plan Next Week</Text>
+                </TouchableOpacity>
+              </>
             ) : (
               <>
                 <Text style={styles.emptyTitle}>No plan</Text>
@@ -516,6 +528,38 @@ export default function PlanScreen() {
                                 ) : null}
                               </View>
                             )}
+                            {isSelected && isCurrentWeek && !cooked && (
+                              <TouchableOpacity
+                                style={styles.pushNextWeekBtn}
+                                disabled={!!pushing}
+                                onPress={async () => {
+                                  if (!userId) return;
+                                  const nextWeekStart = getWeekStart(1);
+                                  setPushing(meal.id);
+                                  try {
+                                    const { plan: nwPlan, meals: nwMeals } =
+                                      await pushMealToNextWeek(userId, meal, nextWeekStart);
+                                    setWeekCache((prev) => ({
+                                      ...prev,
+                                      [nextWeekStart]: {
+                                        plan: nwPlan,
+                                        meals: nwMeals,
+                                        cookedMap: prev[nextWeekStart]?.cookedMap ?? {},
+                                      },
+                                    }));
+                                  } catch (e: any) {
+                                    console.warn('[plan] pushMealToNextWeek failed:', e?.message);
+                                  } finally {
+                                    setPushing(null);
+                                  }
+                                }}
+                              >
+                                {pushing === meal.id
+                                  ? <ActivityIndicator size="small" color="#9CA3AF" />
+                                  : <Text style={styles.pushNextWeekText}>→ Next week</Text>
+                                }
+                              </TouchableOpacity>
+                            )}
                           </>
                         ) : (
                           <Text style={styles.nightOff}>Night off</Text>
@@ -528,8 +572,22 @@ export default function PlanScreen() {
             })}
 
             {isCurrentWeek && (
-              <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
+              <TouchableOpacity
+                style={styles.replanButton}
+                onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '0' } })}
+              >
                 <Text style={styles.replanButtonText}>Replan the Week</Text>
+              </TouchableOpacity>
+            )}
+
+            {weekOffset === 1 && (
+              <TouchableOpacity
+                style={styles.replanButton}
+                onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '1' } })}
+              >
+                <Text style={styles.replanButtonText}>
+                  {displayedMeals.length > 0 ? 'Replan Next Week' : 'Plan Next Week'}
+                </Text>
               </TouchableOpacity>
             )}
           </>
@@ -697,6 +755,9 @@ const styles = StyleSheet.create({
 
   replanButton:     { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
   replanButtonText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
+
+  pushNextWeekBtn:  { marginTop: 8 },
+  pushNextWeekText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
 
   howToButton: { marginTop: 8 },
   howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },

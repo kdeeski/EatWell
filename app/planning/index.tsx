@@ -6,11 +6,11 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
-import { saveMealPlan, saveShoppingList, addGardenPlant } from '../../lib/data';
+import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
 type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
@@ -18,18 +18,23 @@ type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' |
 export default function PlanningFlow() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { weekOffset: weekOffsetParam } = useLocalSearchParams<{ weekOffset?: string }>();
   const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
+  // If opened from the plan tab with an explicit weekOffset param, use it directly and skip
+  // the week_picker step. Without a param, show the picker on Fri/Sat/Sun as before.
+  const [targetWeekOffset, setTargetWeekOffset] = useState<0 | 1>(() => {
+    if (weekOffsetParam === '0') return 0;
+    if (weekOffsetParam === '1') return 1;
+    const adjusted = (new Date().getDay() + 6) % 7;
+    return adjusted === 6 ? 1 : 0; // Sunday defaults to next week
+  });
   const [step, setStep] = useState<Step>(() => {
+    if (weekOffsetParam !== undefined) return 'fridge'; // explicit target — skip picker
     // Show week picker on Friday, Saturday, or Sunday so the user can choose this or next week
     const adjusted = (new Date().getDay() + 6) % 7; // 0=Mon … 6=Sun
     return adjusted >= 4 ? 'week_picker' : 'fridge';
-  });
-  // 0 = this week, 1 = next week (only selectable on Fri/Sat/Sun via week_picker)
-  const [targetWeekOffset, setTargetWeekOffset] = useState<0 | 1>(() => {
-    const adjusted = (new Date().getDay() + 6) % 7;
-    return adjusted === 6 ? 1 : 0; // Sunday defaults to next week
   });
   const [generatingMessage, setGeneratingMessage] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -133,7 +138,7 @@ export default function PlanningFlow() {
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
-        nightsAway,
+        nightsAway: effectiveNightsAway,
         hollyHomeNights,
         carryForwardMeals,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
@@ -158,8 +163,8 @@ export default function PlanningFlow() {
       const result = {
         ...rawResult,
         meals: rawResult.meals
-          // Safety net: remove meals on nights-away days
-          .filter((m) => !nightsAway.includes(m.day_of_week))
+          // Safety net: remove meals on nights-away or locked (already-cooked) days
+          .filter((m) => !effectiveNightsAway.includes(m.day_of_week))
           .map((m) => ({
             ...m,
             ingredients: m.ingredients.map((ing) => ({
@@ -189,6 +194,29 @@ export default function PlanningFlow() {
       const weekStartDate = localDate(monday);
       const todayStr = localDate(now);
 
+      // Determine which days already have a cooked meal so they can be locked.
+      // Claude skips these days (via nightsAway) and saveMealPlan preserves their
+      // planned_meal rows, keeping cooked_meals.planned_meal_id FK links intact.
+      let lockedDays: number[] = [];
+      if (userId) {
+        const [existingPlan, cookedList] = await Promise.all([
+          loadMealPlanForWeek(userId, weekStartDate),
+          fetchWeekCookedMeals(userId, weekStartDate),
+        ]);
+        if (existingPlan && cookedList.length > 0) {
+          lockedDays = existingPlan.meals
+            .filter((m) =>
+              cookedList.some(
+                (c) =>
+                  c.planned_meal_id === m.id ||
+                  c.actual_meal_name.toLowerCase() === m.meal_name.toLowerCase()
+              )
+            )
+            .map((m) => m.day_of_week);
+        }
+      }
+      const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
+
       // Save garden extras to garden_plants if not already tracked
       const extraNames = gardenExtras.split(',').map((s) => s.trim()).filter(Boolean);
       const existingNames = gardenPlants.map((p) => p.plant_name.toLowerCase());
@@ -212,7 +240,7 @@ export default function PlanningFlow() {
       }
 
       // Save to Supabase and update the app store
-      const { plan, meals } = await saveMealPlan(userId!, weekStartDate, result);
+      const { plan, meals } = await saveMealPlan(userId!, weekStartDate, result, lockedDays);
       // Only update the plan tab store entry when targeting this week.
       // Targeting next week keeps this week's plan (and cooked locks) intact on the plan tab.
       if (targetWeekOffset === 0) {
@@ -396,10 +424,16 @@ export default function PlanningFlow() {
             </View>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => setStep(plannedMeals.length > 0 ? 'carry_forward' : 'generating')}
+              onPress={() =>
+                targetWeekOffset === 1 && plannedMeals.length > 0
+                  ? setStep('carry_forward')
+                  : handleGenerate()
+              }
             >
               <Text style={styles.primaryButtonText}>
-                {plannedMeals.length > 0 ? 'Next →' : 'Generate my meal plan'}
+                {targetWeekOffset === 1 && plannedMeals.length > 0
+                  ? 'Next →'
+                  : 'Generate my meal plan'}
               </Text>
             </TouchableOpacity>
           </View>

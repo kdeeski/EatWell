@@ -315,7 +315,8 @@ export async function loadCurrentMealPlan(
 export async function saveMealPlan(
   userId: string,
   weekStartDate: string,
-  generated: GeneratedMealPlan
+  generated: GeneratedMealPlan,
+  lockedDays: number[] = []
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] }> {
   // Upsert the plan row, then fetch separately — combined upsert+select
   // can return empty if the conflict row had no columns to update.
@@ -335,7 +336,21 @@ export async function saveMealPlan(
     .single();
   if (planError) throw planError;
 
-  await supabase.from('planned_meals').delete().eq('meal_plan_id', plan.id);
+  if (lockedDays.length === 0) {
+    // Full replan — wipe all planned_meals
+    await supabase.from('planned_meals').delete().eq('meal_plan_id', plan.id);
+  } else {
+    // Partial replan — only delete the days Claude generated; cooked days are untouched,
+    // preserving their planned_meal rows and cooked_meals.planned_meal_id FK links.
+    const daysToReplace = [...new Set(generated.meals.map((m) => m.day_of_week))];
+    for (const day of daysToReplace) {
+      await supabase
+        .from('planned_meals')
+        .delete()
+        .eq('meal_plan_id', plan.id)
+        .eq('day_of_week', day);
+    }
+  }
 
   const mealsToInsert = generated.meals.map((m) => ({
     meal_plan_id: plan.id,
@@ -353,6 +368,58 @@ export async function saveMealPlan(
     .from('planned_meals')
     .insert(mealsToInsert)
     .select();
+  if (mealsError) throw mealsError;
+
+  return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
+}
+
+// Add a single meal into another week's plan without running the full AI wizard.
+// Replaces that day slot if already occupied; creates the meal_plan row if needed.
+export async function pushMealToNextWeek(
+  userId: string,
+  meal: PlannedMeal,
+  nextWeekStart: string
+): Promise<{ plan: MealPlan; meals: PlannedMeal[] }> {
+  const { error: upsertError } = await supabase
+    .from('meal_plans')
+    .upsert(
+      { user_id: userId, week_start_date: nextWeekStart, confirmed: true },
+      { onConflict: 'user_id,week_start_date' }
+    );
+  if (upsertError) throw upsertError;
+
+  const { data: plan, error: planError } = await supabase
+    .from('meal_plans')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('week_start_date', nextWeekStart)
+    .single();
+  if (planError) throw planError;
+
+  // Replace that day's slot (delete existing if any, then insert the pushed meal)
+  await supabase
+    .from('planned_meals')
+    .delete()
+    .eq('meal_plan_id', plan.id)
+    .eq('day_of_week', meal.day_of_week);
+
+  await supabase.from('planned_meals').insert({
+    meal_plan_id:           plan.id,
+    day_of_week:            meal.day_of_week,
+    meal_name:              meal.meal_name,
+    description:            meal.description,
+    is_fish:                meal.is_fish,
+    needs_recipe:           meal.needs_recipe,
+    estimated_prep_minutes: meal.estimated_prep_minutes,
+    ingredients:            meal.ingredients,
+    holly_included:         meal.holly_included,
+  });
+
+  const { data: meals, error: mealsError } = await supabase
+    .from('planned_meals')
+    .select('*')
+    .eq('meal_plan_id', plan.id)
+    .order('day_of_week');
   if (mealsError) throw mealsError;
 
   return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
