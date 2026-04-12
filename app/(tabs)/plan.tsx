@@ -406,17 +406,17 @@ export default function PlanScreen() {
 
             {displayedSlots.map((mealId, listIndex) => {
               const meal       = mealId ? displayedMeals.find((m) => m.id === mealId) ?? null : null;
-              const isSelected = isCurrentWeek && selectedSlot === listIndex;
+              const isSelected = selectedSlot === listIndex;
 
               return (
                 <TouchableOpacity
                   key={listIndex}
                   style={styles.dayRow}
                   onPress={() => {
-                    if (!meal || !isCurrentWeek) return;
+                    if (!meal) return;
                     setSelectedSlot(isSelected ? null : listIndex);
                   }}
-                  activeOpacity={meal && isCurrentWeek ? 0.7 : 1}
+                  activeOpacity={meal ? 0.7 : 1}
                 >
                   <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
                     {DAY_SHORT[listIndex]}
@@ -450,7 +450,7 @@ export default function PlanScreen() {
                             )}
                             <Text style={styles.mealMeta}>
                               {meal.estimated_prep_minutes ? `~${meal.estimated_prep_minutes} min` : ''}
-                              {isCurrentWeek && !isSelected && !cooked ? '  ·  Tap for details' : ''}
+                              {!isSelected && !cooked ? '  ·  Tap for details' : ''}
                             </Text>
                             {isSelected && meal.description ? (
                               <Text style={styles.description}>{meal.description}</Text>
