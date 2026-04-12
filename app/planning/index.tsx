@@ -529,7 +529,13 @@ export default function PlanningFlow() {
                 ? "Next week's plan is ready. Check the shopping list — it's updated for next week."
                 : "Your week is planned. Check the shopping list — it's organised by store and timing."}
             </Text>
-            <TouchableOpacity style={[styles.primaryButton, styles.centeredButton]} onPress={() => router.replace('/(tabs)/plan')}>
+            <TouchableOpacity
+              style={[styles.primaryButton, styles.centeredButton]}
+              onPress={() => router.replace({
+                pathname: '/(tabs)/plan',
+                params: { showWeek: String(targetWeekOffset) },
+              })}
+            >
               <Text style={styles.primaryButtonText}>See the plan →</Text>
             </TouchableOpacity>
           </View>

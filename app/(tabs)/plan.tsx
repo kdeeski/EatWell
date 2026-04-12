@@ -6,7 +6,7 @@ import {
   LayoutAnimation, Platform, UIManager, ActivityIndicator, Linking,
   Animated, PanResponder, Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -74,6 +74,13 @@ export default function PlanScreen() {
   const weekOffsetRef = useRef(weekOffset);
   weekOffsetRef.current = weekOffset;
   const swipeX = useRef(new Animated.Value(0)).current;
+
+  // Jump to a specific week when returning from the planning wizard
+  const { showWeek } = useLocalSearchParams<{ showWeek?: string }>();
+  useEffect(() => {
+    const offset = parseInt(showWeek ?? '', 10);
+    if (!isNaN(offset)) setWeekOffset(offset);
+  }, [showWeek]);
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
