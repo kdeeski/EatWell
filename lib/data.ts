@@ -358,53 +358,6 @@ export async function saveMealPlan(
   return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
 }
 
-// Copy an existing set of meals into a new (or existing) plan for a different week.
-// Used to migrate a past week's plan into the current week.
-export async function duplicateMealPlanToWeek(
-  userId: string,
-  sourceMeals: PlannedMeal[],
-  targetWeekStart: string
-): Promise<{ plan: MealPlan; meals: PlannedMeal[] }> {
-  const { error: upsertError } = await supabase
-    .from('meal_plans')
-    .upsert(
-      { user_id: userId, week_start_date: targetWeekStart, confirmed: true },
-      { onConflict: 'user_id,week_start_date' }
-    );
-  if (upsertError) throw upsertError;
-
-  const { data: plan, error: planError } = await supabase
-    .from('meal_plans')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('week_start_date', targetWeekStart)
-    .single();
-  if (planError) throw planError;
-
-  // Clear any meals already in the target plan
-  await supabase.from('planned_meals').delete().eq('meal_plan_id', plan.id);
-
-  const mealsToInsert = sourceMeals.map((m) => ({
-    meal_plan_id: plan.id,
-    day_of_week: m.day_of_week,
-    meal_name: m.meal_name,
-    description: m.description,
-    is_fish: m.is_fish,
-    needs_recipe: m.needs_recipe,
-    estimated_prep_minutes: m.estimated_prep_minutes,
-    ingredients: m.ingredients,
-    holly_included: m.holly_included,
-  }));
-
-  const { data: meals, error: mealsError } = await supabase
-    .from('planned_meals')
-    .insert(mealsToInsert)
-    .select();
-  if (mealsError) throw mealsError;
-
-  return { plan: plan as MealPlan, meals: meals as PlannedMeal[] };
-}
-
 export async function reorderPlannedMeals(
   _mealPlanId: string,
   _originalIds: string[],

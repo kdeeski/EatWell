@@ -14,7 +14,7 @@ import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import {
   reorderPlannedMeals, loadCurrentMealPlan, fetchWeekCookedMeals,
-  loadMealPlanForWeek, getThisWeekMonday, duplicateMealPlanToWeek,
+  loadMealPlanForWeek, getThisWeekMonday,
 } from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
@@ -70,7 +70,6 @@ export default function PlanScreen() {
   const [weekCache, setWeekCache]     = useState<Record<string, { plan: MealPlan | null; meals: PlannedMeal[]; cookedMap: Record<string, CookedMeal> } | null>>({});
   const [weekLoading, setWeekLoading] = useState(false);
   const [weekError, setWeekError]     = useState<string | null>(null);
-  const [migrating, setMigrating]     = useState(false);
   const weekOffsetRef = useRef(weekOffset);
   weekOffsetRef.current = weekOffset;
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -305,23 +304,6 @@ export default function PlanScreen() {
     }
   };
 
-  async function handleMigrateToThisWeek() {
-    if (!userId || migrating || displayedMeals.length === 0) return;
-    const thisMonday = getThisWeekMonday();
-    setMigrating(true);
-    try {
-      const { plan, meals } = await duplicateMealPlanToWeek(userId, displayedMeals, thisMonday);
-      setMealPlan(plan, meals);
-      // Bust the current-week cache so the load effect doesn't show stale data
-      setWeekCache(prev => { const n = { ...prev }; delete n[thisMonday]; return n; });
-      setWeekOffset(0);
-    } catch (e: any) {
-      setWeekError(e?.message ?? 'Failed to migrate meals. Please try again.');
-    } finally {
-      setMigrating(false);
-    }
-  }
-
   const hasPlan = displayedMeals.length > 0;
   const selectedMeal = selectedSlot !== null
     ? displayedMeals.find((m) => m.id === displayedSlots[selectedSlot]) ?? null
@@ -548,19 +530,6 @@ export default function PlanScreen() {
             {isCurrentWeek && (
               <TouchableOpacity style={styles.replanButton} onPress={() => router.push('/planning')}>
                 <Text style={styles.replanButtonText}>Replan the Week</Text>
-              </TouchableOpacity>
-            )}
-
-            {!isCurrentWeek && (
-              <TouchableOpacity
-                style={[styles.replanButton, migrating && { opacity: 0.6 }]}
-                onPress={handleMigrateToThisWeek}
-                disabled={migrating}
-              >
-                {migrating
-                  ? <ActivityIndicator size="small" color="#FFFFFF" />
-                  : <Text style={styles.replanButtonText}>Use These Meals for This Week</Text>
-                }
               </TouchableOpacity>
             )}
           </>
