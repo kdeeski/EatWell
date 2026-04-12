@@ -663,6 +663,20 @@ export async function addAdHocShoppingItems(
 export async function logCookedMeal(
   meal: Omit<CookedMeal, 'id' | 'created_at'>
 ): Promise<CookedMeal> {
+  // Delete any existing entry for the same user/date/meal before inserting.
+  // Without this, every check-in edit creates a duplicate row because the
+  // check-in upserts but cooked_meals has no unique constraint to upsert on.
+  const dupeQuery = supabase
+    .from('cooked_meals')
+    .delete()
+    .eq('user_id', meal.user_id)
+    .eq('cooked_date', meal.cooked_date);
+  if (meal.planned_meal_id) {
+    await dupeQuery.eq('planned_meal_id', meal.planned_meal_id);
+  } else {
+    await dupeQuery.eq('actual_meal_name', meal.actual_meal_name);
+  }
+
   const { data, error } = await supabase
     .from('cooked_meals')
     .insert(meal)
