@@ -112,9 +112,31 @@ export default function PantryScreen() {
     }
     const normName = normaliseIngredientName(item.name);
     const existing = shoppingItems.find(
-      (s) => normaliseIngredientName(s.name) === normName && !s.checked
+      (s) => normaliseIngredientName(s.name) === normName
     );
     if (existing) {
+      if (existing.checked) {
+        // Already on the list and pre-checked (in pantry/fridge) — just confirm
+        Alert.alert(
+          `${item.name} is already on your list`,
+          `It's marked as already in stock. Add another anyway?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Add',
+              onPress: async () => {
+                try {
+                  const saved = await addAdHocShoppingItem(shoppingList!.id, item.name, item.category);
+                  addShoppingItem(saved);
+                } catch (e: any) {
+                  Alert.alert('Could Not Add', e.message ?? 'Please try again.');
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
       Alert.alert(
         `${item.name} is already on your list`,
         `Quantity: ${existing.quantity}. Increase to ${existing.quantity + 1}?`,
