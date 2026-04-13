@@ -40,6 +40,19 @@ const CATEGORY_LABELS: Record<IngredientCategory, string> = {
   household:          'Household',
 };
 
+// Correct category mistakes Claude makes on existing list items (applied at display
+// time so old lists benefit without needing a replan).
+const FORCE_MEAT_FISH_RE = /\b(fillet|steak|breast|thigh|mince|chicken|beef|lamb|pork|salmon|tuna|snapper|barramundi|cod|hake|prawn|shrimp|scallop|mussel|squid|octopus|anchov|sardine|mackerel|trout|bream|flathead|whiting)\b/i;
+const FORCE_HERBS_SPICES_RE = /^(ground|dried|smoked|fresh)\s|^(cumin|coriander|turmeric|cardamom|nutmeg|allspice|paprika|fenugreek|mace|chilli|chili|ginger|cinnamon|sumac|star anise|fennel seeds|mustard seeds|caraway seeds|ras el hanout|za'atar|harissa|cloves|bay leaves|bay leaf|mixed spice|five spice|curry powder|garam masala|cajun seasoning|chinese five spice)$/i;
+
+function correctedCategory(item: ShoppingListItem): IngredientCategory {
+  const cat = item.ingredient_category ?? 'produce';
+  const name = item.name.toLowerCase();
+  if (FORCE_MEAT_FISH_RE.test(name)) return 'meat_fish';
+  if (FORCE_HERBS_SPICES_RE.test(name)) return 'herbs_spices';
+  return cat;
+}
+
 // Units that carry meaningful information even at qty=1 (measurements).
 // Everything else at qty=1 (bottle, jar, bunch, pack, each, …) → just show name.
 const MEASURED_UNITS = new Set(['g', 'kg', 'ml', 'l', 'oz', 'lb', 'cup', 'tsp', 'tbsp']);
@@ -308,7 +321,7 @@ export default function ShoppingScreen() {
   }
 
   const itemsByCategory = CATEGORY_ORDER.reduce<Record<string, ShoppingListItem[]>>((acc, cat) => {
-    const group = shoppingItems.filter((i) => (i.ingredient_category ?? 'produce') === cat);
+    const group = shoppingItems.filter((i) => correctedCategory(i) === cat);
     if (group.length > 0) acc[cat] = group;
     return acc;
   }, {});
