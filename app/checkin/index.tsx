@@ -1,7 +1,7 @@
 // Morning check-in modal — daily debrief and tonight planning.
 // Saves to DB. Shows summary if already completed today.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
   KeyboardAvoidingView, Platform,
@@ -9,7 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { saveCheckin, logCookedMeal, localDateString, updateRecipe } from '../../lib/data';
+import { saveCheckin, logCookedMeal, localDateString, updateRecipe, loadMealPlanForWeek, getThisWeekMonday } from '../../lib/data';
 import { findStashMatch } from '../../lib/recipes';
 
 type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
@@ -24,9 +24,24 @@ export default function CheckinFlow() {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayIndex = (yesterday.getDay() + 6) % 7;
-  const lastNightsMeal = plannedMeals.find((m) => m.day_of_week === yesterdayIndex);
-
   const todayIndex = (new Date().getDay() + 6) % 7;
+
+  // If yesterday was in the previous week (e.g. today is Monday, yesterday was Sunday)
+  // we need last week's plan — the current store holds this week's meals only.
+  const crossedWeekBoundary = yesterdayIndex > todayIndex;
+  const [prevWeekMeals, setPrevWeekMeals] = useState<typeof plannedMeals>([]);
+  useEffect(() => {
+    if (!crossedWeekBoundary || !userId) return;
+    const thisMonday = new Date(getThisWeekMonday() + 'T12:00:00');
+    thisMonday.setDate(thisMonday.getDate() - 7);
+    const lastWeekStart = `${thisMonday.getFullYear()}-${String(thisMonday.getMonth() + 1).padStart(2, '0')}-${String(thisMonday.getDate()).padStart(2, '0')}`;
+    loadMealPlanForWeek(userId, lastWeekStart)
+      .then((data) => { if (data) setPrevWeekMeals(data.meals); })
+      .catch(() => {});
+  }, [crossedWeekBoundary, userId]);
+
+  const lastNightsMeal = (crossedWeekBoundary ? prevWeekMeals : plannedMeals)
+    .find((m) => m.day_of_week === yesterdayIndex);
   const tonightOptions = plannedMeals.filter((m) => m.day_of_week === todayIndex);
 
   const [editing, setEditing] = useState(false);
