@@ -555,6 +555,23 @@ export async function saveShoppingList(
   // Names that are clearly meat/fish regardless of what category Claude assigned
   const FORCE_MEAT_FISH = /\b(fillet|steak|breast|thigh|mince|chicken|beef|lamb|pork|salmon|tuna|snapper|barramundi|cod|hake|prawn|shrimp|scallop|mussel|squid|octopus|anchov|sardine|mackerel|trout|bream|flathead|whiting)\b/i;
 
+  // Ingredients Claude sometimes miscategorises as produce instead of herbs_spices:
+  // anything starting with ground/dried/smoked, or that is a bare spice/herb name
+  const FORCE_HERBS_SPICES = /^(ground|dried|smoked|fresh)\s|^(cumin|coriander|turmeric|cardamom|nutmeg|allspice|paprika|fenugreek|mace|chilli|chili|ginger|cinnamon|sumac|star anise|fennel seeds|mustard seeds|caraway seeds|ras el hanout|za'atar|harissa|cloves|bay leaves|bay leaf|mixed spice|five spice|curry powder|garam masala|cajun seasoning|chinese five spice)$/i;
+
+  // Singular forms for common produce plurals — prevents "Carrot" and "Carrots"
+  // from appearing as two separate line items
+  const SINGULAR: Record<string, string> = {
+    carrots: 'carrot', onions: 'onion', mushrooms: 'mushroom',
+    potatoes: 'potato', tomatoes: 'tomato', lemons: 'lemon',
+    limes: 'lime', oranges: 'orange', shallots: 'shallot',
+    courgettes: 'courgette', zucchinis: 'zucchini', capsicums: 'capsicum',
+    eggplants: 'eggplant', parsnips: 'parsnip', beetroots: 'beetroot',
+    leeks: 'leek', turnips: 'turnip', radishes: 'radish',
+    cloves: 'clove', sprigs: 'sprig', stalks: 'stalk', slices: 'slice',
+  };
+  const dedupeKey = (name: string): string => SINGULAR[name] ?? name;
+
   const itemMap = new Map<string, ShoppingListItem>();
 
   for (const meal of generated.meals) {
@@ -570,10 +587,10 @@ export async function saveShoppingList(
       // Override obviously wrong categories from Claude
       let cat = normalizeCategory(ing.ingredient_category ?? 'produce');
       if (FORCE_MEAT_FISH.test(normName)) cat = 'meat_fish';
+      else if (FORCE_HERBS_SPICES.test(normName)) cat = 'herbs_spices';
 
-      // Key by name only (not name+category) so the same ingredient isn't duplicated
-      // if Claude assigns it different categories across different meals
-      const key = normName;
+      // Key by singular form so "Carrot" and "Carrots" merge into one line item
+      const key = dedupeKey(normName);
 
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;
