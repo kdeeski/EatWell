@@ -19,6 +19,7 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   baking: 'Baking',
   marinades_rubs: 'Marinades & Rubs',
   glossary: 'Glossary',
+  cocktails: 'Cocktails',
 };
 
 const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
@@ -29,6 +30,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
   baking: '#EA580C',
   marinades_rubs: '#0369A1',
   glossary: '#374151',
+  cocktails: '#DB2777',
 };
 
 interface Props {

@@ -247,6 +247,9 @@ export default function PlanningFlow() {
               status: 'ready',
               quantity_planted: null,
               notes: 'Added during meal planning',
+              variety: null,
+              location_note: null,
+              is_cut_and_come_again: false,
             })
           )
       );
