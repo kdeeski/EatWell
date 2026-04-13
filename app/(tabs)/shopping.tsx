@@ -187,6 +187,13 @@ export default function ShoppingScreen() {
   const [gardenConfirmed, setGardenConfirmed] = useState<Set<string>>(() =>
     buildGardenConfirmed(shoppingItems, gardenPlants)
   );
+
+  // Rebuild confirmed sets whenever the shopping list or inventory changes
+  // (e.g. after a replan, the new item IDs won't match the old confirmed sets)
+  useEffect(() => {
+    setPantryConfirmed(buildConfirmed(shoppingItems, inventoryItems));
+    setGardenConfirmed(buildGardenConfirmed(shoppingItems, gardenPlants));
+  }, [shoppingItems, inventoryItems, gardenPlants]);
   const [refreshing, setRefreshing] = useState(false);
   const [bulkVisible, setBulkVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<ShoppingListItem | null>(null);
