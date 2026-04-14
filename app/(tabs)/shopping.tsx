@@ -143,15 +143,24 @@ export default function ShoppingScreen() {
 
   const buildConfirmed = (items: typeof shoppingItems, inv: typeof inventoryItems) => {
     const confirmed = new Set<string>();
+    // Pre-build normalised inventory names once for efficiency
+    const invNorms = inv
+      .filter((p) => !p.depleted)
+      .map((p) => normaliseIngredientName(p.name.toLowerCase().trim()));
+
     items.forEach((item) => {
-      // Don't auto-confirm pantry staples — they're on the list to be replenished
-      if (item.is_pantry_staple) return;
       // Don't auto-confirm ad-hoc items — they were explicitly added to buy
       if (item.is_adhoc) return;
       const normItem = normaliseIngredientName(item.name.toLowerCase().trim());
-      if (inv.some((p) => !p.depleted && normaliseIngredientName(p.name.toLowerCase().trim()) === normItem)) {
-        confirmed.add(item.id);
-      }
+      const match = invNorms.some((invName) => {
+        if (invName === normItem) return true;
+        // Substring match for compound names ("tinned chickpeas" vs "chickpeas"),
+        // but only when both sides are long enough to avoid false positives
+        // ("oil" matching "olive oil", "onion" matching "spring onion").
+        if (invName.length < 6 || normItem.length < 4) return false;
+        return invName.includes(normItem) || normItem.includes(invName);
+      });
+      if (match) confirmed.add(item.id);
     });
     return confirmed;
   };

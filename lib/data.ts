@@ -638,9 +638,11 @@ export async function saveShoppingList(
       if (fuzzyMatch(normFridge, item.name)) {
         item.from_fridge = true;
         item.checked     = true;
-      } else if (!item.is_pantry_staple && fuzzyMatch(normPantry, item.name)) {
-        item.is_pantry_staple = true;
-        item.checked          = true;
+      } else if (fuzzyMatch(normPantry, item.name)) {
+        // Promote to pantry staple if Claude missed it, and pre-check regardless —
+        // the user has this in inventory so "Have it" should already be ticked.
+        if (!item.is_pantry_staple) item.is_pantry_staple = true;
+        item.checked = true;
       }
     }
   }

@@ -31,7 +31,8 @@ const ALIASES: Record<string, string> = {
 };
 
 export function normaliseIngredientName(raw: string): string {
-  const name = raw.toLowerCase().trim();
+  const name = raw.toLowerCase().trim()
+    .replace(/\bcanned\b/g, 'tinned'); // normalise US "canned X" → NZ/UK "tinned X"
   if (ALIASES[name]) return ALIASES[name];
   if (QUALIFIERS.test(name)) return name; // already qualified — leave it
   if (FRESH_BY_DEFAULT.has(name)) return `fresh ${name}`;
