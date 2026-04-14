@@ -298,6 +298,39 @@ export default function ShoppingScreen() {
     updateShoppingItemInStore(id, { checked: false });
   };
 
+  // Handles checkbox tap for regular (non-pantry) items — produce, meat, dairy, etc.
+  // Persists to DB and adds to fridge inventory when checking off.
+  const handleBoughtItem = async (item: ShoppingListItem) => {
+    const nowChecked = !item.checked;
+    toggleShoppingItem(item.id); // immediate local feedback
+    toggleShoppingItemChecked(item.id, nowChecked).catch(console.error);
+    if (nowChecked && userId) {
+      const fridgeCats: ShoppingListItem['ingredient_category'][] = [
+        'produce', 'meat_fish', 'dairy_eggs', 'bread_bakery',
+      ];
+      const loc = fridgeCats.includes(item.ingredient_category) ||
+        item.name.toLowerCase().startsWith('fresh ')
+        ? 'fridge' : 'pantry';
+      try {
+        const saved = await upsertInventoryItem({
+          user_id: userId,
+          name: item.name.trim(),
+          category: item.ingredient_category,
+          location: loc,
+          quantity: item.quantity,
+          unit: item.unit,
+          min_quantity: 0,
+          notes: null,
+          added_date: new Date().toISOString().split('T')[0],
+          depleted: false,
+        });
+        upsertStore(saved);
+      } catch (e) {
+        console.error('Failed to save bought item to inventory', e);
+      }
+    }
+  };
+
   const handleExpandToRecipe = async (item: ShoppingListItem, recipe: typeof recipes[0]) => {
     if (!shoppingList || !recipe.ingredients) return;
     setExpandingId(item.id);
@@ -515,7 +548,7 @@ export default function ShoppingScreen() {
                 <View key={item.id}>
                   <TouchableOpacity
                     style={styles.itemRow}
-                    onPress={() => toggleShoppingItem(item.id)}
+                    onPress={() => handleBoughtItem(item)}
                     onLongPress={() => setEditTarget(item)}
                     delayLongPress={400}
                   >
