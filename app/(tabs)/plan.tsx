@@ -71,6 +71,7 @@ export default function PlanScreen() {
   const [weekLoading, setWeekLoading] = useState(false);
   const [weekError, setWeekError]     = useState<string | null>(null);
   const [pushing, setPushing]         = useState<string | null>(null); // meal id being pushed to next week
+  const [pinnedMealIds, setPinnedMealIds] = useState<Set<string>>(new Set());
   const weekOffsetRef = useRef(weekOffset);
   weekOffsetRef.current = weekOffset;
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -81,6 +82,11 @@ export default function PlanScreen() {
     const offset = parseInt(showWeek ?? '', 10);
     if (!isNaN(offset)) setWeekOffset(offset);
   }, [showWeek]);
+
+  // Clear pins when switching weeks — they're ephemeral helpers for the next replan
+  useEffect(() => {
+    setPinnedMealIds(new Set());
+  }, [weekOffset]);
 
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: 7 }, (_, i) => {
@@ -439,6 +445,7 @@ export default function PlanScreen() {
                                 : <>
                                     {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
                                     {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
+                                    {pinnedMealIds.has(meal.id) && <Text style={styles.pinnedBadge}>📌 Pinned</Text>}
                                   </>
                               }
                             </View>
@@ -537,6 +544,23 @@ export default function PlanScreen() {
                             )}
                             {isSelected && isCurrentWeek && !cooked && (
                               <TouchableOpacity
+                                style={styles.pinBtn}
+                                onPress={() => {
+                                  setPinnedMealIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(meal.id)) next.delete(meal.id);
+                                    else next.add(meal.id);
+                                    return next;
+                                  });
+                                }}
+                              >
+                                <Text style={[styles.pinBtnText, pinnedMealIds.has(meal.id) && styles.pinBtnTextActive]}>
+                                  {pinnedMealIds.has(meal.id) ? '📌 Keeping this on replan' : 'Keep this on replan'}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                            {isSelected && isCurrentWeek && !cooked && (
+                              <TouchableOpacity
                                 style={styles.pushNextWeekBtn}
                                 disabled={!!pushing}
                                 onPress={async () => {
@@ -581,19 +605,37 @@ export default function PlanScreen() {
             {isCurrentWeek && (
               <TouchableOpacity
                 style={styles.replanButton}
-                onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '0' } })}
+                onPress={() => router.push({
+                  pathname: '/planning',
+                  params: {
+                    weekOffset: '0',
+                    ...(pinnedMealIds.size > 0 && { pinnedIds: [...pinnedMealIds].join(',') }),
+                  },
+                })}
               >
-                <Text style={styles.replanButtonText}>Replan the Week</Text>
+                <Text style={styles.replanButtonText}>
+                  {pinnedMealIds.size > 0
+                    ? `Replan (${pinnedMealIds.size} pinned)`
+                    : 'Replan the Week'}
+                </Text>
               </TouchableOpacity>
             )}
 
             {weekOffset === 1 && (
               <TouchableOpacity
                 style={styles.replanButton}
-                onPress={() => router.push({ pathname: '/planning', params: { weekOffset: '1' } })}
+                onPress={() => router.push({
+                  pathname: '/planning',
+                  params: {
+                    weekOffset: '1',
+                    ...(pinnedMealIds.size > 0 && { pinnedIds: [...pinnedMealIds].join(',') }),
+                  },
+                })}
               >
                 <Text style={styles.replanButtonText}>
-                  {displayedMeals.length > 0 ? 'Replan the Week' : 'Plan the Week'}
+                  {displayedMeals.length > 0
+                    ? pinnedMealIds.size > 0 ? `Replan (${pinnedMealIds.size} pinned)` : 'Replan the Week'
+                    : 'Plan the Week'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -765,6 +807,14 @@ const styles = StyleSheet.create({
 
   pushNextWeekBtn:  { marginTop: 8 },
   pushNextWeekText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+
+  pinBtn: { marginTop: 8 },
+  pinBtnText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  pinBtnTextActive: { color: '#3B7A57', fontWeight: '600' },
+  pinnedBadge: {
+    fontSize: 11, fontWeight: '600', color: '#065F46', backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
+  },
 
   howToButton: { marginTop: 8 },
   howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },

@@ -81,6 +81,12 @@ Deno.serve(async (req) => {
       repeatMealsBlock = `\nREPEAT MEALS (you must include all of these, distributed through the week):\n${lines.join('\n')}\n`;
     }
 
+    const previousMeals: string[] = input.previousMeals ?? [];
+    let previousMealsBlock = '';
+    if (previousMeals.length > 0) {
+      previousMealsBlock = `\nLAST WEEK'S MEALS (do not repeat any of these — the user wants fresh variety):\n${previousMeals.map((n) => `- ${n}`).join('\n')}\n`;
+    }
+
     // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
 
     const structurePrompt = `
@@ -94,7 +100,7 @@ ${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
 
 SPONTANEOUS ADDITIONS:
 ${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
-${carryForwardBlock}${repeatMealsBlock}
+${previousMealsBlock}${carryForwardBlock}${repeatMealsBlock}
 NIGHTS AWAY (0=Monday, skip these days):
 ${(input.nightsAway ?? []).join(', ') || 'None'}
 
@@ -188,6 +194,8 @@ RULES:
 21. USER PREFERENCES — if USER PREFERENCES are provided in the prompt, treat them as personalisation constraints: lean toward cuisine_likes, avoid cuisine_dislikes, never use proteins_excluded, match spice_level (mild = subtle seasoning, medium = balanced, bold = heat welcome), respect weeknight_max_minutes for Mon–Thu prep times, apply weekend cooking style (project = longer/complex welcome on Sat–Sun, quick = keep it simple all week), and follow any personal cooking_notes. These preferences narrow and personalise choices — do not override safety rules above.
 
 22. CARRY FORWARD — if a "CARRY FORWARD" section appears in the prompt, you MUST include every meal listed in the final plan. Assign each carry-forward meal to any available day (not a night-away day). Use the exact meal name as given — do not rename or paraphrase. This is a hard rule that overrides variety/rotation preferences. If there are more carry-forward meals than available nights, include as many as will fit.
+
+23. VARIETY ACROSS WEEKS — if a "LAST WEEK'S MEALS" section appears in the prompt, do not repeat any of those meals in this week's plan. REPEAT MEALS and CARRY FORWARD entries override this rule (those are explicit user requests) — but for all other slots, choose something genuinely different. This is important: the user is asking for a fresh menu, not a reshuffled version of last week.
 
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],

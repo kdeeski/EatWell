@@ -18,7 +18,9 @@ type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' |
 export default function PlanningFlow() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { weekOffset: weekOffsetParam } = useLocalSearchParams<{ weekOffset?: string }>();
+  const { weekOffset: weekOffsetParam, pinnedIds: pinnedIdsParam } = useLocalSearchParams<{ weekOffset?: string; pinnedIds?: string }>();
+  // IDs of meals the user pinned on the plan tab — these days are locked from regeneration
+  const pinnedIds: string[] = pinnedIdsParam ? pinnedIdsParam.split(',').filter(Boolean) : [];
   const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
@@ -157,14 +159,23 @@ export default function PlanningFlow() {
       const todayStr = localDate(now);
 
       // Determine which days already have a cooked meal so they can be locked.
+      // Also lock any days the user explicitly pinned on the plan tab.
       // Claude skips these days (via nightsAway) and saveMealPlan preserves their
       // planned_meal rows, keeping cooked_meals.planned_meal_id FK links intact.
       let lockedDays: number[] = [];
+      let previousMealNames: string[] = [];
       if (userId) {
-        const [existingPlan, cookedList] = await Promise.all([
+        // Calculate previous week's start date (one week before target week)
+        const prevMonday = new Date(monday);
+        prevMonday.setDate(prevMonday.getDate() - 7);
+        const prevWeekStartDate = localDate(prevMonday);
+
+        const [existingPlan, cookedList, prevPlan] = await Promise.all([
           loadMealPlanForWeek(userId, weekStartDate),
           fetchWeekCookedMeals(userId, weekStartDate),
+          loadMealPlanForWeek(userId, prevWeekStartDate),
         ]);
+        // Cooked-day locks
         if (existingPlan && cookedList.length > 0) {
           lockedDays = existingPlan.meals
             .filter((m) =>
@@ -175,6 +186,17 @@ export default function PlanningFlow() {
               )
             )
             .map((m) => m.day_of_week);
+        }
+        // Pinned-meal locks — days the user explicitly wants to keep
+        if (pinnedIds.length > 0 && existingPlan) {
+          const pinnedDays = existingPlan.meals
+            .filter((m) => pinnedIds.includes(m.id))
+            .map((m) => m.day_of_week);
+          lockedDays = [...new Set([...lockedDays, ...pinnedDays])];
+        }
+        // Previous week's meals — pass to Claude to avoid repetition
+        if (prevPlan) {
+          previousMealNames = prevPlan.meals.map((m) => m.meal_name);
         }
       }
       const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
@@ -193,6 +215,7 @@ export default function PlanningFlow() {
         hollyHomeNights,
         carryForwardMeals,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
+        previousMeals: previousMealNames.length > 0 ? previousMealNames : undefined,
         preferences: userPreferences ? {
           cuisine_likes: userPreferences.cuisine_likes,
           cuisine_dislikes: userPreferences.cuisine_dislikes,

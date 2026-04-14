@@ -34,6 +34,7 @@ export interface MealPlanInput {
   hollyHomeNights: number[];       // day_of_week values Holly is home (Phase 2)
   repeatMeals?: RepeatMeal[];      // high-rated stash meals to rotate in
   carryForwardMeals?: CarryForwardMeal[]; // uncompleted meals from current week
+  previousMeals?: string[];        // meal names from last week — Claude avoids repeating them
   preferences?: Pick<UserPreferences,
     | 'cuisine_likes'
     | 'cuisine_dislikes'
