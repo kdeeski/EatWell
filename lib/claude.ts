@@ -26,6 +26,11 @@ export interface CarryForwardMeal {
   description: string | null;
 }
 
+export interface PinnedMeal {
+  name: string;
+  day_of_week: number;
+}
+
 export interface MealPlanInput {
   fridgeItems: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[];
   gardenAvailable: string[];       // plant names available to harvest this week
@@ -35,6 +40,7 @@ export interface MealPlanInput {
   repeatMeals?: RepeatMeal[];      // high-rated stash meals to rotate in
   carryForwardMeals?: CarryForwardMeal[]; // uncompleted meals from current week
   previousMeals?: string[];        // meal names from last week — Claude avoids repeating them
+  pinnedMeals?: PinnedMeal[];      // meals already locked in — Claude must respect their pasta/protein for variety rules
   preferences?: Pick<UserPreferences,
     | 'cuisine_likes'
     | 'cuisine_dislikes'

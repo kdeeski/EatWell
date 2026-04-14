@@ -87,6 +87,14 @@ Deno.serve(async (req) => {
       previousMealsBlock = `\nLAST WEEK'S MEALS (do not repeat any of these — the user wants fresh variety):\n${previousMeals.map((n) => `- ${n}`).join('\n')}\n`;
     }
 
+    const pinnedMeals: Array<{ name: string; day_of_week: number }> = input.pinnedMeals ?? [];
+    let pinnedMealsBlock = '';
+    if (pinnedMeals.length > 0) {
+      const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const lines = pinnedMeals.map((m) => `- ${DAY_NAMES[m.day_of_week]}: ${m.name}`);
+      pinnedMealsBlock = `\nPINNED MEALS (already set — do NOT generate a meal for these days, but you MUST factor them into pasta uniqueness, protein rotation, and variety rules when planning the remaining days):\n${lines.join('\n')}\n`;
+    }
+
     // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
 
     const structurePrompt = `
@@ -100,7 +108,7 @@ ${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
 
 SPONTANEOUS ADDITIONS:
 ${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
-${previousMealsBlock}${carryForwardBlock}${repeatMealsBlock}
+${previousMealsBlock}${pinnedMealsBlock}${carryForwardBlock}${repeatMealsBlock}
 NIGHTS AWAY (0=Monday, skip these days):
 ${(input.nightsAway ?? []).join(', ') || 'None'}
 
@@ -159,7 +167,7 @@ RULES:
 
 6a. WEEKLY BALANCE — every week must include: exactly 1 fish/seafood meal, at least 1 fully vegetarian meal (no meat, no fish — eggs/dairy fine). The remaining nights are meat-based. This is a hard rule, not a guideline.
 
-7. Never use the same pasta shape twice in the same week (hard rule). Pasta itself can appear more than once — just use different shapes (e.g. pappardelle one night, rigatoni another is fine; pappardelle twice is not).
+7. Never use the same pasta shape twice in the same week (hard rule). Pasta itself can appear more than once — just use different shapes. This rule applies across ALL meals in the week, including any PINNED MEALS listed above. Before choosing a pasta dish, check whether any pinned meal already uses that shape and pick a different one if so.
 
 7a. FRESH PASTA — if a meal uses fresh pasta (pappardelle, tagliatelle, fettuccine, etc.), mark it as is_pantry_staple: true and from_fridge: false — the user makes their own fresh pasta and does not buy it. Do not add fresh pasta to the shopping list.
 

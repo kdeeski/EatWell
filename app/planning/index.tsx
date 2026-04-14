@@ -164,6 +164,7 @@ export default function PlanningFlow() {
       // planned_meal rows, keeping cooked_meals.planned_meal_id FK links intact.
       let lockedDays: number[] = [];
       let previousMealNames: string[] = [];
+      let pinnedMealsList: Array<{ name: string; day_of_week: number }> = [];
       if (userId) {
         // Calculate previous week's start date (one week before target week)
         const prevMonday = new Date(monday);
@@ -189,10 +190,13 @@ export default function PlanningFlow() {
         }
         // Pinned-meal locks — days the user explicitly wants to keep
         if (pinnedIds.length > 0 && existingPlan) {
-          const pinnedDays = existingPlan.meals
-            .filter((m) => pinnedIds.includes(m.id))
-            .map((m) => m.day_of_week);
+          const pinnedMealsInPlan = existingPlan.meals.filter((m) => pinnedIds.includes(m.id));
+          const pinnedDays = pinnedMealsInPlan.map((m) => m.day_of_week);
           lockedDays = [...new Set([...lockedDays, ...pinnedDays])];
+          pinnedMealsList = pinnedMealsInPlan.map((m) => ({
+            name: m.meal_name,
+            day_of_week: m.day_of_week,
+          }));
         }
         // Previous week's meals — pass to Claude to avoid repetition
         if (prevPlan) {
@@ -216,6 +220,7 @@ export default function PlanningFlow() {
         carryForwardMeals,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
         previousMeals: previousMealNames.length > 0 ? previousMealNames : undefined,
+        pinnedMeals: pinnedMealsList.length > 0 ? pinnedMealsList : undefined,
         preferences: userPreferences ? {
           cuisine_likes: userPreferences.cuisine_likes,
           cuisine_dislikes: userPreferences.cuisine_dislikes,

@@ -340,15 +340,18 @@ export async function saveMealPlan(
     // Full replan — wipe all planned_meals
     await supabase.from('planned_meals').delete().eq('meal_plan_id', plan.id);
   } else {
-    // Partial replan — only delete the days Claude generated; cooked days are untouched,
-    // preserving their planned_meal rows and cooked_meals.planned_meal_id FK links.
-    const daysToReplace = [...new Set(generated.meals.map((m) => m.day_of_week))];
-    for (const day of daysToReplace) {
-      await supabase
-        .from('planned_meals')
-        .delete()
-        .eq('meal_plan_id', plan.id)
-        .eq('day_of_week', day);
+    // Partial replan — clear every non-locked day so old meals can't survive
+    // even if Claude skipped a slot. Locked days (cooked or pinned) are preserved,
+    // keeping their planned_meal rows and cooked_meals.planned_meal_id FK links.
+    const { data: existingMeals } = await supabase
+      .from('planned_meals')
+      .select('id, day_of_week')
+      .eq('meal_plan_id', plan.id);
+    const idsToDelete = ((existingMeals ?? []) as { id: string; day_of_week: number }[])
+      .filter((m) => !lockedDays.includes(m.day_of_week))
+      .map((m) => m.id);
+    if (idsToDelete.length > 0) {
+      await supabase.from('planned_meals').delete().in('id', idsToDelete);
     }
   }
 
