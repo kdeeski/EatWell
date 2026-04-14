@@ -267,10 +267,9 @@ export default function PlanningFlow() {
 
       // Build known-items lists so saveShoppingList can fix any missed from_fridge /
       // is_pantry_staple flags from Claude.
-      // Split a free-text list on commas, "&", or "and" — handles inputs like
-      // "creme fraiche, bacon, baby carrots and parmesan" → 4 separate items.
+      // Split on commas only — user enters as a comma-separated list
       const parseList = (text: string) =>
-        text.split(/,|&|\band\b/i).map((s) => s.trim()).filter((s) => s.length > 1);
+        text.split(',').map((s) => s.trim()).filter((s) => s.length > 1);
 
       const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
       const knownItems = {
@@ -388,7 +387,7 @@ export default function PlanningFlow() {
             <Text style={styles.question}>Does that sound right? Anything extra I don't know about?</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. a beautiful piece of fish from the market, bag of feijoas..."
+              placeholder="e.g. crème fraîche, bacon, parmesan (comma separated)"
               value={fridgeExtras}
               onChangeText={setFridgeExtras}
               multiline
@@ -444,7 +443,7 @@ export default function PlanningFlow() {
             </Text>
             <TextInput
               style={styles.input}
-              placeholder="Type or leave blank..."
+              placeholder="e.g. salmon fillet, feijoas (comma separated)"
               value={spontaneous}
               onChangeText={setSpontaneous}
               multiline
