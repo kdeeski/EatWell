@@ -266,6 +266,7 @@ export default function ShoppingScreen() {
     if (pantryInFlight.current.has(item.id)) return;
     pantryInFlight.current.add(item.id);
     setPantryConfirmed((prev) => new Set([...prev, item.id]));
+    updateShoppingItemInStore(item.id, { checked: true }); // keeps item confirmed if useEffect rebuilds pantryConfirmed
     toggleShoppingItemChecked(item.id, true).catch(console.error);
     if (userId) {
       try {
