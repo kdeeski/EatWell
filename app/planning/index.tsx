@@ -267,12 +267,17 @@ export default function PlanningFlow() {
 
       // Build known-items lists so saveShoppingList can fix any missed from_fridge /
       // is_pantry_staple flags from Claude.
+      // Split a free-text list on commas, "&", or "and" — handles inputs like
+      // "creme fraiche, bacon, baby carrots and parmesan" → 4 separate items.
+      const parseList = (text: string) =>
+        text.split(/,|&|\band\b/i).map((s) => s.trim()).filter((s) => s.length > 1);
+
       const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
       const knownItems = {
         fridge: [
           ...fridgeItems.map((i) => i.name),
-          ...fridgeExtras.split(',').map((s) => s.trim()).filter(Boolean),
-          ...spontaneous.split(',').map((s) => s.trim()).filter(Boolean),
+          ...parseList(fridgeExtras),
+          ...parseList(spontaneous),
         ],
         pantry: pantryItems.map((i) => i.name),
       };
@@ -282,8 +287,8 @@ export default function PlanningFlow() {
       // Save fridge extras and spontaneous additions to inventory so they
       // appear in future planning sessions and pantry views.
       const extraFridgeNames = [
-        ...fridgeExtras.split(',').map((s) => s.trim()).filter(Boolean),
-        ...spontaneous.split(',').map((s) => s.trim()).filter(Boolean),
+        ...parseList(fridgeExtras),
+        ...parseList(spontaneous),
       ];
       const existingFridgeNames = new Set(
         inventoryItems
