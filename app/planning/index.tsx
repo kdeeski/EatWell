@@ -10,7 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
-import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals } from '../../lib/data';
+import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
 type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
@@ -19,7 +19,7 @@ export default function PlanningFlow() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { weekOffset: weekOffsetParam } = useLocalSearchParams<{ weekOffset?: string }>();
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore } = useAppStore();
   const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
 
   // If opened from the plan tab with an explicit weekOffset param, use it directly and skip
@@ -278,6 +278,37 @@ export default function PlanningFlow() {
       };
       const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result, knownItems);
       setShoppingList(shoppingData.list, shoppingData.items);
+
+      // Save fridge extras and spontaneous additions to inventory so they
+      // appear in future planning sessions and pantry views.
+      const extraFridgeNames = [
+        ...fridgeExtras.split(',').map((s) => s.trim()).filter(Boolean),
+        ...spontaneous.split(',').map((s) => s.trim()).filter(Boolean),
+      ];
+      const existingFridgeNames = new Set(
+        inventoryItems
+          .filter((i) => i.location === 'fridge' && !i.depleted)
+          .map((i) => i.name.toLowerCase())
+      );
+      await Promise.all(
+        extraFridgeNames
+          .filter((name) => !existingFridgeNames.has(name.toLowerCase()))
+          .map(async (name) => {
+            const saved = await upsertInventoryItem({
+              user_id: userId!,
+              name,
+              category: 'produce',
+              location: 'fridge',
+              quantity: 1,
+              unit: 'item',
+              min_quantity: 0,
+              notes: 'Added during meal planning',
+              added_date: todayStr,
+              depleted: false,
+            });
+            upsertInventoryInStore(saved);
+          })
+      );
 
       setStep('done');
     } catch (e: any) {
