@@ -22,7 +22,9 @@ export default function PlanningFlow() {
   // IDs of meals the user pinned on the plan tab — these days are locked from regeneration
   const pinnedIds: string[] = pinnedIdsParam ? pinnedIdsParam.split(',').filter(Boolean) : [];
   const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore } = useAppStore();
-  const fridgeItems = inventoryItems.filter((i) => i.location === 'fridge' && !i.depleted);
+  const fridgeItems = inventoryItems.filter(
+    (i) => i.location === 'fridge' && !i.depleted && (i.quantity == null || i.quantity > 0)
+  );
 
   // If opened from the plan tab with an explicit weekOffset param, use it directly and skip
   // the week_picker step. Without a param, show the picker on Fri/Sat/Sun as before.
@@ -86,6 +88,14 @@ export default function PlanningFlow() {
   }, [step]);
   const [fridgeConfirmed, setFridgeConfirmed] = useState(false);
   const [fridgeExtras, setFridgeExtras] = useState('');
+  // IDs of fridge items the user taps to mark as already used up
+  const [goneFridgeIds, setGoneFridgeIds] = useState<Set<string>>(new Set());
+  const toggleGoneFridge = (id: string) =>
+    setGoneFridgeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
 
   const [gardenHarvesting, setGardenHarvesting] = useState<string[]>([]);
   const plantsDue = getPlantsDueForHarvest(gardenPlants);
@@ -121,6 +131,8 @@ export default function PlanningFlow() {
 
   const handleGenerate = async () => {
     setStep('generating');
+    // Items the user hasn't crossed off on the fridge step
+    const activeFridgeItems = fridgeItems.filter((i) => !goneFridgeIds.has(i.id));
     try {
       // ── Carry forward: meals selected from previous week ──────────────────
       const carryForwardMeals = carryForwardIds.length > 0
@@ -206,7 +218,7 @@ export default function PlanningFlow() {
       const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
 
       const rawResult = await generateMealPlan({
-        fridgeItems,
+        fridgeItems: activeFridgeItems,
         gardenAvailable: [
           ...gardenHarvesting,
           ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
@@ -302,7 +314,7 @@ export default function PlanningFlow() {
       const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
       const knownItems = {
         fridge: [
-          ...fridgeItems.map((i) => i.name),
+          ...activeFridgeItems.map((i) => i.name),
           ...parseList(fridgeExtras),
           ...parseList(spontaneous),
         ],
@@ -405,20 +417,34 @@ export default function PlanningFlow() {
           <View>
             <Text style={styles.stepTitle}>What's in the fridge?</Text>
             <Text style={styles.stepBody}>
-              Based on last week's shop and what you cooked, here's what I think you've still got:
+              Based on last week's shop and what you cooked, here's what I think you've still got.
+              Tap anything you've already used up:
             </Text>
             <View style={styles.fridgeSummary}>
               {fridgeItems.length === 0 ? (
                 <Text style={styles.mutedText}>Nothing on record yet.</Text>
               ) : (
-                fridgeItems.map((item) => (
-                  <Text key={item.id} style={styles.fridgeItem}>
-                    · {item.quantity} {item.unit} {item.name}
-                  </Text>
-                ))
+                fridgeItems.map((item) => {
+                  const gone = goneFridgeIds.has(item.id);
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.fridgeItemRow}
+                      onPress={() => toggleGoneFridge(item.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.fridgeItemTick, gone && styles.fridgeItemTickGone]}>
+                        {gone ? '✗' : '✓'}
+                      </Text>
+                      <Text style={[styles.fridgeItem, gone && styles.fridgeItemGone]}>
+                        {item.quantity} {item.unit} {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })
               )}
             </View>
-            <Text style={styles.question}>Does that sound right? Anything extra I don't know about?</Text>
+            <Text style={styles.question}>Anything extra I don't know about?</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. crème fraîche, bacon, parmesan (comma separated)"
@@ -427,7 +453,9 @@ export default function PlanningFlow() {
               multiline
             />
             <TouchableOpacity style={styles.primaryButton} onPress={() => { setFridgeConfirmed(true); setStep('garden'); }}>
-              <Text style={styles.primaryButtonText}>Looks right →</Text>
+              <Text style={styles.primaryButtonText}>
+                {goneFridgeIds.size > 0 ? `Done (${goneFridgeIds.size} removed) →` : 'Looks right →'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -654,8 +682,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 20,
+    gap: 2,
   },
-  fridgeItem: { fontSize: 15, color: '#374151', lineHeight: 26 },
+  fridgeItemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 10 },
+  fridgeItemTick: { fontSize: 14, color: '#3B7A57', fontWeight: '700', width: 16 },
+  fridgeItemTickGone: { color: '#EF4444' },
+  fridgeItem: { fontSize: 15, color: '#374151', lineHeight: 22, flex: 1 },
+  fridgeItemGone: { color: '#D1D5DB', textDecorationLine: 'line-through' },
 
   input: {
     backgroundColor: '#FFFFFF',
