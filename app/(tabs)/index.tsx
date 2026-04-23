@@ -3,12 +3,13 @@
 // any morning check-in that needs completing, and quick fridge notes.
 
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
+import { logCookedMeal, localDateString, updateRecipe } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -27,10 +28,50 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
+
+  // Inline "log as cooked" panel state
+  const [logOpen, setLogOpen]               = useState(false);
+  const [logRating, setLogRating]           = useState<number | null>(null);
+  const [logAgain, setLogAgain]             = useState<boolean | null>(null);
+  const [logNotes, setLogNotes]             = useState('');
+  const [logSaving, setLogSaving]           = useState(false);
+  const [logDone, setLogDone]               = useState(false);
+
+  const handleLogCooked = async () => {
+    if (!tonightsMeal || !userId) return;
+    setLogSaving(true);
+    try {
+      await logCookedMeal({
+        user_id: userId,
+        cooked_date: localDateString(),
+        planned_meal_id: tonightsMeal.id,
+        actual_meal_name: tonightsMeal.meal_name,
+        rating: logRating as 1 | 2 | 3 | 4 | 5 | null,
+        would_cook_again: logAgain,
+        notes: logNotes.trim() || null,
+        voice_note_url: null,
+        ate_out: false,
+      });
+      if (logRating != null) {
+        const match = findStashMatch(tonightsMeal.meal_name, recipes);
+        if (match) {
+          try {
+            const updated = await updateRecipe(match.id, { ...match, rating: logRating as 1|2|3|4|5 });
+            updateRecipeInStore(match.id, updated);
+          } catch { /* non-critical */ }
+        }
+      }
+      setLogDone(true);
+      setLogOpen(false);
+    } catch (e) {
+      console.error('Failed to log cooked meal', e);
+    }
+    setLogSaving(false);
+  };
 
   const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
@@ -153,6 +194,73 @@ export default function TodayScreen() {
                 {tonightsMeal.is_fish ? '  ·  Buy fresh today' : ''}
               </Text>
             ) : null}
+
+            {/* Inline "log as cooked" */}
+            {logDone ? (
+              <View style={styles.logDoneRow}>
+                <Text style={styles.logDoneText}>
+                  Cooked ✓{logRating != null ? `  ·  ${logRating}/5 ${RATING_EMOJI[logRating]}` : ''}
+                </Text>
+              </View>
+            ) : logOpen ? (
+              <View style={styles.logPanel}>
+                <Text style={styles.logPanelLabel}>How was it?</Text>
+                <View style={styles.ratingRow}>
+                  {[1, 2, 3, 4, 5].map((r) => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[styles.ratingChip, logRating === r && styles.ratingChipSelected]}
+                      onPress={() => setLogRating(r)}
+                    >
+                      <Text style={[styles.ratingNum, logRating === r && styles.ratingNumSelected]}>{r}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {logRating != null && (
+                  <Text style={styles.ratingLabel}>{RATING_LABELS[logRating]} {RATING_EMOJI[logRating]}</Text>
+                )}
+                <View style={styles.yesNoRow}>
+                  <TouchableOpacity
+                    style={[styles.yesNoChip, logAgain === true && styles.yesChipSelected]}
+                    onPress={() => setLogAgain(true)}
+                  >
+                    <Text style={styles.yesNoText}>Cook again</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.yesNoChip, logAgain === false && styles.noChipSelected]}
+                    onPress={() => setLogAgain(false)}
+                  >
+                    <Text style={styles.yesNoText}>One-off</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder="Any notes? (optional)"
+                  value={logNotes}
+                  onChangeText={setLogNotes}
+                  multiline
+                />
+                <View style={styles.logBtnRow}>
+                  <TouchableOpacity style={styles.logCancelBtn} onPress={() => setLogOpen(false)}>
+                    <Text style={styles.logCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.logSaveBtn, logSaving && styles.logSaveBtnDisabled]}
+                    onPress={handleLogCooked}
+                    disabled={logSaving}
+                  >
+                    {logSaving
+                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      : <Text style={styles.logSaveText}>Save</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.logButton} onPress={() => setLogOpen(true)}>
+                <Text style={styles.logButtonText}>Cooked it? Log a review →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <TouchableOpacity
@@ -266,4 +374,52 @@ const styles = StyleSheet.create({
   stashNudge: { marginTop: 4 },
   stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+
+  logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  logButtonText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  logDoneRow: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  logDoneText: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
+
+  logPanel: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6', gap: 10 },
+  logPanelLabel: { fontSize: 15, fontWeight: '600', color: '#374151' },
+
+  ratingRow: { flexDirection: 'row', gap: 8 },
+  ratingChip: {
+    width: 44, height: 44, borderRadius: 10,
+    borderWidth: 1, borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+  },
+  ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
+  ratingNum: { fontSize: 16, fontWeight: '700', color: '#374151' },
+  ratingNumSelected: { color: '#FFFFFF' },
+  ratingLabel: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+
+  yesNoRow: { flexDirection: 'row', gap: 10 },
+  yesNoChip: {
+    flex: 1, paddingVertical: 10, borderRadius: 12,
+    borderWidth: 1, borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF', alignItems: 'center',
+  },
+  yesChipSelected: { backgroundColor: '#D1FAE5', borderColor: '#3B7A57' },
+  noChipSelected:  { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
+  yesNoText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+
+  notesInput: {
+    backgroundColor: '#F9FAFB', borderRadius: 12,
+    borderWidth: 1, borderColor: '#E5E7EB',
+    padding: 12, fontSize: 14, color: '#1C1C1E',
+    minHeight: 60, textAlignVertical: 'top',
+  },
+  logBtnRow: { flexDirection: 'row', gap: 10 },
+  logCancelBtn: {
+    paddingVertical: 12, paddingHorizontal: 20,
+    borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+  },
+  logCancelText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  logSaveBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 12,
+    backgroundColor: '#3B7A57', alignItems: 'center', justifyContent: 'center',
+  },
+  logSaveBtnDisabled: { opacity: 0.5 },
+  logSaveText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
