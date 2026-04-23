@@ -3,7 +3,7 @@
 // any morning check-in that needs completing, and quick fridge notes.
 
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
@@ -83,7 +83,11 @@ export default function TodayScreen() {
     : null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]} keyboardShouldPersistTaps="handled">
       <View style={styles.topRow}>
         <Text style={styles.greeting}>Good morning.</Text>
         <TouchableOpacity
@@ -309,6 +313,7 @@ export default function TodayScreen() {
         />
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

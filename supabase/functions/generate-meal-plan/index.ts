@@ -169,6 +169,8 @@ RULES:
 
 7. Never use the same pasta shape twice in the same week (hard rule). Pasta itself can appear more than once — just use different shapes. This rule applies across ALL meals in the week, including any PINNED MEALS listed above. Before choosing a pasta dish, check whether any pinned meal already uses that shape and pick a different one if so.
 
+7b. PASTA SPECIFICITY — When adding pasta as a shopping ingredient, always name the exact shape (e.g. "Rigatoni", "Spaghetti", "Linguine", "Orecchiette", "Penne", "Fusilli", "Tagliatelle"). NEVER use generic names like "Pasta", "Dry Pasta", "Dried Pasta", or "Pasta Shapes". The ingredient name must be the actual shape the recipe uses. This rule applies to both dry pasta and fresh pasta. If a dish uses a specific pasta shape in its meal name (e.g. "Rigatoni with Sausage Ragù"), the ingredient must be that exact shape ("Rigatoni"), not a generic term.
+
 7a. FRESH PASTA — if a meal uses fresh pasta (pappardelle, tagliatelle, fettuccine, etc.), mark it as is_pantry_staple: true and from_fridge: false — the user makes their own fresh pasta and does not buy it. Do not add fresh pasta to the shopping list.
 
 8. Omit days the user is away entirely — do not generate a meal for those day_of_week values.
