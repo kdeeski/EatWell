@@ -688,6 +688,15 @@ export async function deleteShoppingItems(ids: string[]): Promise<void> {
   if (error) throw error;
 }
 
+export async function depleteInventoryItems(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from('inventory_items')
+    .update({ depleted: true })
+    .in('id', ids);
+  if (error) throw error;
+}
+
 export async function toggleShoppingItemChecked(
   id: string,
   checked: boolean

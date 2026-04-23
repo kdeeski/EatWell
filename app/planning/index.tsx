@@ -10,7 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
-import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem } from '../../lib/data';
+import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem, depleteInventoryItems } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
 type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
@@ -353,6 +353,15 @@ export default function PlanningFlow() {
             upsertInventoryInStore(saved);
           })
       );
+
+      // Mark crossed-off fridge items as depleted in inventory so they
+      // don't reappear in the next planning session's fridge list.
+      if (goneFridgeIds.size > 0) {
+        await depleteInventoryItems([...goneFridgeIds]);
+        fridgeItems
+          .filter((i) => goneFridgeIds.has(i.id))
+          .forEach((i) => upsertInventoryInStore({ ...i, depleted: true }));
+      }
 
       setStep('done');
     } catch (e: any) {
