@@ -2,14 +2,14 @@
 // Shows tonight's chosen meal (or the pick-your-meal prompt),
 // any morning check-in that needs completing, and quick fridge notes.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
-import { logCookedMeal, localDateString, updateRecipe } from '../../lib/data';
+import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -40,6 +40,21 @@ export default function TodayScreen() {
   const [logNotes, setLogNotes]             = useState('');
   const [logSaving, setLogSaving]           = useState(false);
   const [logDone, setLogDone]               = useState(false);
+
+  const todayIndex = (new Date().getDay() + 6) % 7;
+  const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
+
+  // Load any review already logged for tonight's meal (e.g. via Tonight card yesterday)
+  useEffect(() => {
+    if (!userId || !tonightsMeal) return;
+    fetchCookedMealForPlannedMeal(userId, tonightsMeal.id)
+      .then((cooked) => {
+        if (!cooked) return;
+        setLogDone(true);
+        if (cooked.rating != null) setLogRating(cooked.rating);
+      })
+      .catch(() => {});
+  }, [userId, tonightsMeal?.id]);
 
   const handleLogCooked = async () => {
     if (!tonightsMeal || !userId) return;
@@ -72,9 +87,6 @@ export default function TodayScreen() {
     }
     setLogSaving(false);
   };
-
-  const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
-  const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
 
   const checkinDone = !!todayCheckin?.completed_at;
   const lastNight   = todayCheckin?.last_night_response ?? null;

@@ -208,6 +208,28 @@ export default function CheckinFlow() {
             } catch { /* non-critical */ }
           }
         }
+      } else if (lastNightChoice === 'something_else' && somethingElseName.trim() && userId) {
+        await logCookedMeal({
+          user_id: userId,
+          cooked_date: localDateString(yesterday),
+          planned_meal_id: null,
+          actual_meal_name: somethingElseName.trim(),
+          rating: rating as 1 | 2 | 3 | 4 | 5 | null,
+          would_cook_again: wouldCookAgain,
+          notes: notes.trim() || null,
+          voice_note_url: null,
+          ate_out: false,
+        });
+
+        if (rating != null) {
+          const match = findStashMatch(somethingElseName.trim(), recipes);
+          if (match) {
+            try {
+              const updated = await updateRecipe(match.id, { ...match, rating: rating as 1|2|3|4|5 });
+              updateRecipeInStore(match.id, updated);
+            } catch { /* non-critical */ }
+          }
+        }
       } else if ((lastNightChoice === 'ate_out') && userId) {
         await logCookedMeal({
           user_id: userId,
@@ -235,9 +257,9 @@ export default function CheckinFlow() {
             meal_name: lastNightChoice === lastNightsMeal?.id ? lastNightsMeal?.meal_name
               : lastNightChoice === 'something_else' ? (somethingElseName.trim() || undefined)
               : undefined,
-            rating: lastNightChoice === lastNightsMeal?.id ? rating : null,
-            would_cook_again: lastNightChoice === lastNightsMeal?.id ? wouldCookAgain : null,
-            notes: lastNightChoice === lastNightsMeal?.id ? (notes.trim() || null) : null,
+            rating: (lastNightChoice === lastNightsMeal?.id || lastNightChoice === 'something_else') ? rating : null,
+            would_cook_again: (lastNightChoice === lastNightsMeal?.id || lastNightChoice === 'something_else') ? wouldCookAgain : null,
+            notes: (lastNightChoice === lastNightsMeal?.id || lastNightChoice === 'something_else') ? (notes.trim() || null) : null,
           } : null,
           tonight_planned_meal_id: mealId !== 'not_sure' ? mealId : null,
           holly_joining: false,
@@ -305,7 +327,7 @@ export default function CheckinFlow() {
               autoFocus
               autoCapitalize="sentences"
             />
-            <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('tonight')}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('rating')}>
               <Text style={styles.primaryButtonText}>Next →</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.skipLink} onPress={() => { setSomethingElseName(''); setStep('tonight'); }}>
@@ -317,7 +339,9 @@ export default function CheckinFlow() {
         {/* Rating */}
         {step === 'rating' && (
           <View>
-            <Text style={styles.stepTitle}>How was {lastNightsMeal?.meal_name}?</Text>
+            <Text style={styles.stepTitle}>
+              How was {lastNightChoice === 'something_else' ? (somethingElseName || 'it') : lastNightsMeal?.meal_name}?
+            </Text>
 
             <View style={styles.ratingRow}>
               {[1, 2, 3, 4, 5].map((r) => (
