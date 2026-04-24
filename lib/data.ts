@@ -814,6 +814,22 @@ export async function logCookedMeal(
   return data as CookedMeal;
 }
 
+export async function fetchCookedMealForPlannedMeal(
+  userId: string,
+  plannedMealId: string
+): Promise<CookedMeal | null> {
+  const { data, error } = await supabase
+    .from('cooked_meals')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('planned_meal_id', plannedMealId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as CookedMeal | null;
+}
+
 export async function fetchWeekCookedMeals(userId: string, weekStartDate: string): Promise<CookedMeal[]> {
   // Query by date range so results survive reorders (which used to null planned_meal_id FKs).
   const start = new Date(weekStartDate + 'T12:00:00');

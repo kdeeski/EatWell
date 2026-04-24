@@ -9,7 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { saveCheckin, logCookedMeal, localDateString, updateRecipe, loadMealPlanForWeek, getThisWeekMonday } from '../../lib/data';
+import { saveCheckin, logCookedMeal, localDateString, updateRecipe, loadMealPlanForWeek, getThisWeekMonday, fetchCookedMealForPlannedMeal } from '../../lib/data';
 import { findStashMatch } from '../../lib/recipes';
 
 type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
@@ -62,6 +62,20 @@ export default function CheckinFlow() {
   const [notes, setNotes] = useState('');
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Pre-populate rating/notes from a review already logged via Tonight card
+  useEffect(() => {
+    if (!userId || !lastNightsMeal) return;
+    fetchCookedMealForPlannedMeal(userId, lastNightsMeal.id)
+      .then((cooked) => {
+        if (!cooked) return;
+        if (cooked.rating != null) setRating(cooked.rating);
+        if (cooked.would_cook_again != null) setWouldCookAgain(cooked.would_cook_again);
+        if (cooked.notes) setNotes(cooked.notes);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, lastNightsMeal?.id]);
 
   const startEditing = () => {
     setLastNightChoice(initialChoice);
