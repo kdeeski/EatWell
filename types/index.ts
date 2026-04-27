@@ -41,6 +41,7 @@ export interface InventoryItem {
   notes: string | null;
   added_date: string; // ISO date
   depleted: boolean;
+  is_staple: boolean;
   created_at: string;
 }
 

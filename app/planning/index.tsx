@@ -27,9 +27,11 @@ export default function PlanningFlow() {
   );
 
   // Items that are always assumed on hand — don't send to Claude as "plan around" items.
-  // They still feed the shopping-list cross-reference so they don't appear as things to buy.
+  // Uses the DB is_staple flag first; falls back to a name regex for items added before
+  // the flag existed or items not yet manually classified.
   const FRIDGE_STAPLE_RE = /^(butter|eggs?|milk|cream|crème fraîche|creme fraiche|greek yogh?urt|parmesan|cheddar|mozzarella|feta|ricotta|halloumi|standard cheese|olive oil|vegetable oil|canola oil|coconut oil|soy sauce|fish sauce|oyster sauce|miso|dijon|mustard|mayonnaise|mayo|ketchup|tomato paste|tomato pur[eé]e|worcestershire|hot sauce|sriracha|capers|anchovies|stock|chicken stock|beef stock|vegetable stock|broth)$/i;
-  const isStaple = (name: string) => FRIDGE_STAPLE_RE.test(name.toLowerCase().trim());
+  const isStaple = (item: { name: string; is_staple?: boolean }) =>
+    item.is_staple === true || FRIDGE_STAPLE_RE.test(item.name.toLowerCase().trim());
 
   // If opened from the plan tab with an explicit weekOffset param, use it directly and skip
   // the week_picker step. Without a param, show the picker on Fri/Sat/Sun as before.
@@ -227,8 +229,8 @@ export default function PlanningFlow() {
       // Claude only sees items worth planning meals around — not background staples.
       // Staples still feed knownItems so they're cross-referenced off the shopping list.
       const claudeFridgeItems = [
-        ...activeFridgeItems.filter((i) => !isStaple(i.name)),
-        ...freezerItems.filter((i) => !isStaple(i.name)),
+        ...activeFridgeItems.filter((i) => !isStaple(i)),
+        ...freezerItems.filter((i) => !isStaple(i)),
       ];
 
       const rawResult = await generateMealPlan({
@@ -448,7 +450,7 @@ export default function PlanningFlow() {
                 <Text style={styles.mutedText}>Nothing on record yet.</Text>
               ) : (
                 <>
-                  {fridgeItems.filter((i) => !isStaple(i.name)).map((item) => {
+                  {fridgeItems.filter((i) => !isStaple(i)).map((item) => {
                     const gone = goneFridgeIds.has(item.id);
                     return (
                       <TouchableOpacity
@@ -466,7 +468,7 @@ export default function PlanningFlow() {
                       </TouchableOpacity>
                     );
                   })}
-                  {fridgeItems.some((i) => isStaple(i.name)) && (
+                  {fridgeItems.some((i) => isStaple(i)) && (
                     <Text style={styles.fridgeStapleNote}>
                       Staples (butter, eggs, cream etc.) are assumed on hand and won't affect meal choices.
                     </Text>

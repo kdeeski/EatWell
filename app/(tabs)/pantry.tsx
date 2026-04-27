@@ -380,6 +380,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
   const [unit, setUnit]           = useState(existingItem?.unit ?? 'each');
   const [minQty, setMinQty]       = useState(String(existingItem?.min_quantity ?? '0'));
   const [notes, setNotes]         = useState(existingItem?.notes ?? '');
+  const [isStaple, setIsStaple]   = useState(existingItem?.is_staple ?? false);
   const [saving, setSaving]       = useState(false);
   const [catOpen, setCatOpen]     = useState(false);
   const [locOpen, setLocOpen]     = useState(false);
@@ -399,6 +400,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
           unit,
           min_quantity: parseFloat(minQty) || 0,
           notes: notes.trim() || null,
+          is_staple: isStaple,
         });
       } else {
         saved = await upsertInventoryItem({
@@ -412,6 +414,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
           notes: notes.trim() || null,
           added_date: new Date().toISOString().split('T')[0],
           depleted: false,
+          is_staple: isStaple,
         });
       }
       onSaved(saved);
@@ -540,6 +543,20 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
               placeholder="e.g. almost empty, two jars"
               placeholderTextColor="#9CA3AF"
             />
+
+            <TouchableOpacity
+              style={styles.stapleRow}
+              onPress={() => setIsStaple((v) => !v)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.stapleTextBlock}>
+                <Text style={styles.stapleLabel}>Kitchen staple</Text>
+                <Text style={styles.stapleHint}>Always on hand — won't drive meal planning choices</Text>
+              </View>
+              <View style={[styles.stapleToggle, isStaple && styles.stapleToggleOn]}>
+                <View style={[styles.stapleThumb, isStaple && styles.stapleThumbOn]} />
+              </View>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -858,6 +875,18 @@ const styles = StyleSheet.create({
   dropdownOptionActive: { backgroundColor: '#F0FDF4' },
   dropdownText: { fontSize: 14, color: '#374151' },
   dropdownTextActive: { color: '#3B7A57', fontWeight: '600' },
+
+  stapleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, paddingVertical: 4 },
+  stapleTextBlock: { flex: 1 },
+  stapleLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  stapleHint: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  stapleToggle: {
+    width: 44, height: 26, borderRadius: 13, backgroundColor: '#D1D5DB',
+    justifyContent: 'center', paddingHorizontal: 2,
+  },
+  stapleToggleOn: { backgroundColor: '#3B7A57' },
+  stapleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  stapleThumbOn: { alignSelf: 'flex-end' },
 
   // Bulk add
   bulkInputStep: { padding: 20, paddingBottom: 40 },
