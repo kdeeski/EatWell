@@ -8,10 +8,10 @@ import { useAppStore } from '../../store/useAppStore';
 import type { Recipe, RecipeCategory } from '../../types';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
-import { deleteRecipe, updateRecipe } from '../../lib/data';
+import { deleteRecipe, updateRecipe, saveRecipeBitePairing } from '../../lib/data';
 import { toTitleCase } from '../../lib/titleCase';
 import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
-import { getWineMatch } from '../../lib/claude';
+import { getWineMatch, generateBitePairing } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 
 type FilterKey = 'all' | RecipeCategory;
@@ -68,6 +68,10 @@ export default function RecipesScreen() {
   const [wineLoading, setWineLoading] = useState<string | null>(null);
   const [wineErrors, setWineErrors] = useState<Record<string, string>>({});
 
+  // Bite pairing state for cocktail recipes
+  const [biteLoading, setBiteLoading] = useState<string | null>(null);
+  const [biteErrors, setBiteErrors] = useState<Record<string, string>>({});
+
   const DRINK_PAIRING_CATEGORIES: RecipeCategory[] = ['mains', 'sides', 'desserts', 'baking'];
 
   async function handleWineMatch(recipe: Recipe) {
@@ -84,6 +88,20 @@ export default function RecipesScreen() {
       setWineErrors((prev) => ({ ...prev, [recipe.id]: e.message ?? 'Could not fetch pairing.' }));
     } finally {
       setWineLoading(null);
+    }
+  }
+
+  async function handleBitePairing(recipe: Recipe) {
+    setBiteLoading(recipe.id);
+    setBiteErrors((prev) => { const n = { ...prev }; delete n[recipe.id]; return n; });
+    try {
+      const result = await generateBitePairing(recipe.name, recipe.description);
+      await saveRecipeBitePairing(recipe.id, result);
+      updateRecipeInStore(recipe.id, { bite_pairing: result });
+    } catch (e: any) {
+      setBiteErrors((prev) => ({ ...prev, [recipe.id]: e.message ?? 'Could not generate bite pairing.' }));
+    } finally {
+      setBiteLoading(null);
     }
   }
 
@@ -204,6 +222,9 @@ export default function RecipesScreen() {
             const wineResult = wineResults[item.id] ?? null;
             const wineError = wineErrors[item.id] ?? null;
             const isWineLoading = wineLoading === item.id;
+            const isCocktail = item.category === 'cocktails';
+            const isBiteLoading = biteLoading === item.id;
+            const biteError = biteErrors[item.id] ?? null;
             let sourceDomain: string | null = null;
             if (item.source_url) {
               try { sourceDomain = new URL(item.source_url).hostname.replace(/^www\./, ''); } catch {}
@@ -296,6 +317,41 @@ export default function RecipesScreen() {
                     {wineError ? (
                       <TouchableOpacity onPress={() => handleWineMatch(item)}>
                         <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
+                    {isCocktail && (
+                      item.bite_pairing ? (
+                        <View style={styles.biteSection}>
+                          <Text style={styles.biteLabel}>Suggested bites</Text>
+                          <Text style={styles.biteText}>{item.bite_pairing}</Text>
+                          <TouchableOpacity
+                            onPress={() => handleBitePairing(item)}
+                            disabled={isBiteLoading}
+                            hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
+                          >
+                            {isBiteLoading
+                              ? <ActivityIndicator size="small" color="#3B7A57" style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+                              : <Text style={styles.biteRegenerate}>Regenerate</Text>
+                            }
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => handleBitePairing(item)}
+                          disabled={isBiteLoading}
+                          hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+                        >
+                          {isBiteLoading
+                            ? <ActivityIndicator size="small" color="#3B7A57" style={{ alignSelf: 'flex-start', marginTop: 8 }} />
+                            : <Text style={styles.expandedBitePairing}>Bite pairing →</Text>
+                          }
+                        </TouchableOpacity>
+                      )
+                    )}
+                    {biteError ? (
+                      <TouchableOpacity onPress={() => handleBitePairing(item)}>
+                        <Text style={styles.wineError}>{biteError} Tap to retry.</Text>
                       </TouchableOpacity>
                     ) : null}
 
@@ -458,6 +514,12 @@ const styles = StyleSheet.create({
   wineNote: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 3 },
   wineDismiss: { fontSize: 12, color: '#9CA3AF' },
   wineError: { fontSize: 12, color: '#EF4444' },
+
+  expandedBitePairing: { fontSize: 13, fontWeight: '600', color: '#3B7A57', marginTop: 2 },
+  biteSection: { backgroundColor: '#F0F7F3', borderRadius: 10, borderWidth: 1, borderColor: '#B7D9C8', padding: 10, gap: 4, marginTop: 2 },
+  biteLabel: { fontSize: 11, fontStyle: 'italic', color: '#3B7A57', fontWeight: '600', marginBottom: 2 },
+  biteText: { fontSize: 13, color: '#374151', lineHeight: 20 },
+  biteRegenerate: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
 
   ratingRow: { marginTop: 12, gap: 6 },
   ratingLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },

@@ -293,6 +293,7 @@ export interface Recipe {
   times_cooked: number;
   cooked_meal_id: string | null;
   guide_json: RecipeGuideJson | null;
+  bite_pairing: string | null;
   created_at: string;
   updated_at: string;
 }

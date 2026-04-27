@@ -1063,6 +1063,11 @@ export async function updateRecipe(
   return data as Recipe;
 }
 
+export async function saveRecipeBitePairing(id: string, bitePairing: string): Promise<void> {
+  const { error } = await supabase.from('recipes').update({ bite_pairing: bitePairing }).eq('id', id);
+  if (error) throw error;
+}
+
 export async function deleteRecipe(id: string): Promise<void> {
   const { error } = await supabase
     .from('recipes')

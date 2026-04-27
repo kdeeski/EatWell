@@ -299,6 +299,39 @@ export async function getWineMatch(input: WineMatchInput): Promise<WineMatchResu
   }
 }
 
+// ─── Bite Pairing ─────────────────────────────────────────────────────────────
+
+export async function generateBitePairing(
+  cocktailName: string,
+  description?: string | null
+): Promise<string> {
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/bite-pairing';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify({ cocktail_name: cocktailName, description }),
+      signal: controller.signal,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+    return (data as { bite_pairing: string }).bite_pairing;
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new Error('Bite pairing timed out — please try again.');
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function categorisePantryItems(
   itemNames: string[]
 ): Promise<CategorisedItem[]> {
