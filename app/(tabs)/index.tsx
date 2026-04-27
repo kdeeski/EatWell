@@ -3,7 +3,7 @@
 // any morning check-in that needs completing, and quick fridge notes.
 
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
@@ -32,6 +32,12 @@ export default function TodayScreen() {
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
+
+  // "Something else tonight" sheet state
+  const [elseOpen, setElseOpen]                   = useState(false);
+  const [elseSearch, setElseSearch]               = useState('');
+  const [elseSelectedRecipe, setElseSelectedRecipe] = useState<Recipe | null>(null);
+  const [elseGuideTarget, setElseGuideTarget]     = useState<{ name: string } | null>(null);
 
   // Inline "log as cooked" panel state
   const [logOpen, setLogOpen]               = useState(false);
@@ -86,6 +92,26 @@ export default function TodayScreen() {
       console.error('Failed to log cooked meal', e);
     }
     setLogSaving(false);
+  };
+
+  const elseRecipes = recipes
+    .filter((r) => r.category !== 'cocktails')
+    .filter((r) => !elseSearch.trim() || r.name.toLowerCase().includes(elseSearch.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const handleElseClose = () => { setElseOpen(false); setElseSearch(''); };
+
+  const handleElseRecipe = (r: Recipe) => {
+    handleElseClose();
+    if (r.source_url) { Linking.openURL(r.source_url); }
+    else { setElseSelectedRecipe(r); }
+  };
+
+  const handleElseAskClaude = () => {
+    const name = elseSearch.trim();
+    if (!name) return;
+    handleElseClose();
+    setElseGuideTarget({ name });
   };
 
   const checkinDone = !!todayCheckin?.completed_at;
@@ -162,7 +188,12 @@ export default function TodayScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Tonight</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>Tonight</Text>
+          <TouchableOpacity onPress={() => setElseOpen(true)}>
+            <Text style={styles.somethingElseLink}>Something else? →</Text>
+          </TouchableOpacity>
+        </View>
         {tonightsMeal ? (
           <View style={styles.mealCard}>
             <Text style={styles.mealName}>{toTitleCase(tonightsMeal.meal_name)}</Text>
@@ -295,6 +326,48 @@ export default function TodayScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Something else tonight — bottom sheet */}
+      <Modal visible={elseOpen} animationType="slide" transparent onRequestClose={handleElseClose}>
+        <View style={styles.sheetOverlay}>
+          <TouchableOpacity style={styles.sheetDismiss} activeOpacity={1} onPress={handleElseClose} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>What do you fancy?</Text>
+            <TextInput
+              style={styles.sheetSearch}
+              placeholder="Search your recipes…"
+              placeholderTextColor="#9CA3AF"
+              value={elseSearch}
+              onChangeText={setElseSearch}
+              autoFocus
+              returnKeyType="search"
+            />
+            <ScrollView style={styles.sheetList} keyboardShouldPersistTaps="handled">
+              {elseRecipes.map((r) => (
+                <TouchableOpacity key={r.id} style={styles.sheetItem} onPress={() => handleElseRecipe(r)}>
+                  <Text style={styles.sheetItemName}>{r.name}</Text>
+                  <Text style={styles.sheetItemCat}>{r.category.replace(/_/g, ' ')}</Text>
+                </TouchableOpacity>
+              ))}
+              {elseRecipes.length === 0 && elseSearch.trim() === '' && (
+                <Text style={styles.sheetEmpty}>No recipes saved yet.</Text>
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.sheetClaudeBtn, !elseSearch.trim() && styles.sheetClaudeBtnDisabled]}
+              onPress={handleElseAskClaude}
+              disabled={!elseSearch.trim()}
+            >
+              <Text style={[styles.sheetClaudeText, !elseSearch.trim() && styles.sheetClaudeTextDisabled]}>
+                {elseSearch.trim()
+                  ? `Ask Claude how to make "${elseSearch.trim()}" →`
+                  : 'Type a dish name to ask Claude…'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {saveForMeal && (
         <SaveRecipeModal
           visible
@@ -310,7 +383,24 @@ export default function TodayScreen() {
           onClose={() => setStashRecipe(null)}
           onEdit={() => {}}
           onDelete={() => {}}
-          
+        />
+      )}
+
+      {elseSelectedRecipe && (
+        <RecipeDetailModal
+          recipe={elseSelectedRecipe}
+          onClose={() => setElseSelectedRecipe(null)}
+          onEdit={() => {}}
+          onDelete={() => {}}
+        />
+      )}
+
+      {elseGuideTarget && (
+        <CookingGuideModal
+          mealName={toTitleCase(elseGuideTarget.name)}
+          description=""
+          visible={!!elseGuideTarget}
+          onClose={() => setElseGuideTarget(null)}
         />
       )}
 
@@ -439,4 +529,44 @@ const styles = StyleSheet.create({
   },
   logSaveBtnDisabled: { opacity: 0.5 },
   logSaveText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  somethingElseLink: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+
+  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheetDismiss: { flex: 1 },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 34,
+    maxHeight: '80%',
+  },
+  sheetHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: '#D1D5DB', alignSelf: 'center', marginTop: 12, marginBottom: 16,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 14 },
+  sheetSearch: {
+    backgroundColor: '#F3F4F6', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 10,
+    fontSize: 15, color: '#1C1C1E', marginBottom: 12,
+  },
+  sheetList: { maxHeight: 280 },
+  sheetItem: {
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  sheetItemName: { fontSize: 15, color: '#1C1C1E', fontWeight: '500', flex: 1 },
+  sheetItemCat: { fontSize: 12, color: '#9CA3AF', marginLeft: 8, textTransform: 'capitalize' },
+  sheetEmpty: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', paddingVertical: 20 },
+  sheetClaudeBtn: {
+    marginTop: 16, paddingVertical: 14,
+    borderRadius: 14, backgroundColor: '#3B7A57',
+    alignItems: 'center',
+  },
+  sheetClaudeBtnDisabled: { backgroundColor: '#F3F4F6' },
+  sheetClaudeText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  sheetClaudeTextDisabled: { color: '#9CA3AF' },
 });
