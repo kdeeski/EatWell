@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Linking, ActivityIndicator, Platform,
+  TouchableOpacity, Linking, ActivityIndicator, Platform, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -290,7 +290,14 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                 <Text style={styles.actionLink}>Edit recipe</Text>
               </TouchableOpacity>
               <Text style={styles.actionDivider}>·</Text>
-              <TouchableOpacity onPress={onDelete}>
+              <TouchableOpacity onPress={() => Alert.alert(
+                'Delete recipe',
+                `Remove "${recipe.name}" from your stash?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: onDelete },
+                ],
+              )}>
                 <Text style={styles.actionLinkDestructive}>Delete recipe</Text>
               </TouchableOpacity>
             </View>

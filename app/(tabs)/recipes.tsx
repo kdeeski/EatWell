@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
-  ActivityIndicator, Linking, TextInput,
+  ActivityIndicator, Linking, TextInput, Alert,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -124,8 +124,8 @@ export default function RecipesScreen() {
     try {
       await deleteRecipe(recipe.id);
       removeRecipe(recipe.id);
-    } catch (e) {
-      console.error('Failed to delete recipe', e);
+    } catch (e: any) {
+      Alert.alert('Could not delete', e?.message ?? 'Something went wrong. Please try again.');
     }
   };
 
