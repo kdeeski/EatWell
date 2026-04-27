@@ -195,17 +195,26 @@ export default function PlanningFlow() {
           fetchWeekCookedMeals(userId, weekStartDate),
           loadMealPlanForWeek(userId, prevWeekStartDate),
         ]);
-        // Cooked-day locks
+        // Cooked-day locks — also add to pinnedMealsList so Claude knows what's on
+        // those days (for pasta uniqueness, protein rotation, and variety rules),
+        // and add their names to previousMealNames so Rule 23 blocks the same base dish.
         if (existingPlan && cookedList.length > 0) {
-          lockedDays = existingPlan.meals
-            .filter((m) =>
-              cookedList.some(
-                (c) =>
-                  c.planned_meal_id === m.id ||
-                  (c.actual_meal_name?.toLowerCase() ?? '') === m.meal_name.toLowerCase()
-              )
+          const cookedMeals = existingPlan.meals.filter((m) =>
+            cookedList.some(
+              (c) =>
+                c.planned_meal_id === m.id ||
+                (c.actual_meal_name?.toLowerCase() ?? '') === m.meal_name.toLowerCase()
             )
-            .map((m) => m.day_of_week);
+          );
+          lockedDays = cookedMeals.map((m) => m.day_of_week);
+          pinnedMealsList = [
+            ...pinnedMealsList,
+            ...cookedMeals.map((m) => ({ name: m.meal_name, day_of_week: m.day_of_week })),
+          ];
+          previousMealNames = [
+            ...previousMealNames,
+            ...cookedMeals.map((m) => m.meal_name),
+          ];
         }
         // Pinned-meal locks — days the user explicitly wants to keep
         if (pinnedIds.length > 0 && existingPlan) {
