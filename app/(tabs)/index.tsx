@@ -2,7 +2,7 @@
 // Shows tonight's chosen meal (or the pick-your-meal prompt),
 // any morning check-in that needs completing, and quick fridge notes.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,6 +38,7 @@ export default function TodayScreen() {
   const [elseSearch, setElseSearch]               = useState('');
   const [elseSelectedRecipe, setElseSelectedRecipe] = useState<Recipe | null>(null);
   const [elseGuideTarget, setElseGuideTarget]     = useState<{ name: string } | null>(null);
+  const elseSearchRef = useRef<TextInput>(null);
 
   // Inline "log as cooked" panel state
   const [logOpen, setLogOpen]               = useState(false);
@@ -109,7 +110,10 @@ export default function TodayScreen() {
 
   const handleElseAskClaude = () => {
     const name = elseSearch.trim();
-    if (!name) return;
+    if (!name) {
+      elseSearchRef.current?.focus();
+      return;
+    }
     handleElseClose();
     setElseGuideTarget({ name });
   };
@@ -334,6 +338,7 @@ export default function TodayScreen() {
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>What do you fancy?</Text>
             <TextInput
+              ref={elseSearchRef}
               style={styles.sheetSearch}
               placeholder="Search your recipes…"
               placeholderTextColor="#9CA3AF"
@@ -354,14 +359,13 @@ export default function TodayScreen() {
               )}
             </ScrollView>
             <TouchableOpacity
-              style={[styles.sheetClaudeBtn, !elseSearch.trim() && styles.sheetClaudeBtnDisabled]}
+              style={styles.sheetClaudeBtn}
               onPress={handleElseAskClaude}
-              disabled={!elseSearch.trim()}
             >
-              <Text style={[styles.sheetClaudeText, !elseSearch.trim() && styles.sheetClaudeTextDisabled]}>
+              <Text style={styles.sheetClaudeText}>
                 {elseSearch.trim()
                   ? `Ask Claude how to make "${elseSearch.trim()}" →`
-                  : 'Type a dish name to ask Claude…'}
+                  : 'Ask Claude for a recipe →'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -565,7 +569,5 @@ const styles = StyleSheet.create({
     borderRadius: 14, backgroundColor: '#3B7A57',
     alignItems: 'center',
   },
-  sheetClaudeBtnDisabled: { backgroundColor: '#F3F4F6' },
   sheetClaudeText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
-  sheetClaudeTextDisabled: { color: '#9CA3AF' },
 });
