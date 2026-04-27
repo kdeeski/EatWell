@@ -217,8 +217,13 @@ export default function PlanningFlow() {
       }
       const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
 
+      const allOnHandItems = [
+        ...activeFridgeItems,
+        ...inventoryItems.filter((i) => i.location === 'freezer' && !i.depleted),
+      ];
+
       const rawResult = await generateMealPlan({
-        fridgeItems: activeFridgeItems,
+        fridgeItems: allOnHandItems,
         gardenAvailable: [
           ...gardenHarvesting,
           ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
@@ -311,10 +316,12 @@ export default function PlanningFlow() {
       const parseList = (text: string) =>
         text.split(',').map((s) => s.trim()).filter((s) => s.length > 1);
 
-      const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
+      const pantryItems  = inventoryItems.filter((i) => i.location === 'pantry'  && !i.depleted);
+      const freezerItems = inventoryItems.filter((i) => i.location === 'freezer' && !i.depleted);
       const knownItems = {
         fridge: [
           ...activeFridgeItems.map((i) => i.name),
+          ...freezerItems.map((i) => i.name),
           ...parseList(fridgeExtras),
           ...parseList(spontaneous),
         ],
