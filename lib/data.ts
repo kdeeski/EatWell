@@ -560,7 +560,7 @@ export async function saveShoppingList(
 
   // Ingredients Claude sometimes miscategorises as produce instead of herbs_spices:
   // ground/dried/smoked prefix, OR fresh + a known herb name (NOT "fresh pasta" etc.)
-  const FORCE_HERBS_SPICES = /^(ground|dried|smoked)\s|^fresh\s+(basil|parsley|mint|chives|dill|tarragon|chervil|sage|thyme|rosemary|oregano|marjoram|lemongrass|coriander|cilantro|kaffir|bay\s+leaf|bay\s+leaves)\b|^(cumin|coriander|turmeric|cardamom|nutmeg|allspice|paprika|fenugreek|mace|chilli|chili|ginger|cinnamon|sumac|star anise|fennel seeds|mustard seeds|caraway seeds|ras el hanout|za'atar|harissa|cloves|bay leaves|bay leaf|mixed spice|five spice|curry powder|garam masala|cajun seasoning|chinese five spice)$/i;
+  const FORCE_HERBS_SPICES = /^(ground|smoked)\s+(cumin|coriander|turmeric|cardamom|nutmeg|allspice|paprika|fenugreek|mace|ginger|cinnamon|cloves?|black pepper|white pepper|chilli|chili)\b|^dried\s+(basil|parsley|mint|chives|dill|tarragon|chervil|sage|thyme|rosemary|oregano|marjoram|lemongrass|coriander|cilantro|bay\s+leaves?|mixed\s+herbs?|chilli|chili)\b|^fresh\s+(basil|parsley|mint|chives|dill|tarragon|chervil|sage|thyme|rosemary|oregano|marjoram|lemongrass|coriander|cilantro|kaffir|bay\s+leaf|bay\s+leaves)\b|^(cumin|coriander|turmeric|cardamom|nutmeg|allspice|paprika|fenugreek|mace|chilli|chili|ginger|cinnamon|sumac|star anise|fennel seeds|mustard seeds|caraway seeds|ras el hanout|za'atar|harissa|cloves|bay leaves|bay leaf|mixed spice|five spice|curry powder|garam masala|cajun seasoning|chinese five spice)$/i;
 
   // Singular forms for common produce plurals — prevents "Carrot" and "Carrots"
   // from appearing as two separate line items
