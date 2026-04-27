@@ -212,6 +212,7 @@ export async function generateGardenSuggestions(
 // ─── Cooking Guide ────────────────────────────────────────────────────────────
 
 export interface CookingGuide {
+  ingredients?: string[];
   steps: string[];
   components: Array<{ name: string; description: string; steps: string[]; category?: string }>;
   glossary: Array<{ term: string; definition: string }>;

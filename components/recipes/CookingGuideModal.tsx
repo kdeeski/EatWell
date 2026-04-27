@@ -202,7 +202,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <TouchableOpacity
                 onPress={() => setSavePrefill({
                   name: mealName, category: 'mains', description,
-                  ingredients,
+                  ingredients: ingredients ?? guide.ingredients?.join('\n'),
                   method: numberedMethod(guide.steps),
                   guideJson: guide,
                 })}
