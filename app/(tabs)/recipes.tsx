@@ -119,11 +119,11 @@ export default function RecipesScreen() {
   }, [recipes, activeFilter, searchQuery]);
 
   const handleDelete = async (recipe: Recipe) => {
-    setShowDetail(false);
-    setSelectedRecipe(null);
     try {
       await deleteRecipe(recipe.id);
       removeRecipe(recipe.id);
+      setShowDetail(false);
+      setSelectedRecipe(null);
     } catch (e: any) {
       Alert.alert('Could not delete', e?.message ?? 'Something went wrong. Please try again.');
     }

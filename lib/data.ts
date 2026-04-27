@@ -1069,9 +1069,10 @@ export async function saveRecipeBitePairing(id: string, bitePairing: string): Pr
 }
 
 export async function deleteRecipe(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('recipes')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('id', id);
   if (error) throw error;
+  if (count === 0) throw new Error('Delete was blocked — check Supabase RLS policies for the recipes table.');
 }
