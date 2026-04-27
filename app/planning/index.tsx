@@ -26,6 +26,11 @@ export default function PlanningFlow() {
     (i) => i.location === 'fridge' && !i.depleted && (i.quantity == null || i.quantity > 0)
   );
 
+  // Items that are always assumed on hand — don't send to Claude as "plan around" items.
+  // They still feed the shopping-list cross-reference so they don't appear as things to buy.
+  const FRIDGE_STAPLE_RE = /^(butter|eggs?|milk|cream|crème fraîche|creme fraiche|greek yogh?urt|parmesan|cheddar|mozzarella|feta|ricotta|halloumi|standard cheese|olive oil|vegetable oil|canola oil|coconut oil|soy sauce|fish sauce|oyster sauce|miso|dijon|mustard|mayonnaise|mayo|ketchup|tomato paste|tomato pur[eé]e|worcestershire|hot sauce|sriracha|capers|anchovies|stock|chicken stock|beef stock|vegetable stock|broth)$/i;
+  const isStaple = (name: string) => FRIDGE_STAPLE_RE.test(name.toLowerCase().trim());
+
   // If opened from the plan tab with an explicit weekOffset param, use it directly and skip
   // the week_picker step. Without a param, show the picker on Fri/Sat/Sun as before.
   const [targetWeekOffset, setTargetWeekOffset] = useState<0 | 1>(() => {
@@ -217,13 +222,17 @@ export default function PlanningFlow() {
       }
       const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
 
-      const allOnHandItems = [
-        ...activeFridgeItems,
-        ...inventoryItems.filter((i) => i.location === 'freezer' && !i.depleted),
+      const freezerItems = inventoryItems.filter((i) => i.location === 'freezer' && !i.depleted);
+
+      // Claude only sees items worth planning meals around — not background staples.
+      // Staples still feed knownItems so they're cross-referenced off the shopping list.
+      const claudeFridgeItems = [
+        ...activeFridgeItems.filter((i) => !isStaple(i.name)),
+        ...freezerItems.filter((i) => !isStaple(i.name)),
       ];
 
       const rawResult = await generateMealPlan({
-        fridgeItems: allOnHandItems,
+        fridgeItems: claudeFridgeItems,
         gardenAvailable: [
           ...gardenHarvesting,
           ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
@@ -316,12 +325,11 @@ export default function PlanningFlow() {
       const parseList = (text: string) =>
         text.split(',').map((s) => s.trim()).filter((s) => s.length > 1);
 
-      const pantryItems  = inventoryItems.filter((i) => i.location === 'pantry'  && !i.depleted);
-      const freezerItems = inventoryItems.filter((i) => i.location === 'freezer' && !i.depleted);
+      const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
       const knownItems = {
         fridge: [
-          ...activeFridgeItems.map((i) => i.name),
-          ...freezerItems.map((i) => i.name),
+          ...activeFridgeItems.map((i) => i.name),   // all fridge items (incl. staples)
+          ...freezerItems.map((i) => i.name),          // all freezer items
           ...parseList(fridgeExtras),
           ...parseList(spontaneous),
         ],
@@ -433,31 +441,37 @@ export default function PlanningFlow() {
           <View>
             <Text style={styles.stepTitle}>What's in the fridge?</Text>
             <Text style={styles.stepBody}>
-              Based on last week's shop and what you cooked, here's what I think you've still got.
               Tap anything you've already used up:
             </Text>
             <View style={styles.fridgeSummary}>
               {fridgeItems.length === 0 ? (
                 <Text style={styles.mutedText}>Nothing on record yet.</Text>
               ) : (
-                fridgeItems.map((item) => {
-                  const gone = goneFridgeIds.has(item.id);
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.fridgeItemRow}
-                      onPress={() => toggleGoneFridge(item.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.fridgeItemTick, gone && styles.fridgeItemTickGone]}>
-                        {gone ? '✗' : '✓'}
-                      </Text>
-                      <Text style={[styles.fridgeItem, gone && styles.fridgeItemGone]}>
-                        {item.quantity} {item.unit} {item.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })
+                <>
+                  {fridgeItems.filter((i) => !isStaple(i.name)).map((item) => {
+                    const gone = goneFridgeIds.has(item.id);
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.fridgeItemRow}
+                        onPress={() => toggleGoneFridge(item.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.fridgeItemTick, gone && styles.fridgeItemTickGone]}>
+                          {gone ? '✗' : '✓'}
+                        </Text>
+                        <Text style={[styles.fridgeItem, gone && styles.fridgeItemGone]}>
+                          {item.quantity} {item.unit} {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {fridgeItems.some((i) => isStaple(i.name)) && (
+                    <Text style={styles.fridgeStapleNote}>
+                      Staples (butter, eggs, cream etc.) are assumed on hand and won't affect meal choices.
+                    </Text>
+                  )}
+                </>
               )}
             </View>
             <Text style={styles.question}>Anything extra I don't know about?</Text>
@@ -705,6 +719,7 @@ const styles = StyleSheet.create({
   fridgeItemTickGone: { color: '#EF4444' },
   fridgeItem: { fontSize: 15, color: '#374151', lineHeight: 22, flex: 1 },
   fridgeItemGone: { color: '#D1D5DB', textDecorationLine: 'line-through' },
+  fridgeStapleNote: { fontSize: 12, color: '#9CA3AF', fontStyle: 'italic', marginTop: 8, lineHeight: 16 },
 
   input: {
     backgroundColor: '#FFFFFF',
