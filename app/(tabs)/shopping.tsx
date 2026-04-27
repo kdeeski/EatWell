@@ -279,11 +279,17 @@ export default function ShoppingScreen() {
     toggleShoppingItemChecked(item.id, true).catch(console.error);
     if (userId) {
       try {
+        const fridgeCats: ShoppingListItem['ingredient_category'][] = [
+          'produce', 'meat_fish', 'dairy_eggs', 'bread_bakery',
+        ];
+        const loc = fridgeCats.includes(item.ingredient_category) ||
+          item.name.toLowerCase().startsWith('fresh ')
+          ? 'fridge' : 'pantry';
         const saved = await upsertInventoryItem({
           user_id: userId,
           name: item.name.trim(),
-          category: item.ingredient_category === 'herbs_spices' ? 'herbs_spices' : 'pantry_dry_goods',
-          location: item.ingredient_category === 'herbs_spices' && item.name.toLowerCase().startsWith('fresh ') ? 'fridge' : 'pantry',
+          category: item.ingredient_category ?? 'pantry_dry_goods',
+          location: loc,
           quantity: item.quantity,
           unit: item.unit,
           min_quantity: 0,
