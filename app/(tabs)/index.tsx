@@ -332,7 +332,10 @@ export default function TodayScreen() {
 
       {/* Something else tonight — bottom sheet */}
       <Modal visible={elseOpen} animationType="slide" transparent onRequestClose={handleElseClose}>
-        <View style={styles.sheetOverlay}>
+        <KeyboardAvoidingView
+          style={styles.sheetOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <TouchableOpacity style={styles.sheetDismiss} activeOpacity={1} onPress={handleElseClose} />
           <View style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom + 16) }]}>
             <View style={styles.sheetHandle} />
@@ -369,7 +372,7 @@ export default function TodayScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {saveForMeal && (
