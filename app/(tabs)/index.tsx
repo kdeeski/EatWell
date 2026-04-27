@@ -95,7 +95,7 @@ export default function TodayScreen() {
   };
 
   const elseRecipes = recipes
-    .filter((r) => r.category !== 'cocktails')
+    .filter((r) => r.category !== 'cocktails' && r.category !== 'glossary')
     .filter((r) => !elseSearch.trim() || r.name.toLowerCase().includes(elseSearch.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -330,7 +330,7 @@ export default function TodayScreen() {
       <Modal visible={elseOpen} animationType="slide" transparent onRequestClose={handleElseClose}>
         <View style={styles.sheetOverlay}>
           <TouchableOpacity style={styles.sheetDismiss} activeOpacity={1} onPress={handleElseClose} />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom + 16) }]}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>What do you fancy?</Text>
             <TextInput
@@ -540,7 +540,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingBottom: 34,
     maxHeight: '80%',
   },
   sheetHandle: {
