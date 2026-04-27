@@ -3,13 +3,13 @@
 // any morning check-in that needs completing, and quick fridge notes.
 
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
-import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal } from '../../lib/data';
+import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -28,7 +28,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
@@ -398,7 +398,15 @@ export default function TodayScreen() {
           recipe={elseSelectedRecipe}
           onClose={() => setElseSelectedRecipe(null)}
           onEdit={() => {}}
-          onDelete={() => {}}
+          onDelete={async () => {
+            try {
+              await deleteRecipe(elseSelectedRecipe.id);
+              removeRecipe(elseSelectedRecipe.id);
+              setElseSelectedRecipe(null);
+            } catch (e: any) {
+              Alert.alert('Could not delete', e?.message ?? 'Something went wrong.');
+            }
+          }}
         />
       )}
 
