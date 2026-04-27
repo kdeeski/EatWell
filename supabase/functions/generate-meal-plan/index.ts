@@ -205,7 +205,12 @@ RULES:
 
 22. CARRY FORWARD — if a "CARRY FORWARD" section appears in the prompt, you MUST include every meal listed in the final plan. Assign each carry-forward meal to any available day (not a night-away day). Use the exact meal name as given — do not rename or paraphrase. This is a hard rule that overrides variety/rotation preferences. If there are more carry-forward meals than available nights, include as many as will fit.
 
-23. VARIETY ACROSS WEEKS — if a "LAST WEEK'S MEALS" section appears in the prompt, do not repeat any of those meals in this week's plan. REPEAT MEALS and CARRY FORWARD entries override this rule (those are explicit user requests) — but for all other slots, choose something genuinely different. This is important: the user is asking for a fresh menu, not a reshuffled version of last week.
+23. VARIETY ACROSS WEEKS — if a "LAST WEEK'S MEALS" section appears in the prompt, avoid repeating not just the exact meal names but the same base dish format or protein cut. Examples of what is NOT allowed:
+- Last week: "Beef Meatballs with Tomato Sauce" → this week: any meatball dish (lamb, pork, chicken — doesn't matter)
+- Last week: "Pork Chops with Apple and Thyme" → this week: any pork chop dish regardless of sauce or accompaniment
+- Last week: "Gnocchi with Parsnip and Sage" → this week: any gnocchi dish
+- Last week: "Lamb Ragu with Tagliatelle" → this week: another pasta ragù is too similar; choose a different sauce style
+The test is: would a reasonable person say "that's basically the same dish"? If yes, choose something else. The user wants a genuinely fresh week of cooking — not small variations on last week's lineup. REPEAT MEALS and CARRY FORWARD entries are the only exceptions to this rule.
 
 Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: structurePrompt }],
