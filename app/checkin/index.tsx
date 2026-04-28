@@ -321,12 +321,34 @@ export default function CheckinFlow() {
             <Text style={styles.stepTitle}>What did you cook?</Text>
             <TextInput
               style={styles.notesInput}
-              placeholder="e.g. pasta with leftover veg"
+              placeholder="Search your recipes or type a name…"
               value={somethingElseName}
               onChangeText={setSomethingElseName}
               autoFocus
               autoCapitalize="sentences"
             />
+            {(() => {
+              const q = somethingElseName.trim().toLowerCase();
+              const hits = recipes
+                .filter((r) => r.category !== 'cocktails' && r.category !== 'glossary')
+                .filter((r) => q && r.name.toLowerCase().includes(q))
+                .slice(0, 5);
+              if (!hits.length) return null;
+              return (
+                <View style={styles.stashResults}>
+                  {hits.map((r) => (
+                    <TouchableOpacity
+                      key={r.id}
+                      style={styles.stashResult}
+                      onPress={() => { setSomethingElseName(r.name); setStep('rating'); }}
+                    >
+                      <Text style={styles.stashResultName}>{r.name}</Text>
+                      <Text style={styles.stashResultCat}>{r.category.replace(/_/g, ' ')}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              );
+            })()}
             <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('rating')}>
               <Text style={styles.primaryButtonText}>Next →</Text>
             </TouchableOpacity>
@@ -567,4 +589,24 @@ const styles = StyleSheet.create({
   skipLink: { paddingVertical: 14, alignItems: 'center' },
   skipLinkText: { fontSize: 14, color: '#9CA3AF' },
   summaryTapHint: { fontSize: 11, color: '#9CA3AF', marginTop: 6 },
+
+  stashResults: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  stashResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  stashResultName: { fontSize: 15, fontWeight: '500', color: '#1C1C1E', flex: 1 },
+  stashResultCat: { fontSize: 12, color: '#9CA3AF', textTransform: 'capitalize', marginLeft: 8 },
 });
