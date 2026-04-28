@@ -252,7 +252,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
             })() : null}
 
             {/* Drink pairing — only for mains/sides/desserts/baking */}
-            {!['glossary', 'sauces_dressings', 'marinades_rubs'].includes(recipe.category) && <View style={styles.section}>
+            {!['glossary', 'sauces_dressings', 'marinades_rubs', 'cocktails'].includes(recipe.category) && <View style={styles.section}>
               {wineResult ? (
                 <>
                   <Text style={styles.sectionLabel}>Drink pairing</Text>
