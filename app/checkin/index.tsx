@@ -19,7 +19,7 @@ const RATING_LABELS = ['', 'Meh', 'Fine', 'Good', 'Great', 'Loved it'];
 export default function CheckinFlow() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { plannedMeals, setTodayCheckin, todayCheckin, userId, recipes, updateRecipeInStore } = useAppStore();
+  const { plannedMeals, setTodayCheckin, todayCheckin, userId, recipes, updateRecipeInStore, tonightSomethingElseName, setTonightSomethingElseName } = useAppStore();
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
@@ -62,6 +62,17 @@ export default function CheckinFlow() {
   const [notes, setNotes] = useState('');
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Pre-fill from "Something else tonight" choice made last evening
+  useEffect(() => {
+    if (todayCheckin?.completed_at) return;
+    if (!tonightSomethingElseName) return;
+    setLastNightChoice('something_else');
+    setSomethingElseName(tonightSomethingElseName);
+    setStep('rating');
+    setTonightSomethingElseName(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pre-populate rating/notes from a review already logged via Tonight card
   useEffect(() => {

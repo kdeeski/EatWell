@@ -28,7 +28,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
@@ -104,6 +104,7 @@ export default function TodayScreen() {
 
   const handleElseRecipe = (r: Recipe) => {
     handleElseClose();
+    setTonightSomethingElseName(r.name);
     if (r.source_url) { Linking.openURL(r.source_url); }
     else { setElseSelectedRecipe(r); }
   };
@@ -114,6 +115,7 @@ export default function TodayScreen() {
       elseSearchRef.current?.focus();
       return;
     }
+    setTonightSomethingElseName(name);
     handleElseClose();
     setElseGuideTarget({ name });
   };

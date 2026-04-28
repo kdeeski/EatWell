@@ -65,6 +65,10 @@ interface AppState {
   updateRecipeInStore: (id: string, updates: Partial<Recipe>) => void;
   removeRecipe: (id: string) => void;
 
+  // ── Tonight something-else choice (persists until morning check-in uses it) ─
+  tonightSomethingElseName: string | null;
+  setTonightSomethingElseName: (name: string | null) => void;
+
   // ── Bar ───────────────────────────────────────────────────────────────────
   barItems: BarItem[];
   setBarItems: (items: BarItem[]) => void;
@@ -150,6 +154,10 @@ export const useAppStore = create<AppState>((set) => ({
   // Check-in
   todayCheckin: null,
   setTodayCheckin: (checkin) => set({ todayCheckin: checkin }),
+
+  // Tonight something-else choice
+  tonightSomethingElseName: null,
+  setTonightSomethingElseName: (name) => set({ tonightSomethingElseName: name }),
 
   // User preferences
   userPreferences: null,
