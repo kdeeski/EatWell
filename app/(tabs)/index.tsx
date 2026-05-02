@@ -240,7 +240,7 @@ export default function TodayScreen() {
             <Text style={styles.somethingElseLink}>Something else? →</Text>
           </TouchableOpacity>
         </View>
-        {tonightsMeal ? (
+        {tonightsMeal && !elseLogDone ? (
           <View style={styles.mealCard}>
             <Text style={styles.mealName}>{toTitleCase(tonightsMeal.meal_name)}</Text>
             {tonightsMeal.description ? (
