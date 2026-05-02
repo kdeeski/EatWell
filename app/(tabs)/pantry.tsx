@@ -281,6 +281,7 @@ export default function PantryScreen() {
         visible={addVisible}
         userId={userId!}
         existingItem={editItem}
+        allItems={inventoryItems}
         onClose={() => { setAddVisible(false); setEditItem(null); }}
         onSaved={(item) => { upsertStore(item); setAddVisible(false); setEditItem(null); }}
       />
@@ -359,10 +360,19 @@ function InventoryRow({ item, onReplenish, onRemove, onEdit }: {
 
 // ─── Add / Edit modal ─────────────────────────────────────────────────────────
 
-function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
+function normaliseName(n: string): string {
+  const s = n.toLowerCase().trim();
+  if (s.endsWith('ies')) return s.slice(0, -3) + 'y'; // berries → berry
+  if (s.endsWith('es') && s.length > 4) return s.slice(0, -2); // tomatoes → tomat
+  if (s.endsWith('s') && s.length > 3) return s.slice(0, -1); // mushrooms → mushroom
+  return s;
+}
+
+function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSaved }: {
   visible: boolean;
   userId: string;
   existingItem: InventoryItem | null;
+  allItems: InventoryItem[];
   onClose: () => void;
   onSaved: (item: InventoryItem) => void;
 }) {
@@ -388,6 +398,30 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
 
   const handleSave = async () => {
     if (!name.trim()) return;
+
+    // Duplicate check for new items only
+    if (!existingItem) {
+      const norm = normaliseName(name.trim());
+      const dupe = allItems.find(
+        (i) => !i.depleted && normaliseName(i.name) === norm && i.name.toLowerCase() !== name.trim().toLowerCase()
+      );
+      if (dupe) {
+        Alert.alert(
+          'Similar item exists',
+          `You already have "${dupe.name}" in your ${dupe.location}. Add "${name.trim()}" as a separate item anyway?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Add anyway', onPress: () => doSave() },
+          ]
+        );
+        return;
+      }
+    }
+
+    doSave();
+  };
+
+  const doSave = async () => {
     setSaving(true);
     try {
       let saved: InventoryItem;
@@ -422,7 +456,7 @@ function AddEditModal({ visible, userId, existingItem, onClose, onSaved }: {
       Alert.alert('Error', e.message ?? 'Could not save item.');
       setSaving(false);
     }
-  };
+  }; // end doSave
 
   return (
     <Modal
