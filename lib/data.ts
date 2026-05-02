@@ -1068,6 +1068,21 @@ export async function saveRecipeBitePairing(id: string, bitePairing: string): Pr
   if (error) throw error;
 }
 
+export async function loadCookNotesForRecipe(
+  userId: string,
+  recipeName: string
+): Promise<Array<{ cooked_date: string; notes: string; rating: number | null }>> {
+  const { data, error } = await supabase
+    .from('cooked_meals')
+    .select('cooked_date, notes, rating')
+    .eq('user_id', userId)
+    .ilike('actual_meal_name', recipeName)
+    .not('notes', 'is', null)
+    .order('cooked_date', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Array<{ cooked_date: string; notes: string; rating: number | null }>;
+}
+
 export async function deleteRecipe(id: string): Promise<void> {
   const { error, count } = await supabase
     .from('recipes')

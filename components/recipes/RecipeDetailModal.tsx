@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { loadCookNotesForRecipe } from '../../lib/data';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Linking, ActivityIndicator, Platform, Alert,
@@ -103,11 +104,19 @@ function GuideComponentCard({ component }: { component: NonNullable<Recipe['guid
 
 export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
-  const { userPreferences } = useAppStore();
+  const { userPreferences, userId } = useAppStore();
   const [screenOn, setScreenOn] = useState(false);
   const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
   const [wineLoading, setWineLoading] = useState(false);
   const [wineError, setWineError] = useState<string | null>(null);
+  const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string; rating: number | null }>>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    loadCookNotesForRecipe(userId, recipe.name)
+      .then(setCookLog)
+      .catch(() => {});
+  }, [userId, recipe.name]);
   const badgeColour = CATEGORY_COLOURS[recipe.category];
   const guide = recipe.guide_json;
 
@@ -291,6 +300,23 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               ) : null}
             </View>}
 
+            {/* Cook log */}
+            {cookLog.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>Cook log</Text>
+                {cookLog.map((entry, i) => {
+                  const [y, m, d] = entry.cooked_date.split('-');
+                  const dateStr = `${d}/${m}`;
+                  return (
+                    <View key={i} style={styles.cookLogRow}>
+                      <Text style={styles.cookLogDate}>{dateStr}</Text>
+                      <Text style={styles.cookLogNote}>{entry.notes}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
             {/* Edit / Delete */}
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={onEdit}>
@@ -356,6 +382,10 @@ const styles = StyleSheet.create({
   componentHint: { fontSize: 12, color: '#9CA3AF' },
   componentDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
   componentStashLink: { fontSize: 14, color: '#3B7A57', fontWeight: '600' },
+
+  cookLogRow: { flexDirection: 'row', gap: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  cookLogDate: { fontSize: 13, fontWeight: '600', color: '#9CA3AF', minWidth: 36 },
+  cookLogNote: { fontSize: 14, color: '#374151', flex: 1, lineHeight: 20 },
 
   glossaryRow: { gap: 2 },
   glossaryTerm: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
