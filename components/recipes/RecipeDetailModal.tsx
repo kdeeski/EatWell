@@ -178,6 +178,13 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
             {guide ? (
               /* ── Guide layout (saved from cooking guide) ── */
               <>
+                {recipe.ingredients ? (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Ingredients</Text>
+                    <Text style={styles.preText}>{recipe.ingredients}</Text>
+                  </View>
+                ) : null}
+
                 <View style={styles.section}>
                   <View style={styles.sectionLabelRow}>
                     <Text style={styles.sectionLabel}>How to cook it</Text>

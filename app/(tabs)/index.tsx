@@ -28,7 +28,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
@@ -40,13 +40,21 @@ export default function TodayScreen() {
   const [elseGuideTarget, setElseGuideTarget]     = useState<{ name: string } | null>(null);
   const elseSearchRef = useRef<TextInput>(null);
 
-  // Inline "log as cooked" panel state
+  // Inline "log as cooked" panel state — planned meal
   const [logOpen, setLogOpen]               = useState(false);
   const [logRating, setLogRating]           = useState<number | null>(null);
   const [logAgain, setLogAgain]             = useState<boolean | null>(null);
   const [logNotes, setLogNotes]             = useState('');
   const [logSaving, setLogSaving]           = useState(false);
   const [logDone, setLogDone]               = useState(false);
+
+  // Inline "log as cooked" panel state — something else
+  const [elseLogOpen, setElseLogOpen]       = useState(false);
+  const [elseLogRating, setElseLogRating]   = useState<number | null>(null);
+  const [elseLogAgain, setElseLogAgain]     = useState<boolean | null>(null);
+  const [elseLogNotes, setElseLogNotes]     = useState('');
+  const [elseLogSaving, setElseLogSaving]   = useState(false);
+  const [elseLogDone, setElseLogDone]       = useState(false);
 
   const todayIndex = (new Date().getDay() + 6) % 7;
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
@@ -93,6 +101,38 @@ export default function TodayScreen() {
       console.error('Failed to log cooked meal', e);
     }
     setLogSaving(false);
+  };
+
+  const handleElseLogCooked = async () => {
+    if (!tonightSomethingElseName || !userId) return;
+    setElseLogSaving(true);
+    try {
+      await logCookedMeal({
+        user_id: userId,
+        cooked_date: localDateString(),
+        planned_meal_id: null,
+        actual_meal_name: tonightSomethingElseName,
+        rating: elseLogRating as 1 | 2 | 3 | 4 | 5 | null,
+        would_cook_again: elseLogAgain,
+        notes: elseLogNotes.trim() || null,
+        voice_note_url: null,
+        ate_out: false,
+      });
+      if (elseLogRating != null) {
+        const match = findStashMatch(tonightSomethingElseName, recipes);
+        if (match) {
+          try {
+            const updated = await updateRecipe(match.id, { ...match, rating: elseLogRating as 1|2|3|4|5 });
+            updateRecipeInStore(match.id, updated);
+          } catch { /* non-critical */ }
+        }
+      }
+      setElseLogDone(true);
+      setElseLogOpen(false);
+    } catch (e) {
+      console.error('Failed to log something-else meal', e);
+    }
+    setElseLogSaving(false);
   };
 
   const elseRecipes = recipes
@@ -323,6 +363,64 @@ export default function TodayScreen() {
             <Text style={styles.emptyText}>Nothing chosen yet — tap to pick tonight's meal</Text>
           </TouchableOpacity>
         )}
+
+        {/* Something-else card with its own log panel */}
+        {tonightSomethingElseName ? (
+          <View style={[styles.mealCard, { marginTop: 10 }]}>
+            <Text style={styles.mealName}>{tonightSomethingElseName}</Text>
+            <Text style={styles.mealDesc}>Something else tonight</Text>
+            {elseLogDone ? (
+              <View style={styles.logDoneRow}>
+                <Text style={styles.logDoneText}>
+                  Cooked ✓{elseLogRating != null ? `  ·  ${elseLogRating}/5 ${RATING_EMOJI[elseLogRating]}` : ''}
+                </Text>
+              </View>
+            ) : elseLogOpen ? (
+              <View style={styles.logPanel}>
+                <Text style={styles.logPanelLabel}>How was it?</Text>
+                <View style={styles.ratingRow}>
+                  {[1, 2, 3, 4, 5].map((r) => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[styles.ratingChip, elseLogRating === r && styles.ratingChipSelected]}
+                      onPress={() => setElseLogRating(r)}
+                    >
+                      <Text style={[styles.ratingNum, elseLogRating === r && styles.ratingNumSelected]}>{r}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {elseLogRating != null && (
+                  <Text style={styles.ratingLabel}>{RATING_LABELS[elseLogRating]} {RATING_EMOJI[elseLogRating]}</Text>
+                )}
+                <View style={styles.yesNoRow}>
+                  <TouchableOpacity style={[styles.yesNoChip, elseLogAgain === true && styles.yesChipSelected]} onPress={() => setElseLogAgain(true)}>
+                    <Text style={styles.yesNoText}>Cook again</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.yesNoChip, elseLogAgain === false && styles.noChipSelected]} onPress={() => setElseLogAgain(false)}>
+                    <Text style={styles.yesNoText}>One-off</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput style={styles.notesInput} placeholder="Any notes? (optional)" value={elseLogNotes} onChangeText={setElseLogNotes} multiline />
+                <View style={styles.logBtnRow}>
+                  <TouchableOpacity style={styles.logCancelBtn} onPress={() => setElseLogOpen(false)}>
+                    <Text style={styles.logCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.logSaveBtn, elseLogSaving && styles.logSaveBtnDisabled]}
+                    onPress={handleElseLogCooked}
+                    disabled={elseLogSaving}
+                  >
+                    {elseLogSaving ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.logSaveText}>Save</Text>}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.logButton} onPress={() => setElseLogOpen(true)}>
+                <Text style={styles.logButtonText}>Cooked it? Log a review →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.section}>
