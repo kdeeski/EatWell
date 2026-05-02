@@ -1042,7 +1042,7 @@ export async function saveRecipe(
 ): Promise<Recipe> {
   const { data: result, error } = await supabase
     .from('recipes')
-    .insert({ ...data, user_id: userId })
+    .upsert({ ...data, user_id: userId }, { onConflict: 'user_id,name', ignoreDuplicates: false })
     .select()
     .single();
   if (error) throw error;
