@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
-  ActivityIndicator, Linking, TextInput, Alert,
+  ActivityIndicator, Linking, TextInput, Alert, Platform,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -379,6 +379,23 @@ export default function RecipesScreen() {
                         </View>
                       </View>
                     )}
+
+                    <View style={styles.expandedActions}>
+                      <TouchableOpacity onPress={() => handleEdit(item)}>
+                        <Text style={styles.expandedEdit}>Edit</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.expandedActionDivider}>·</Text>
+                      <TouchableOpacity onPress={() => Alert.alert(
+                        'Delete recipe',
+                        `Remove "${item.name}" from your stash?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => handleDelete(item) },
+                        ]
+                      )}>
+                        <Text style={styles.expandedDelete}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </TouchableOpacity>
@@ -516,6 +533,10 @@ const styles = StyleSheet.create({
   wineError: { fontSize: 12, color: '#EF4444' },
 
   expandedBitePairing: { fontSize: 13, fontWeight: '600', color: '#3B7A57', marginTop: 2 },
+  expandedActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  expandedEdit: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+  expandedActionDivider: { fontSize: 13, color: '#D1D5DB' },
+  expandedDelete: { fontSize: 13, color: '#EF4444', fontWeight: '500' },
   biteSection: { backgroundColor: '#F0F7F3', borderRadius: 10, borderWidth: 1, borderColor: '#B7D9C8', padding: 10, gap: 4, marginTop: 2 },
   biteLabel: { fontSize: 11, fontStyle: 'italic', color: '#3B7A57', fontWeight: '600', marginBottom: 2 },
   biteText: { fontSize: 13, color: '#374151', lineHeight: 20 },
