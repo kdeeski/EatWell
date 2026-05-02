@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
-import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe } from '../../lib/data';
+import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -58,6 +58,19 @@ export default function TodayScreen() {
 
   const todayIndex = (new Date().getDay() + 6) % 7;
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
+
+  // Restore something-else cook state on reload
+  useEffect(() => {
+    if (!userId) return;
+    loadTodaysSomethingElseCook(userId)
+      .then((cook) => {
+        if (!cook) return;
+        setTonightSomethingElseName(cook.actual_meal_name);
+        setElseLogDone(true);
+        if (cook.rating != null) setElseLogRating(cook.rating);
+      })
+      .catch(() => {});
+  }, [userId]);
 
   // Load any review already logged for tonight's meal (e.g. via Tonight card yesterday)
   useEffect(() => {

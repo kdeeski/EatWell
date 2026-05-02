@@ -1068,6 +1068,24 @@ export async function saveRecipeBitePairing(id: string, bitePairing: string): Pr
   if (error) throw error;
 }
 
+export async function loadTodaysSomethingElseCook(
+  userId: string
+): Promise<{ actual_meal_name: string; rating: number | null } | null> {
+  const today = localDateString();
+  const { data, error } = await supabase
+    .from('cooked_meals')
+    .select('actual_meal_name, rating')
+    .eq('user_id', userId)
+    .eq('cooked_date', today)
+    .is('planned_meal_id', null)
+    .eq('ate_out', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  if (error) return null;
+  return data as { actual_meal_name: string; rating: number | null };
+}
+
 export async function loadCookLogForRecipe(
   userId: string,
   recipeName: string
