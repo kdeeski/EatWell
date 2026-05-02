@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { loadCookNotesForRecipe } from '../../lib/data';
+import { loadCookLogForRecipe } from '../../lib/data';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Linking, ActivityIndicator, Platform, Alert,
@@ -109,14 +109,17 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
   const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
   const [wineLoading, setWineLoading] = useState(false);
   const [wineError, setWineError] = useState<string | null>(null);
-  const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string; rating: number | null }>>([]);
+  const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string | null; rating: number | null }>>([]);
 
   useEffect(() => {
     if (!userId) return;
-    loadCookNotesForRecipe(userId, recipe.name)
+    loadCookLogForRecipe(userId, recipe.name)
       .then(setCookLog)
       .catch(() => {});
   }, [userId, recipe.name]);
+
+  const ratings = cookLog.map((e) => e.rating).filter((r): r is number => r != null);
+  const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : null;
   const badgeColour = CATEGORY_COLOURS[recipe.category];
   const guide = recipe.guide_json;
 
@@ -172,9 +175,14 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                   {CATEGORY_LABELS[recipe.category]}
                 </Text>
               </View>
-              {recipe.rating != null && (
-                <Text style={styles.rating}>{recipe.rating}/5</Text>
-              )}
+              {avgRating != null ? (
+                <Text style={styles.rating}>
+                  ★ {avgRating % 1 === 0 ? avgRating.toFixed(0) : avgRating.toFixed(1)}/5
+                  {ratings.length > 1 ? <Text style={styles.ratingCount}> ({ratings.length}×)</Text> : null}
+                </Text>
+              ) : recipe.rating != null ? (
+                <Text style={styles.rating}>★ {recipe.rating}/5</Text>
+              ) : null}
             </View>
 
             {/* Description */}
@@ -301,15 +309,14 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
             </View>}
 
             {/* Cook log */}
-            {cookLog.length > 0 && (
+            {cookLog.some((e) => e.notes) && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Cook log</Text>
-                {cookLog.map((entry, i) => {
-                  const [y, m, d] = entry.cooked_date.split('-');
-                  const dateStr = `${d}/${m}`;
+                {cookLog.filter((e) => e.notes).map((entry, i) => {
+                  const [, m, d] = entry.cooked_date.split('-');
                   return (
                     <View key={i} style={styles.cookLogRow}>
-                      <Text style={styles.cookLogDate}>{dateStr}</Text>
+                      <Text style={styles.cookLogDate}>{d}/{m}</Text>
                       <Text style={styles.cookLogNote}>{entry.notes}</Text>
                     </View>
                   );
@@ -382,6 +389,8 @@ const styles = StyleSheet.create({
   componentHint: { fontSize: 12, color: '#9CA3AF' },
   componentDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
   componentStashLink: { fontSize: 14, color: '#3B7A57', fontWeight: '600' },
+
+  ratingCount: { fontSize: 12, color: '#9CA3AF', fontWeight: '400' },
 
   cookLogRow: { flexDirection: 'row', gap: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   cookLogDate: { fontSize: 13, fontWeight: '600', color: '#9CA3AF', minWidth: 36 },
