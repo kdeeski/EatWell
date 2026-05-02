@@ -368,14 +368,14 @@ export default function TodayScreen() {
               </TouchableOpacity>
             )}
           </View>
-        ) : (
+        ) : !elseLogDone ? (
           <TouchableOpacity
             style={styles.emptyCard}
             onPress={() => router.push('/checkin')}
           >
             <Text style={styles.emptyText}>Nothing chosen yet — tap to pick tonight's meal</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
 
         {/* Something-else card with its own log panel */}
         {tonightSomethingElseName ? (
