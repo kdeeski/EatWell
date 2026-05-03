@@ -4,12 +4,12 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { saveCheckin, logCookedMeal, localDateString, updateRecipe, loadMealPlanForWeek, getThisWeekMonday, fetchCookedMealForPlannedMeal } from '../../lib/data';
+import { saveCheckin, logCookedMeal, localDateString, updateRecipe, loadMealPlanForWeek, getThisWeekMonday, fetchCookedMealForPlannedMeal, loadCookedMealForDate } from '../../lib/data';
 import { findStashMatch } from '../../lib/recipes';
 
 type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
@@ -62,6 +62,34 @@ export default function CheckinFlow() {
   const [notes, setNotes] = useState('');
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  type LastNightCooked = { actual_meal_name: string; rating: number | null; would_cook_again: boolean | null; notes: string | null; planned_meal_id: string | null };
+  const [lastNightCooked, setLastNightCooked] = useState<LastNightCooked | null>(null);
+  const [lastNightCookedLoading, setLastNightCookedLoading] = useState(true);
+
+  // Load yesterday's cooked meal from DB on mount
+  useEffect(() => {
+    if (!userId) { setLastNightCookedLoading(false); return; }
+    if (todayCheckin?.completed_at) { setLastNightCookedLoading(false); return; }
+    loadCookedMealForDate(userId, localDateString(yesterday))
+      .then((cooked) => {
+        if (cooked) {
+          setLastNightCooked(cooked);
+          if (cooked.planned_meal_id) {
+            setLastNightChoice(cooked.planned_meal_id);
+          } else {
+            setLastNightChoice('something_else');
+            setSomethingElseName(cooked.actual_meal_name);
+          }
+          if (cooked.rating != null) setRating(cooked.rating);
+          if (cooked.would_cook_again != null) setWouldCookAgain(cooked.would_cook_again);
+          if (cooked.notes) setNotes(cooked.notes);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLastNightCookedLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // Pre-fill from "Something else tonight" choice made last evening
   useEffect(() => {
@@ -195,8 +223,8 @@ export default function CheckinFlow() {
     try {
       const today = localDateString();
 
-      // Log cooked meal if they cooked the planned meal
-      if (lastNightChoice === lastNightsMeal?.id && userId) {
+      // Log cooked meal — skip if already logged (lastNightCooked was loaded from DB)
+      if (lastNightChoice === lastNightsMeal?.id && userId && !lastNightCooked) {
         await logCookedMeal({
           user_id: userId,
           cooked_date: localDateString(yesterday),
@@ -219,7 +247,7 @@ export default function CheckinFlow() {
             } catch { /* non-critical */ }
           }
         }
-      } else if (lastNightChoice === 'something_else' && somethingElseName.trim() && userId) {
+      } else if (lastNightChoice === 'something_else' && somethingElseName.trim() && userId && !lastNightCooked) {
         await logCookedMeal({
           user_id: userId,
           cooked_date: localDateString(yesterday),
@@ -241,7 +269,7 @@ export default function CheckinFlow() {
             } catch { /* non-critical */ }
           }
         }
-      } else if ((lastNightChoice === 'ate_out') && userId) {
+      } else if (lastNightChoice === 'ate_out' && userId && !lastNightCooked) {
         await logCookedMeal({
           user_id: userId,
           cooked_date: localDateString(yesterday),
@@ -302,27 +330,77 @@ export default function CheckinFlow() {
         {/* Debrief */}
         {step === 'debrief' && (
           <View>
-            <Text style={styles.stepTitle}>What did you end up cooking last night?</Text>
+            {lastNightCookedLoading ? (
+              <ActivityIndicator color="#3B7A57" style={{ marginTop: 40 }} />
+            ) : lastNightCooked ? (
+              <>
+                <Text style={styles.sectionMicro}>Last night</Text>
+                <View style={styles.knownMealCard}>
+                  <Text style={styles.knownMealName}>{lastNightCooked.actual_meal_name}</Text>
+                  {lastNightCooked.rating != null ? (
+                    <Text style={styles.knownMealRating}>
+                      {lastNightCooked.rating}/5 · {RATING_LABELS[lastNightCooked.rating]}
+                      {lastNightCooked.would_cook_again === true ? '  ·  Would cook again' : ''}
+                      {lastNightCooked.would_cook_again === false ? '  ·  Wouldn\'t repeat' : ''}
+                    </Text>
+                  ) : (
+                    <>
+                      <Text style={[styles.subLabel, { marginTop: 12 }]}>How was it?</Text>
+                      <View style={styles.ratingRow}>
+                        {[1, 2, 3, 4, 5].map((r) => (
+                          <TouchableOpacity
+                            key={r}
+                            style={[styles.ratingChip, rating === r && styles.ratingChipSelected]}
+                            onPress={() => setRating(r)}
+                          >
+                            <Text style={[styles.ratingNum, rating === r && styles.ratingNumSelected]}>{r}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      {rating != null && (
+                        <Text style={styles.ratingSelectedLabel}>{RATING_LABELS[rating]}</Text>
+                      )}
+                    </>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.changeLink}
+                  onPress={() => { setLastNightCooked(null); setLastNightChoice(null); setRating(null); setWouldCookAgain(null); setNotes(''); setSomethingElseName(''); }}
+                >
+                  <Text style={styles.changeLinkText}>Not right? Change →</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { marginTop: 24 }]}
+                  onPress={() => setStep('tonight')}
+                >
+                  <Text style={styles.primaryButtonText}>What about tonight? →</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.stepTitle}>What did you end up cooking last night?</Text>
 
-            {lastNightsMeal && (
-              <TouchableOpacity
-                style={[styles.mealOption, lastNightChoice === lastNightsMeal.id && styles.mealOptionSelected]}
-                onPress={() => handleDebrief(lastNightsMeal.id)}
-              >
-                <Text style={styles.mealOptionName}>{lastNightsMeal.meal_name}</Text>
-                <Text style={styles.mealOptionMeta}>The plan</Text>
-              </TouchableOpacity>
+                {lastNightsMeal && (
+                  <TouchableOpacity
+                    style={[styles.mealOption, lastNightChoice === lastNightsMeal.id && styles.mealOptionSelected]}
+                    onPress={() => handleDebrief(lastNightsMeal.id)}
+                  >
+                    <Text style={styles.mealOptionName}>{lastNightsMeal.meal_name}</Text>
+                    <Text style={styles.mealOptionMeta}>The plan</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('something_else')}>
+                  <Text style={styles.mealOptionName}>Something else</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('ate_out')}>
+                  <Text style={styles.mealOptionName}>Ate out / ordered in</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('didnt_cook')}>
+                  <Text style={styles.mealOptionName}>Didn't cook</Text>
+                </TouchableOpacity>
+              </>
             )}
-
-            <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('something_else')}>
-              <Text style={styles.mealOptionName}>Something else</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('ate_out')}>
-              <Text style={styles.mealOptionName}>Ate out / ordered in</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mealOption} onPress={() => handleDebrief('didnt_cook')}>
-              <Text style={styles.mealOptionName}>Didn't cook</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -600,6 +678,23 @@ const styles = StyleSheet.create({
   skipLink: { paddingVertical: 14, alignItems: 'center' },
   skipLinkText: { fontSize: 14, color: '#9CA3AF' },
   summaryTapHint: { fontSize: 11, color: '#9CA3AF', marginTop: 6 },
+
+  sectionMicro: {
+    fontSize: 11, fontWeight: '700', color: '#9CA3AF',
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+  },
+  knownMealCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 8,
+  },
+  knownMealName: { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
+  knownMealRating: { fontSize: 14, color: '#6B7280', marginTop: 6 },
+  changeLink: { alignSelf: 'flex-start', paddingVertical: 4 },
+  changeLinkText: { fontSize: 13, color: '#9CA3AF' },
 
   stashResults: {
     backgroundColor: '#FFFFFF',

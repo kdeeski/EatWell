@@ -1040,9 +1040,20 @@ export async function saveRecipe(
   userId: string,
   data: Omit<Recipe, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'times_cooked'>
 ): Promise<Recipe> {
+  const { data: existing } = await supabase
+    .from('recipes')
+    .select('id')
+    .eq('user_id', userId)
+    .ilike('name', data.name)
+    .maybeSingle();
+
+  if (existing) {
+    return updateRecipe(existing.id, data);
+  }
+
   const { data: result, error } = await supabase
     .from('recipes')
-    .upsert({ ...data, user_id: userId }, { onConflict: 'user_id,name', ignoreDuplicates: false })
+    .insert({ ...data, user_id: userId })
     .select()
     .single();
   if (error) throw error;
@@ -1066,6 +1077,22 @@ export async function updateRecipe(
 export async function saveRecipeBitePairing(id: string, bitePairing: string): Promise<void> {
   const { error } = await supabase.from('recipes').update({ bite_pairing: bitePairing }).eq('id', id);
   if (error) throw error;
+}
+
+export async function loadCookedMealForDate(
+  userId: string,
+  date: string
+): Promise<{ actual_meal_name: string; rating: number | null; would_cook_again: boolean | null; notes: string | null; planned_meal_id: string | null } | null> {
+  const { data } = await supabase
+    .from('cooked_meals')
+    .select('actual_meal_name, rating, would_cook_again, notes, planned_meal_id')
+    .eq('user_id', userId)
+    .eq('cooked_date', date)
+    .eq('ate_out', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data as { actual_meal_name: string; rating: number | null; would_cook_again: boolean | null; notes: string | null; planned_meal_id: string | null } | null;
 }
 
 export async function loadTodaysSomethingElseCook(
