@@ -61,6 +61,8 @@ export default function CheckinFlow() {
   const [wouldCookAgain, setWouldCookAgain] = useState<boolean | null>(null);
   const [notes, setNotes] = useState('');
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
+  const [tonightStashSearch, setTonightStashSearch] = useState('');
+  const [tonightStashName, setTonightStashName] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   type LastNightCooked = { actual_meal_name: string; rating: number | null; would_cook_again: boolean | null; notes: string | null; planned_meal_id: string | null };
@@ -215,6 +217,19 @@ export default function CheckinFlow() {
 
   const handleRatingDone = () => {
     setStep('tonight');
+  };
+
+  const handleTonightStashPick = async (recipeName: string) => {
+    const matchedMeal = tonightOptions.find(
+      (m) => m.meal_name.toLowerCase() === recipeName.toLowerCase()
+    );
+    if (matchedMeal) {
+      await handleTonightChoice(matchedMeal.id);
+      return;
+    }
+    setTonightStashName(recipeName);
+    setTonightSomethingElseName(recipeName);
+    await handleTonightChoice('not_sure');
   };
 
   const handleTonightChoice = async (mealId: string) => {
@@ -510,28 +525,65 @@ export default function CheckinFlow() {
         {step === 'tonight' && (
           <View>
             <Text style={styles.stepTitle}>What are you thinking for tonight?</Text>
-            {tonightOptions.length === 0 ? (
-              <Text style={styles.mutedText}>Nothing planned — you're on your own tonight!</Text>
-            ) : (
-              tonightOptions.map((meal) => (
-                <TouchableOpacity
-                  key={meal.id}
-                  style={styles.mealOption}
-                  onPress={() => handleTonightChoice(meal.id)}
-                >
-                  <Text style={styles.mealOptionName}>{meal.meal_name}</Text>
-                  {meal.description ? (
-                    <Text style={styles.mealOptionDesc} numberOfLines={2}>{meal.description}</Text>
-                  ) : null}
-                  {meal.is_fish && <Text style={styles.fishNote}>Buy fresh today</Text>}
-                  {meal.estimated_prep_minutes ? (
-                    <Text style={styles.mealOptionMeta}>~{meal.estimated_prep_minutes} min</Text>
-                  ) : null}
-                </TouchableOpacity>
-              ))
+
+            {tonightOptions.length > 0 && (
+              <>
+                <Text style={styles.sectionMicro}>This week's plan</Text>
+                {tonightOptions.map((meal) => (
+                  <TouchableOpacity
+                    key={meal.id}
+                    style={styles.mealOption}
+                    onPress={() => handleTonightChoice(meal.id)}
+                  >
+                    <Text style={styles.mealOptionName}>{meal.meal_name}</Text>
+                    {meal.description ? (
+                      <Text style={styles.mealOptionDesc} numberOfLines={2}>{meal.description}</Text>
+                    ) : null}
+                    {meal.is_fish && <Text style={styles.fishNote}>Buy fresh today</Text>}
+                    {meal.estimated_prep_minutes ? (
+                      <Text style={styles.mealOptionMeta}>~{meal.estimated_prep_minutes} min</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+              </>
             )}
+
+            <Text style={[styles.sectionMicro, { marginTop: tonightOptions.length > 0 ? 20 : 0 }]}>
+              From my recipe stash
+            </Text>
+            <TextInput
+              style={styles.stashSearchInput}
+              placeholder="Search recipes…"
+              value={tonightStashSearch}
+              onChangeText={setTonightStashSearch}
+              autoCapitalize="none"
+            />
+            {(() => {
+              const q = tonightStashSearch.trim().toLowerCase();
+              if (!q) return null;
+              const hits = recipes
+                .filter((r) => r.category !== 'cocktails' && r.category !== 'glossary')
+                .filter((r) => r.name.toLowerCase().includes(q))
+                .slice(0, 6);
+              if (!hits.length) return <Text style={styles.mutedText}>No matches</Text>;
+              return (
+                <View style={styles.stashResults}>
+                  {hits.map((r) => (
+                    <TouchableOpacity
+                      key={r.id}
+                      style={styles.stashResult}
+                      onPress={() => handleTonightStashPick(r.name)}
+                    >
+                      <Text style={styles.stashResultName}>{r.name}</Text>
+                      <Text style={styles.stashResultCat}>{r.category.replace(/_/g, ' ')}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              );
+            })()}
+
             <TouchableOpacity
-              style={[styles.mealOption, styles.mealOptionMuted]}
+              style={[styles.mealOption, styles.mealOptionMuted, { marginTop: 20 }]}
               onPress={() => handleTonightChoice('not_sure')}
             >
               <Text style={styles.mealOptionName}>Not sure yet</Text>
@@ -543,13 +595,13 @@ export default function CheckinFlow() {
         {step === 'done' && (
           <View style={styles.doneBlock}>
             <Text style={styles.doneTitle}>All set.</Text>
-            {tonightChoice && tonightChoice !== 'not_sure' && (
+            {(tonightStashName || (tonightChoice && tonightChoice !== 'not_sure')) && (
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>Tonight</Text>
                 <Text style={styles.summaryMeal}>
-                  {plannedMeals.find((m) => m.id === tonightChoice)?.meal_name}
+                  {tonightStashName ?? plannedMeals.find((m) => m.id === tonightChoice)?.meal_name}
                 </Text>
-                {plannedMeals.find((m) => m.id === tonightChoice)?.is_fish && (
+                {!tonightStashName && plannedMeals.find((m) => m.id === tonightChoice)?.is_fish && (
                   <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
                 )}
               </View>
@@ -696,6 +748,16 @@ const styles = StyleSheet.create({
   changeLink: { alignSelf: 'flex-start', paddingVertical: 4 },
   changeLinkText: { fontSize: 13, color: '#9CA3AF' },
 
+  stashSearchInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    fontSize: 15,
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
   stashResults: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,

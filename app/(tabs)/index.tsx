@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
-import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook } from '../../lib/data';
+import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook, loadCookedMealForDate } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -58,6 +58,15 @@ export default function TodayScreen() {
 
   const todayIndex = (new Date().getDay() + 6) % 7;
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
+
+  const [lastNightAlreadyLogged, setLastNightAlreadyLogged] = useState(false);
+  useEffect(() => {
+    if (!userId) return;
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    loadCookedMealForDate(userId, localDateString(yesterday))
+      .then((c) => { if (c) setLastNightAlreadyLogged(true); })
+      .catch(() => {});
+  }, [userId]);
 
   // Restore something-else cook state on reload
   useEffect(() => {
@@ -240,7 +249,9 @@ export default function TodayScreen() {
         >
           <Text style={styles.checkinTitle}>Morning Check-In</Text>
           <Text style={styles.checkinSub}>
-            What did you cook last night? What are you thinking for tonight?
+            {lastNightAlreadyLogged
+              ? 'What are you thinking for tonight?'
+              : 'What did you cook last night? What are you thinking for tonight?'}
           </Text>
           <Text style={styles.checkinCta}>Let's do it →</Text>
         </TouchableOpacity>
