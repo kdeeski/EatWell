@@ -113,7 +113,9 @@ export default function RecipesScreen() {
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
-        (r.description ?? '').toLowerCase().includes(q)
+        (r.description ?? '').toLowerCase().includes(q) ||
+        (r.ingredients ?? '').toLowerCase().includes(q) ||
+        (r.source_book ?? '').toLowerCase().includes(q)
       );
     });
   }, [recipes, activeFilter, searchQuery]);
@@ -229,6 +231,9 @@ export default function RecipesScreen() {
             if (item.source_url) {
               try { sourceDomain = new URL(item.source_url).hostname.replace(/^www\./, ''); } catch {}
             }
+            const sourceBookLabel = item.source_book
+              ? (item.page_number ? `${item.source_book}, p.${item.page_number}` : item.source_book)
+              : null;
             return (
               <TouchableOpacity
                 style={[styles.row, isExpanded && styles.rowExpanded]}
@@ -249,8 +254,8 @@ export default function RecipesScreen() {
                       {item.rating != null && (
                         <Text style={styles.rowRating}>{item.rating}/5</Text>
                       )}
-                      {sourceDomain && !isExpanded ? (
-                        <Text style={styles.rowDomain}>{sourceDomain}</Text>
+                      {!isExpanded && (sourceDomain || sourceBookLabel) ? (
+                        <Text style={styles.rowDomain}>{sourceBookLabel ?? sourceDomain}</Text>
                       ) : null}
                       {!isExpanded && (
                         <Text style={styles.rowHint}>· Tap for details</Text>
@@ -265,6 +270,8 @@ export default function RecipesScreen() {
                       <TouchableOpacity onPress={() => Linking.openURL(item.source_url!)} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}>
                         <Text style={styles.expandedDomain}>{sourceDomain}</Text>
                       </TouchableOpacity>
+                    ) : sourceBookLabel ? (
+                      <Text style={styles.expandedDomain}>📖 {sourceBookLabel}</Text>
                     ) : null}
 
                     {item.description ? (
@@ -282,6 +289,7 @@ export default function RecipesScreen() {
                         <Text style={styles.expandedViewFull}>
                           {item.source_url ? 'View original recipe →' : 'View full recipe →'}
                         </Text>
+
                       </TouchableOpacity>
                     )}
 

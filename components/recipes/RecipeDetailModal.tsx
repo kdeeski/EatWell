@@ -261,7 +261,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               </>
             )}
 
-            {/* Source URL */}
+            {/* Source */}
             {recipe.source_url ? (() => {
               let domain = recipe.source_url;
               try { domain = new URL(recipe.source_url).hostname.replace(/^www\./, ''); } catch {}
@@ -273,7 +273,11 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                   </TouchableOpacity>
                 </View>
               );
-            })() : null}
+            })() : recipe.source_book ? (
+              <View style={styles.section}>
+                <Text style={styles.sourceLinkLabel}>📖 {recipe.source_book}{recipe.page_number ? `, p. ${recipe.page_number}` : ''}</Text>
+              </View>
+            ) : null}
 
             {/* Drink pairing — only for mains/sides/desserts/baking */}
             {!['glossary', 'sauces_dressings', 'marinades_rubs', 'cocktails'].includes(recipe.category) && <View style={styles.section}>

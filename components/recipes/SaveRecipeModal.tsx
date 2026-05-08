@@ -64,6 +64,9 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   const [ingredients, setIngredients] = useState(existingRecipe?.ingredients ?? prefill?.ingredients ?? '');
   const [method, setMethod]           = useState(existingRecipe?.method ?? prefill?.method ?? '');
   const [sourceUrl, setSourceUrl]     = useState(existingRecipe?.source_url ?? '');
+  const [sourceBook, setSourceBook]   = useState(existingRecipe?.source_book ?? '');
+  const [pageNumber, setPageNumber]   = useState(existingRecipe?.page_number?.toString() ?? '');
+  const [sourceType, setSourceType]   = useState<'web' | 'book'>(existingRecipe?.source_book ? 'book' : 'web');
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
@@ -81,7 +84,9 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
         description: description.trim() || null,
         ingredients: ingredients.trim() || null,
         method: method.trim() || null,
-        source_url: sourceUrl.trim() || null,
+        source_url: sourceType === 'web' ? (sourceUrl.trim() || null) : null,
+        source_book: sourceType === 'book' ? (sourceBook.trim() || null) : null,
+        page_number: sourceType === 'book' && pageNumber.trim() ? (parseInt(pageNumber, 10) || null) : null,
         rating: existingRecipe?.rating ?? null,
         would_cook_again: existingRecipe?.would_cook_again ?? null,
         cooked_meal_id: existingRecipe?.cooked_meal_id ?? null,
@@ -212,24 +217,60 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                 </ScrollView>
               </View>
 
-              {/* Source URL */}
+              {/* Source */}
               <View style={styles.fieldGroup}>
-                <View style={styles.fieldLabelRow}>
-                  <Text style={styles.fieldLabel}>Source URL</Text>
-                  <TouchableOpacity onPress={() => setShowBrowser(true)}>
-                    <Text style={styles.findOnWebBtn}>Find on web →</Text>
+                <Text style={styles.fieldLabel}>Source</Text>
+                <View style={styles.sourceToggle}>
+                  <TouchableOpacity
+                    style={[styles.sourceToggleBtn, sourceType === 'web' && styles.sourceToggleBtnActive]}
+                    onPress={() => setSourceType('web')}
+                  >
+                    <Text style={[styles.sourceToggleBtnText, sourceType === 'web' && styles.sourceToggleBtnTextActive]}>Web</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.sourceToggleBtn, sourceType === 'book' && styles.sourceToggleBtnActive]}
+                    onPress={() => setSourceType('book')}
+                  >
+                    <Text style={[styles.sourceToggleBtnText, sourceType === 'book' && styles.sourceToggleBtnTextActive]}>Book</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput
-                  style={styles.textInput}
-                  value={sourceUrl}
-                  onChangeText={setSourceUrl}
-                  placeholder="https://..."
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="url"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+
+                {sourceType === 'web' ? (
+                  <View style={styles.fieldLabelRow}>
+                    <TextInput
+                      style={[styles.textInput, { flex: 1 }]}
+                      value={sourceUrl}
+                      onChangeText={setSourceUrl}
+                      placeholder="https://..."
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="url"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity onPress={() => setShowBrowser(true)} style={{ marginLeft: 8 }}>
+                      <Text style={styles.findOnWebBtn}>Find →</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.bookRow}>
+                    <TextInput
+                      style={[styles.textInput, { flex: 1 }]}
+                      value={sourceBook}
+                      onChangeText={setSourceBook}
+                      placeholder="Book title"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="words"
+                    />
+                    <TextInput
+                      style={[styles.textInput, styles.pageInput]}
+                      value={pageNumber}
+                      onChangeText={setPageNumber}
+                      placeholder="p."
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="number-pad"
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Description */}
@@ -332,6 +373,17 @@ const styles = StyleSheet.create({
     minHeight: 200,
     paddingTop: 12,
   },
+
+  sourceToggle: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  sourceToggleBtn: {
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+  },
+  sourceToggleBtnActive: { backgroundColor: '#3B7A5722', borderColor: '#3B7A57' },
+  sourceToggleBtnText: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
+  sourceToggleBtnTextActive: { color: '#3B7A57', fontWeight: '600' },
+  bookRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  pageInput: { width: 72 },
 
   pillScroll: { marginHorizontal: -20, paddingHorizontal: 20 },
   pillRow: { flexDirection: 'row', gap: 8, paddingRight: 20 },

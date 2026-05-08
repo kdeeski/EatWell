@@ -288,6 +288,8 @@ export interface Recipe {
   ingredients: string | null;
   method: string | null;
   source_url: string | null;
+  source_book: string | null;
+  page_number: number | null;
   rating: number | null;
   would_cook_again: boolean | null;
   times_cooked: number;
