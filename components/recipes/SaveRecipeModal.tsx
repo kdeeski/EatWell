@@ -78,20 +78,25 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
     setError(null);
     setSaving(true);
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         name: name.trim(),
         category,
         description: description.trim() || null,
         ingredients: ingredients.trim() || null,
         method: method.trim() || null,
         source_url: sourceType === 'web' ? (sourceUrl.trim() || null) : null,
-        source_book: sourceType === 'book' ? (sourceBook.trim() || null) : null,
-        page_number: sourceType === 'book' && pageNumber.trim() ? (parseInt(pageNumber, 10) || null) : null,
         rating: existingRecipe?.rating ?? null,
         would_cook_again: existingRecipe?.would_cook_again ?? null,
         cooked_meal_id: existingRecipe?.cooked_meal_id ?? null,
         guide_json: existingRecipe?.guide_json ?? null,
       };
+
+      // Only include book fields when book source is active — avoids errors
+      // if migration 016 hasn't been applied yet (columns won't exist).
+      if (sourceType === 'book') {
+        payload.source_book = sourceBook.trim() || null;
+        payload.page_number = pageNumber.trim() ? (parseInt(pageNumber, 10) || null) : null;
+      }
 
       if (isEdit && existingRecipe) {
         const updated = await updateRecipe(existingRecipe.id, payload);
