@@ -132,6 +132,8 @@ export default function GardenScreen() {
           why_now: s.why_now,
           why_worth_growing: s.why_worth_growing,
           why_suits_cooking: s.why_suits_cooking,
+          soil_notes: s.soil_notes ?? null,
+          sun_notes: s.sun_notes ?? null,
           month_generated: now.getMonth() + 1,
         }))
       );

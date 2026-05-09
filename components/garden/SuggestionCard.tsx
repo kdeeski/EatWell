@@ -41,6 +41,17 @@ export default function SuggestionCard({ suggestion, onAddToGarden, onDismiss }:
             <Text style={styles.whyText}>{suggestion.why_suits_cooking}</Text>
           </View>
 
+          {(suggestion.soil_notes || suggestion.sun_notes) && (
+            <View style={styles.growingNotes}>
+              {suggestion.sun_notes ? (
+                <Text style={styles.growingNote}>☀ {suggestion.sun_notes}</Text>
+              ) : null}
+              {suggestion.soil_notes ? (
+                <Text style={styles.growingNote}>⬡ {suggestion.soil_notes}</Text>
+              ) : null}
+            </View>
+          )}
+
           <View style={styles.actions}>
             <TouchableOpacity style={styles.addButton} onPress={onAddToGarden}>
               <Text style={styles.addButtonText}>+ Add to Garden</Text>
@@ -97,6 +108,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#064E3B',
     lineHeight: 19,
+  },
+
+  growingNotes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#A7F3D0',
+  },
+  growingNote: {
+    fontSize: 12,
+    color: '#065F46',
+    backgroundColor: '#A7F3D0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
 
   actions: {

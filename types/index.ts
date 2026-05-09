@@ -110,6 +110,8 @@ export interface GardenSuggestion {
   why_now: string;
   why_worth_growing: string;
   why_suits_cooking: string;
+  soil_notes: string | null;
+  sun_notes: string | null;
   month_generated: number;
   dismissed: boolean;
   added_to_garden: boolean;

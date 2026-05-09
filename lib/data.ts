@@ -213,9 +213,19 @@ export async function saveGardenSuggestions(
     why_now: string;
     why_worth_growing: string;
     why_suits_cooking: string;
+    soil_notes?: string | null;
+    sun_notes?: string | null;
     month_generated: number;
   }>
 ): Promise<GardenSuggestion[]> {
+  // Clear old non-dismissed suggestions before inserting fresh ones to prevent duplicates
+  await supabase
+    .from('garden_suggestions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('dismissed', false)
+    .eq('added_to_garden', false);
+
   const rows = suggestions.map((s) => ({ ...s, user_id: userId }));
   const { data, error } = await supabase
     .from('garden_suggestions')

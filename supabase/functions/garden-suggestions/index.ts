@@ -75,7 +75,14 @@ Current pantry/garden inventory: ${inventoryText}
 Return:
 {
   "suggestions": [
-    { "plant_name": "string", "why_now": "string", "why_worth_growing": "string", "why_suits_cooking": "string" }
+    {
+      "plant_name": "string",
+      "why_now": "string",
+      "why_worth_growing": "string",
+      "why_suits_cooking": "string",
+      "soil_notes": "string",
+      "sun_notes": "string"
+    }
   ]
 }`;
 
@@ -98,7 +105,9 @@ Rules:
 - why_now: one sentence, mention specific planting window or timing reason.
 - why_worth_growing: one sentence, reference freshness, cost, or Christchurch shop availability.
 - why_suits_cooking: one sentence, reference their actual ingredient patterns where possible.
-- All three why fields: one sentence maximum.
+- soil_notes: one short phrase describing ideal soil (e.g. "Well-drained, compost-enriched soil").
+- sun_notes: one short phrase describing sun requirement (e.g. "Full sun, 6+ hours" or "Part shade tolerant").
+- All why fields: one sentence maximum. soil_notes and sun_notes: one phrase each, no full stop.
 - Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: userPrompt }],
     });
