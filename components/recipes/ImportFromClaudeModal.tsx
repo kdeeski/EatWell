@@ -104,7 +104,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
         presentationStyle="formSheet"
         onRequestClose={handleClose}
       >
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
             {/* Header */}
             <View style={styles.header}>
@@ -117,7 +117,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
 
             <ScrollView
               style={styles.scroll}
-              contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: 20 }]}
               keyboardShouldPersistTaps="handled"
             >
               {/* Step 1 */}
@@ -155,19 +155,20 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
                     placeholder={'{\n  "name": "...",\n  ...\n}'}
                     placeholderTextColor="#9CA3AF"
                     multiline
-                    numberOfLines={8}
                     textAlignVertical="top"
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
                 </View>
               </View>
+            </ScrollView>
 
-              {/* Step 3 */}
+            {/* Sticky footer — stays above keyboard */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
               <TouchableOpacity style={styles.loadBtn} onPress={handleLoad}>
                 <Text style={styles.loadBtnText}>Load Recipe →</Text>
               </TouchableOpacity>
-            </ScrollView>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -239,6 +240,13 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+  },
   loadBtn: {
     backgroundColor: '#1C1C1E', borderRadius: 14,
     paddingVertical: 16, alignItems: 'center',
