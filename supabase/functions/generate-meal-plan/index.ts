@@ -41,6 +41,10 @@ Deno.serve(async (req) => {
       .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
       .join(', ');
 
+    const freezerSummary = (input.freezerItems ?? [])
+      .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
+      .join(', ');
+
     const prefs = input.preferences ?? null;
 
     // Build preferences block for the prompt
@@ -100,8 +104,11 @@ Deno.serve(async (req) => {
     const structurePrompt = `
 Plan a week of 7 dinners for a single person in Christchurch, New Zealand.
 
-FRIDGE (use these up):
+FRIDGE (use these up this week — fresh items that will spoil):
 ${fridgeSummary || 'Nothing noted'}
+
+FREEZER (use where it fits naturally — no urgency, won't spoil this week):
+${freezerSummary || 'Nothing noted'}
 
 GARDEN (available this week):
 ${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
@@ -153,7 +160,12 @@ Return ONLY a JSON object with this exact shape — no prose:
       system: `You are EatWell's meal planning engine for Christchurch, New Zealand.
 
 RULES:
-1. Use fridge items first — mark as from_fridge: true, do not add to shopping list.
+1. FRIDGE items — use these up this week, they will spoil. Mark as from_fridge: true, do not add to shopping list. Prioritise them when choosing what protein or produce to build a meal around.
+
+1a. FREEZER items — incorporate these naturally across the week, but with far less urgency than fridge items. They won't spoil. Key freezer rules:
+- NEVER cluster the same protein on consecutive nights just because multiple portions exist in the freezer. If the freezer has pork sausages, pork mince and pork chops, spread them across different weeks or use at most one this week, unless fridge items force otherwise.
+- A freezer item should feel like a welcome choice, not an obligation. Only use it if it genuinely fits a meal you'd want to cook anyway.
+- Mark freezer-sourced ingredients as from_fridge: true (same flag — means "don't buy this").
 
 2. Fish/seafood on solo nights only — Holly dislikes fish. Default fish to Sunday (freshest after Saturday shop). Set buy_timing: "sunday_default" for fish. Days can be reordered by the user. MAX ONE fish or seafood meal per week — do not plan fish on multiple nights regardless of availability.
 

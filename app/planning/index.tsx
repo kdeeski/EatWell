@@ -236,14 +236,13 @@ export default function PlanningFlow() {
       const freezerItems = inventoryItems.filter((i) => i.location === 'freezer' && !i.depleted);
 
       // Claude only sees items worth planning meals around — not background staples.
-      // Staples still feed knownItems so they're cross-referenced off the shopping list.
-      const claudeFridgeItems = [
-        ...activeFridgeItems.filter((i) => !isStaple(i)),
-        ...freezerItems.filter((i) => !isStaple(i)),
-      ];
+      // Fridge and freezer are sent separately so the prompt can apply different urgency rules.
+      const claudeFridgeItems = activeFridgeItems.filter((i) => !isStaple(i));
+      const claudeFreezerItems = freezerItems.filter((i) => !isStaple(i));
 
       const rawResult = await generateMealPlan({
         fridgeItems: claudeFridgeItems,
+        freezerItems: claudeFreezerItems.length > 0 ? claudeFreezerItems : undefined,
         gardenAvailable: [
           ...gardenHarvesting,
           ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
