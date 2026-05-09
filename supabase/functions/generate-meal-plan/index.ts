@@ -173,7 +173,7 @@ RULES:
 
 4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On Holly nights (holly_included: true), scale the full dish to serve 2–3.
 
-5. Varied, interesting meals — prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects. Keep meal names short (max 5 words).
+5. Varied, interesting meals — prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects. Keep meal names short (max 5 words). Every meal must be a complete, satisfying dinner — never suggest a dip, spread, condiment, or side dish (e.g. whipped feta, hummus, tzatziki, guacamole) as a standalone meal. These may appear as accompaniments within a dish but never as the meal itself.
 
 6. Avoid the same protein on consecutive nights where possible (guideline, not hard rule).
 
