@@ -245,10 +245,10 @@ export default function PlanningFlow() {
         freezerItems: claudeFreezerItems.length > 0 ? claudeFreezerItems : undefined,
         gardenAvailable: [
           ...gardenHarvesting,
-          ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
+          ...gardenExtras.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
         ],
         spontaneousAdditions: spontaneous
-          .split(',')
+          .split(/[,\n]/)
           .map((s) => s.trim())
           .filter(Boolean),
         nightsAway: effectiveNightsAway,
@@ -272,7 +272,7 @@ export default function PlanningFlow() {
       // Build confirmed garden list for validation
       const gardenNames = [
         ...gardenHarvesting,
-        ...gardenExtras.split(',').map((s) => s.trim()).filter(Boolean),
+        ...gardenExtras.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
       ].map((s) => s.toLowerCase());
 
       const result = {
@@ -297,7 +297,7 @@ export default function PlanningFlow() {
       };
 
       // Save garden extras to garden_plants if not already tracked
-      const extraNames = gardenExtras.split(',').map((s) => s.trim()).filter(Boolean);
+      const extraNames = gardenExtras.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
       const existingNames = gardenPlants.map((p) => p.plant_name.toLowerCase());
       const newPlants = await Promise.all(
         extraNames
@@ -333,7 +333,7 @@ export default function PlanningFlow() {
       // is_pantry_staple flags from Claude.
       // Split on commas only — user enters as a comma-separated list
       const parseList = (text: string) =>
-        text.split(',').map((s) => s.trim()).filter((s) => s.length > 1);
+        text.split(/[,\n]/).map((s) => s.trim()).filter((s) => s.length > 1);
 
       const pantryItems = inventoryItems.filter((i) => i.location === 'pantry' && !i.depleted);
       const knownItems = {
