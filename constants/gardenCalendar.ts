@@ -217,9 +217,10 @@ export function getPlantsDueForHarvest(
   const today = new Date();
   return plants.filter((p) => {
     if (p.status === 'harvested' || p.status === 'finished') return false;
+    if (p.status === 'ready') return true; // always surface plants already marked ready
     if (!p.expected_ready_date) return false;
     const ready = new Date(p.expected_ready_date);
     const daysUntilReady = (ready.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-    return daysUntilReady <= 7; // surfaced if within one week
+    return daysUntilReady >= 0 && daysUntilReady <= 7; // upcoming within the week
   });
 }
