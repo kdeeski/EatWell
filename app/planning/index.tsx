@@ -113,6 +113,22 @@ export default function PlanningFlow() {
   const [nightsAway, setNightsAway] = useState<number[]>([]);
   const [hollyHomeNights, setHollyHomeNights] = useState<number[]>([]);
   const [carryForwardIds, setCarryForwardIds] = useState<string[]>([]);
+  const [cookedThisWeekIds, setCookedThisWeekIds] = useState<Set<string>>(new Set());
+
+  // Load this week's cooked meals so already-cooked planned meals are hidden from carry-forward
+  useEffect(() => {
+    if (!userId || plannedMeals.length === 0) return;
+    const now = new Date();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const weekStart = [mon.getFullYear(), String(mon.getMonth() + 1).padStart(2, '0'), String(mon.getDate()).padStart(2, '0')].join('-');
+    fetchWeekCookedMeals(userId, weekStart)
+      .then((cooked) => {
+        const ids = new Set(cooked.map((c) => c.planned_meal_id).filter(Boolean) as string[]);
+        setCookedThisWeekIds(ids);
+      })
+      .catch(() => {});
+  }, [userId, plannedMeals.length]);
 
   const toggleCarryForward = (id: string) =>
     setCarryForwardIds((prev) =>
@@ -610,18 +626,17 @@ export default function PlanningFlow() {
           <View>
             <View style={styles.carryForwardHeader}>
               <Text style={styles.stepTitle}>Anything to carry forward?</Text>
-              <TouchableOpacity onPress={() =>
-                carryForwardIds.length === plannedMeals.length
-                  ? setCarryForwardIds([])
-                  : setCarryForwardIds(plannedMeals.map((m) => m.id))
-              }>
+              <TouchableOpacity onPress={() => {
+                const uncooked = plannedMeals.filter((m) => !cookedThisWeekIds.has(m.id)).map((m) => m.id);
+                setCarryForwardIds(carryForwardIds.length === uncooked.length ? [] : uncooked);
+              }}>
                 <Text style={styles.carryForwardToggleAll}>
-                  {carryForwardIds.length === plannedMeals.length ? 'Clear' : 'Select all'}
+                  {carryForwardIds.length === plannedMeals.filter((m) => !cookedThisWeekIds.has(m.id)).length && carryForwardIds.length > 0 ? 'Clear' : 'Select all'}
                 </Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.stepBody}>Meals from this week you didn't get to — tap any to include in next week's plan.</Text>
-            {plannedMeals.map((meal) => {
+            {plannedMeals.filter((m) => !cookedThisWeekIds.has(m.id)).map((meal) => {
               const selected = carryForwardIds.includes(meal.id);
               return (
                 <TouchableOpacity
@@ -638,6 +653,9 @@ export default function PlanningFlow() {
                 </TouchableOpacity>
               );
             })}
+            {plannedMeals.every((m) => cookedThisWeekIds.has(m.id)) && (
+              <Text style={styles.mutedText}>You cooked everything this week! Nothing to carry forward.</Text>
+            )}
             <View style={styles.carryForwardButtons}>
               <TouchableOpacity style={styles.skipButton} onPress={() => { setCarryForwardIds([]); handleGenerate(); }}>
                 <Text style={styles.skipButtonText}>Skip</Text>
