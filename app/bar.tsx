@@ -13,6 +13,7 @@ import { useAppStore } from '../store/useAppStore';
 import { saveBarItem, updateBarItem, removeBarItem, addAdHocShoppingItem, updateShoppingItem } from '../lib/data';
 import { normaliseIngredientName } from '../lib/recipes';
 import type { BarItem, SpiritType } from '../types';
+import ImportBarItemModal from '../components/bar/ImportBarItemModal';
 
 const SPIRIT_TYPES: { key: SpiritType; label: string; emoji: string }[] = [
   { key: 'whiskey',            label: 'Whiskey',           emoji: '🥃' },
@@ -61,6 +62,7 @@ export default function BarScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState<ModalState>({ visible: false, item: null });
   const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Form state
   const [name, setName]       = useState('');
@@ -74,6 +76,17 @@ export default function BarScreen() {
   const openAdd = () => {
     setName(''); setSpiritType('whiskey'); setAbv('');
     setSizeMl(700); setCountry(''); setQuantity('1'); setNotes('');
+    setModal({ visible: true, item: null });
+  };
+
+  const handleImportPrefill = (data: Pick<BarItem, 'name' | 'spirit_type' | 'abv' | 'size_ml' | 'country' | 'notes'>) => {
+    setName(data.name);
+    setSpiritType(data.spirit_type);
+    setAbv(data.abv != null ? String(data.abv) : '');
+    setSizeMl(data.size_ml ?? 700);
+    setCountry(data.country ?? '');
+    setQuantity('1');
+    setNotes(data.notes ?? '');
     setModal({ visible: true, item: null });
   };
 
@@ -211,9 +224,14 @@ export default function BarScreen() {
             <Text style={styles.headerBtn}>Close</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bar</Text>
-          <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Text style={styles.headerAdd}>+ Add</Text>
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity onPress={() => setImportOpen(true)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Text style={styles.headerImport}>Claude</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Text style={styles.headerAdd}>+ Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search */}
@@ -402,6 +420,12 @@ export default function BarScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ImportBarItemModal
+        visible={importOpen}
+        onClose={() => setImportOpen(false)}
+        onPrefill={handleImportPrefill}
+      />
     </View>
   );
 }
@@ -466,9 +490,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
-  headerBtn:   { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
-  headerAdd:   { fontSize: 16, color: '#3B7A57', fontWeight: '700', minWidth: 48, textAlign: 'right' },
+  headerBtn:    { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
+  headerTitle:  { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
+  headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerImport: { fontSize: 14, color: '#7C3AED', fontWeight: '600' },
+  headerAdd:    { fontSize: 16, color: '#3B7A57', fontWeight: '700' },
 
   searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
