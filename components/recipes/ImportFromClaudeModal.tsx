@@ -8,13 +8,13 @@ import type { Recipe, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
 
 const VALID_CATEGORIES: RecipeCategory[] = [
-  'mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary',
+  'mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary', 'cocktails',
 ];
 
 const PROMPT_TEXT = `Please format this recipe as JSON using exactly this structure — no extra fields:
 {
   "name": "Recipe Name in Title Case",
-  "category": "mains | sauces_dressings | sides | desserts | baking | marinades_rubs | glossary",
+  "category": "mains | sauces_dressings | sides | desserts | baking | marinades_rubs | glossary | cocktails",
   "description": "One sentence describing the dish and what makes it good.",
   "ingredients": "150g Chicken Thighs\\n2 cloves Garlic\\n1 tsp Smoked Paprika",
   "method": "1. First step.\\n2. Second step.\\n3. Third step."
