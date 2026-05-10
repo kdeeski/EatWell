@@ -261,8 +261,14 @@ export interface WinePairing {
   pairing_note?: string;
 }
 
+export interface CocktailPairing {
+  name: string;
+  reason: string;
+}
+
 export interface WineMatchResult {
   pairings: WinePairing[];
+  cocktail?: CocktailPairing;
 }
 
 export async function getWineMatch(input: WineMatchInput): Promise<WineMatchResult> {

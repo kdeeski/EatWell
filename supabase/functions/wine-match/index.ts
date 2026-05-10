@@ -47,19 +47,33 @@ Deno.serve(async (req) => {
     const isDetailed = detail_level === 'detailed';
 
     const schemaDesc = isDetailed
-      ? `{ "pairings": [{ "varietal": "string", "reason": "string", "pairing_note": "string" }] }`
-      : `{ "pairings": [{ "varietal": "string", "reason": "string" }] }`;
+      ? `{ "pairings": [{ "varietal": "string", "reason": "string", "pairing_note": "string" }], "cocktail": { "name": "string", "reason": "string" } }`
+      : `{ "pairings": [{ "varietal": "string", "reason": "string" }], "cocktail": { "name": "string", "reason": "string" } }`;
 
     const systemPrompt = isDetailed
-      ? `You are a sommelier assistant for EatWell. Given a meal name and optional description, suggest 2-3 wine pairings. For each pairing provide:
+      ? `You are a drinks pairing assistant for EatWell. Given a meal name and optional description, suggest 2-3 wine pairings and one cocktail pairing.
+
+For each wine pairing provide:
 - varietal: the wine varietal (e.g. "Pinot Noir", "Sauvignon Blanc")
 - reason: one sentence explaining why it works with this dish
-- pairing_note: a short paragraph (2-3 sentences) on the food-wine interaction — what flavour elements complement each other, texture/weight match, and any serving tips
+- pairing_note: a short paragraph (2-3 sentences) on the food-wine interaction — flavour elements, texture/weight match, and serving tips
+
+For the cocktail provide:
+- name: a specific cocktail name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy")
+- reason: one sentence explaining why it complements the dish
+
 Respond ONLY with valid JSON matching this exact schema:
 ${schemaDesc}`
-      : `You are a sommelier assistant for EatWell. Given a meal name and optional description, suggest 2-3 wine pairings. For each pairing provide:
+      : `You are a drinks pairing assistant for EatWell. Given a meal name and optional description, suggest 2-3 wine pairings and one cocktail pairing.
+
+For each wine pairing provide:
 - varietal: the wine varietal (e.g. "Pinot Noir", "Sauvignon Blanc")
 - reason: one sentence explaining why it works with this dish
+
+For the cocktail provide:
+- name: a specific cocktail name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy")
+- reason: one sentence explaining why it complements the dish
+
 Respond ONLY with valid JSON matching this exact schema:
 ${schemaDesc}`;
 

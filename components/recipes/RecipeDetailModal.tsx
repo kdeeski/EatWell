@@ -293,6 +293,12 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                       ) : null}
                     </View>
                   ))}
+                  {wineResult.cocktail && (
+                    <View style={[styles.wineCard, styles.cocktailCard]}>
+                      <Text style={[styles.wineVarietal, styles.cocktailName]}>🍸 {wineResult.cocktail.name}</Text>
+                      <Text style={styles.wineReason}>{wineResult.cocktail.reason}</Text>
+                    </View>
+                  )}
                   <TouchableOpacity onPress={() => setWineResult(null)}>
                     <Text style={styles.wineDismiss}>Clear</Text>
                   </TouchableOpacity>
@@ -422,7 +428,9 @@ const styles = StyleSheet.create({
   sourceLinkDomain: { fontSize: 12, color: '#9CA3AF' },
 
   wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, gap: 4 },
+  cocktailCard: { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' },
   wineVarietal: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  cocktailName: { color: '#7C3AED' },
   wineReason: { fontSize: 14, color: '#374151', lineHeight: 20 },
   wineNote: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 4 },
   wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
