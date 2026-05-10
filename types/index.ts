@@ -204,6 +204,8 @@ export interface CookedMeal {
   rating: 1 | 2 | 3 | 4 | 5 | null;
   would_cook_again: boolean | null;
   notes: string | null;
+  drink_name: string | null;
+  drink_notes: string | null;
   voice_note_url: string | null;
   ate_out: boolean;
   created_at: string;

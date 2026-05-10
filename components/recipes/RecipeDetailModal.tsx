@@ -104,12 +104,12 @@ function GuideComponentCard({ component }: { component: NonNullable<Recipe['guid
 
 export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
-  const { userPreferences, userId } = useAppStore();
+  const { userPreferences, userId, inventoryItems } = useAppStore();
   const [screenOn, setScreenOn] = useState(false);
   const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
   const [wineLoading, setWineLoading] = useState(false);
   const [wineError, setWineError] = useState<string | null>(null);
-  const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string | null; rating: number | null }>>([]);
+  const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string | null; rating: number | null; drink_name: string | null; drink_notes: string | null }>>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -137,10 +137,14 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
     setWineLoading(true);
     setWineError(null);
     try {
+      const barItems = inventoryItems
+        .filter((i) => (i.location === 'bar' || i.location === 'cellar') && !i.depleted)
+        .map((i) => i.name);
       const result = await getWineMatch({
         meal_name: recipe.name,
         description: recipe.description ?? undefined,
         detail_level: userPreferences?.wine_detail_level ?? 'simple',
+        bar_inventory: barItems.length > 0 ? barItems : undefined,
       });
       setWineResult(result);
     } catch (e: any) {
@@ -319,15 +323,20 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
             </View>}
 
             {/* Cook log */}
-            {cookLog.some((e) => e.notes) && (
+            {cookLog.some((e) => e.notes || e.drink_name) && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Cook log</Text>
-                {cookLog.filter((e) => e.notes).map((entry, i) => {
+                {cookLog.filter((e) => e.notes || e.drink_name).map((entry, i) => {
                   const [, m, d] = entry.cooked_date.split('-');
                   return (
                     <View key={i} style={styles.cookLogRow}>
                       <Text style={styles.cookLogDate}>{d}/{m}</Text>
-                      <Text style={styles.cookLogNote}>{entry.notes}</Text>
+                      <View style={{ flex: 1 }}>
+                        {entry.notes ? <Text style={styles.cookLogNote}>{entry.notes}</Text> : null}
+                        {entry.drink_name ? (
+                          <Text style={styles.cookLogDrink}>🍷 {entry.drink_name}{entry.drink_notes ? ` · ${entry.drink_notes}` : ''}</Text>
+                        ) : null}
+                      </View>
                     </View>
                   );
                 })}
@@ -404,7 +413,8 @@ const styles = StyleSheet.create({
 
   cookLogRow: { flexDirection: 'row', gap: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   cookLogDate: { fontSize: 13, fontWeight: '600', color: '#9CA3AF', minWidth: 36 },
-  cookLogNote: { fontSize: 14, color: '#374151', flex: 1, lineHeight: 20 },
+  cookLogNote: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  cookLogDrink: { fontSize: 13, color: '#7C3AED', lineHeight: 18, marginTop: 2 },
 
   glossaryRow: { gap: 2 },
   glossaryTerm: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },

@@ -1126,15 +1126,15 @@ export async function loadTodaysSomethingElseCook(
 export async function loadCookLogForRecipe(
   userId: string,
   recipeName: string
-): Promise<Array<{ cooked_date: string; notes: string | null; rating: number | null }>> {
+): Promise<Array<{ cooked_date: string; notes: string | null; rating: number | null; drink_name: string | null; drink_notes: string | null }>> {
   const { data, error } = await supabase
     .from('cooked_meals')
-    .select('cooked_date, notes, rating')
+    .select('cooked_date, notes, rating, drink_name, drink_notes')
     .eq('user_id', userId)
     .ilike('actual_meal_name', recipeName)
     .order('cooked_date', { ascending: false });
   if (error) throw error;
-  return (data ?? []) as Array<{ cooked_date: string; notes: string | null; rating: number | null }>;
+  return (data ?? []) as Array<{ cooked_date: string; notes: string | null; rating: number | null; drink_name: string | null; drink_notes: string | null }>;
 }
 
 export async function deleteRecipe(id: string): Promise<void> {

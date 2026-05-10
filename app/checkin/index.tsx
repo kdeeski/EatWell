@@ -60,6 +60,8 @@ export default function CheckinFlow() {
   const [rating, setRating] = useState<number | null>(null);
   const [wouldCookAgain, setWouldCookAgain] = useState<boolean | null>(null);
   const [notes, setNotes] = useState('');
+  const [drinkName, setDrinkName] = useState('');
+  const [drinkNotes, setDrinkNotes] = useState('');
   const [tonightChoice, setTonightChoice] = useState<string | null>(null);
   const [tonightStashSearch, setTonightStashSearch] = useState('');
   const [tonightStashName, setTonightStashName] = useState<string | null>(null);
@@ -248,6 +250,8 @@ export default function CheckinFlow() {
           rating: rating as 1 | 2 | 3 | 4 | 5 | null,
           would_cook_again: wouldCookAgain,
           notes: notes.trim() || null,
+          drink_name: drinkName.trim() || null,
+          drink_notes: drinkNotes.trim() || null,
           voice_note_url: null,
           ate_out: false,
         });
@@ -271,6 +275,8 @@ export default function CheckinFlow() {
           rating: rating as 1 | 2 | 3 | 4 | 5 | null,
           would_cook_again: wouldCookAgain,
           notes: notes.trim() || null,
+          drink_name: drinkName.trim() || null,
+          drink_notes: drinkNotes.trim() || null,
           voice_note_url: null,
           ate_out: false,
         });
@@ -514,6 +520,24 @@ export default function CheckinFlow() {
               onChangeText={setNotes}
               multiline
             />
+
+            {/* Drink */}
+            <Text style={styles.subLabel}>What did you drink? (optional)</Text>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="e.g. Felton Road Pinot Noir 2022"
+              value={drinkName}
+              onChangeText={setDrinkName}
+            />
+            {drinkName.trim() ? (
+              <TextInput
+                style={[styles.notesInput, { marginTop: 8 }]}
+                placeholder="Tasting notes…"
+                value={drinkNotes}
+                onChangeText={setDrinkNotes}
+                multiline
+              />
+            ) : null}
 
             <TouchableOpacity style={styles.primaryButton} onPress={handleRatingDone}>
               <Text style={styles.primaryButtonText}>Next →</Text>

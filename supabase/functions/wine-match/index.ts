@@ -36,13 +36,17 @@ Deno.serve(async (req) => {
       });
     }
     const input = JSON.parse(rawBody);
-    const { meal_name, description, detail_level } = input;
+    const { meal_name, description, detail_level, bar_inventory } = input;
 
     if (!meal_name) {
       return new Response(JSON.stringify({ error: 'meal_name is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const barText = bar_inventory?.length
+      ? `\nBar inventory (spirits/liqueurs available): ${bar_inventory.join(', ')}`
+      : '';
 
     const isDetailed = detail_level === 'detailed';
 
@@ -61,6 +65,7 @@ For each wine pairing provide:
 For the cocktail provide:
 - name: a specific cocktail name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy")
 - reason: one sentence explaining why it complements the dish
+- If bar inventory is provided, ONLY suggest a cocktail that can be made from those spirits. If none suit the dish, suggest the closest possible match using available ingredients.
 
 Respond ONLY with valid JSON matching this exact schema:
 ${schemaDesc}`
@@ -73,6 +78,7 @@ For each wine pairing provide:
 For the cocktail provide:
 - name: a specific cocktail name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy")
 - reason: one sentence explaining why it complements the dish
+- If bar inventory is provided, ONLY suggest a cocktail that can be made from those spirits. If none suit the dish, suggest the closest possible match using available ingredients.
 
 Respond ONLY with valid JSON matching this exact schema:
 ${schemaDesc}`;
@@ -84,7 +90,7 @@ ${schemaDesc}`;
       messages: [
         {
           role: 'user',
-          content: `Meal: ${meal_name}${description ? `\nDescription: ${description}` : ''}`,
+          content: `Meal: ${meal_name}${description ? `\nDescription: ${description}` : ''}${barText}`,
         },
       ],
     });

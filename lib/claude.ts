@@ -253,6 +253,7 @@ export interface WineMatchInput {
   meal_name: string;
   description?: string;
   detail_level: 'simple' | 'detailed';
+  bar_inventory?: string[]; // spirit/liqueur names for cocktail suggestions
 }
 
 export interface WinePairing {

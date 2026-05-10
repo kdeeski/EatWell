@@ -45,6 +45,8 @@ export default function TodayScreen() {
   const [logRating, setLogRating]           = useState<number | null>(null);
   const [logAgain, setLogAgain]             = useState<boolean | null>(null);
   const [logNotes, setLogNotes]             = useState('');
+  const [logDrinkName, setLogDrinkName]     = useState('');
+  const [logDrinkNotes, setLogDrinkNotes]   = useState('');
   const [logSaving, setLogSaving]           = useState(false);
   const [logDone, setLogDone]               = useState(false);
 
@@ -53,6 +55,8 @@ export default function TodayScreen() {
   const [elseLogRating, setElseLogRating]   = useState<number | null>(null);
   const [elseLogAgain, setElseLogAgain]     = useState<boolean | null>(null);
   const [elseLogNotes, setElseLogNotes]     = useState('');
+  const [elseLogDrinkName, setElseLogDrinkName] = useState('');
+  const [elseLogDrinkNotes, setElseLogDrinkNotes] = useState('');
   const [elseLogSaving, setElseLogSaving]   = useState(false);
   const [elseLogDone, setElseLogDone]       = useState(false);
 
@@ -105,6 +109,8 @@ export default function TodayScreen() {
         rating: logRating as 1 | 2 | 3 | 4 | 5 | null,
         would_cook_again: logAgain,
         notes: logNotes.trim() || null,
+        drink_name: logDrinkName.trim() || null,
+        drink_notes: logDrinkNotes.trim() || null,
         voice_note_url: null,
         ate_out: false,
       });
@@ -137,6 +143,8 @@ export default function TodayScreen() {
         rating: elseLogRating as 1 | 2 | 3 | 4 | 5 | null,
         would_cook_again: elseLogAgain,
         notes: elseLogNotes.trim() || null,
+        drink_name: elseLogDrinkName.trim() || null,
+        drink_notes: elseLogDrinkNotes.trim() || null,
         voice_note_url: null,
         ate_out: false,
       });
@@ -357,6 +365,21 @@ export default function TodayScreen() {
                   onChangeText={setLogNotes}
                   multiline
                 />
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder="What did you drink? (optional)"
+                  value={logDrinkName}
+                  onChangeText={setLogDrinkName}
+                />
+                {logDrinkName.trim() ? (
+                  <TextInput
+                    style={styles.notesInput}
+                    placeholder="Tasting notes…"
+                    value={logDrinkNotes}
+                    onChangeText={setLogDrinkNotes}
+                    multiline
+                  />
+                ) : null}
                 <View style={styles.logBtnRow}>
                   <TouchableOpacity style={styles.logCancelBtn} onPress={() => setLogOpen(false)}>
                     <Text style={styles.logCancelText}>Cancel</Text>
@@ -425,6 +448,21 @@ export default function TodayScreen() {
                   </TouchableOpacity>
                 </View>
                 <TextInput style={styles.notesInput} placeholder="Any notes? (optional)" value={elseLogNotes} onChangeText={setElseLogNotes} multiline />
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder="What did you drink? (optional)"
+                  value={elseLogDrinkName}
+                  onChangeText={setElseLogDrinkName}
+                />
+                {elseLogDrinkName.trim() ? (
+                  <TextInput
+                    style={styles.notesInput}
+                    placeholder="Tasting notes…"
+                    value={elseLogDrinkNotes}
+                    onChangeText={setElseLogDrinkNotes}
+                    multiline
+                  />
+                ) : null}
                 <View style={styles.logBtnRow}>
                   <TouchableOpacity style={styles.logCancelBtn} onPress={() => setElseLogOpen(false)}>
                     <Text style={styles.logCancelText}>Cancel</Text>
