@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     let standingOrdersBlock = '';
     if (prefs?.standing_orders) {
-      standingOrdersBlock = `\nSTANDING ORDERS (always apply, non-negotiable):\n${prefs.standing_orders}\n`;
+      standingOrdersBlock = `\nSTANDING ORDERS (apply to Holly nights — nights where holly_included: true — unless the rule explicitly says otherwise):\n${prefs.standing_orders}\n`;
     }
 
     const carryForward: Array<{ name: string; description: string | null }> = input.carryForwardMeals ?? [];
@@ -185,7 +185,7 @@ ANTI-BOREDOM MANDATE: Do NOT default to the obvious or predictable. Avoid generi
 
 6a. WEEKLY BALANCE — every week must include: exactly 1 fish/seafood meal, at least 1 fully vegetarian meal (no meat, no fish — eggs/dairy fine). The remaining nights are meat-based. This is a hard rule.
 
-The vegetarian meal must be genuinely exciting and substantial — not "pasta with roasted vegetables" or a basic salad. Good examples of the ambition level: Shakshuka with Feta and Harissa, Spiced Red Lentil Dahl with Crispy Shallots, Turkish Eggs with Brown Butter and Yogurt, Mushroom Larb with Sticky Rice, Corn and Halloumi Fritters with Chilli Sauce, Smashed Cucumber and Tofu in Chilli Oil, Saag Paneer, Miso Roasted Eggplant with Sesame Rice. Match the style to the user's cuisine preferences.
+The vegetarian meal must be genuinely exciting and substantial — not "pasta with roasted vegetables" or a basic salad. Good examples of the ambition level: Shakshuka with Feta and Harissa, Spiced Red Lentil Dahl with Crispy Shallots, Turkish Eggs with Brown Butter and Yogurt, Corn and Halloumi Fritters with Chilli Sauce, Smashed Cucumber and Tofu in Chilli Oil, Saag Paneer, Miso Roasted Eggplant with Sesame Rice, Socca with Roasted Peppers and Labneh, Paneer Tikka Masala. Match the style to the user's cuisine preferences.
 
 7. Never use the same pasta shape twice in the same week (hard rule). Pasta itself can appear more than once — just use different shapes. This rule applies across ALL meals in the week, including any PINNED MEALS listed above. Before choosing a pasta dish, check whether any pinned meal already uses that shape and pick a different one if so.
 
