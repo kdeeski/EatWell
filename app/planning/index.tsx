@@ -237,10 +237,13 @@ export default function PlanningFlow() {
           const pinnedMealsInPlan = existingPlan.meals.filter((m) => pinnedIds.includes(m.id));
           const pinnedDays = pinnedMealsInPlan.map((m) => m.day_of_week);
           lockedDays = [...new Set([...lockedDays, ...pinnedDays])];
-          pinnedMealsList = pinnedMealsInPlan.map((m) => ({
-            name: m.meal_name,
-            day_of_week: m.day_of_week,
-          }));
+          pinnedMealsList = [
+            ...pinnedMealsList,
+            ...pinnedMealsInPlan.map((m) => ({
+              name: m.meal_name,
+              day_of_week: m.day_of_week,
+            })),
+          ];
         }
         // Previous week's meals — pass to Claude to avoid repetition
         if (prevPlan) {
@@ -267,7 +270,7 @@ export default function PlanningFlow() {
           .split(/[,\n]/)
           .map((s) => s.trim())
           .filter(Boolean),
-        nightsAway: effectiveNightsAway,
+        nightsAway: nightsAway, // genuine away nights only — locked/pinned days handled via pinnedMeals block
         hollyHomeNights,
         carryForwardMeals,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,

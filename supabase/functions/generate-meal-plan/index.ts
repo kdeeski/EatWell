@@ -187,13 +187,15 @@ ANTI-BOREDOM MANDATE: Do NOT default to the obvious or predictable. Avoid generi
 
 The vegetarian meal must be genuinely exciting and substantial — not "pasta with roasted vegetables" or a basic salad. Good examples of the ambition level: Shakshuka with Feta and Harissa, Spiced Red Lentil Dahl with Crispy Shallots, Turkish Eggs with Brown Butter and Yogurt, Corn and Halloumi Fritters with Chilli Sauce, Smashed Cucumber and Tofu in Chilli Oil, Saag Paneer, Miso Roasted Eggplant with Sesame Rice, Socca with Roasted Peppers and Labneh, Paneer Tikka Masala. Match the style to the user's cuisine preferences.
 
-7. Never use the same pasta shape twice in the same week (hard rule). Pasta itself can appear more than once — just use different shapes. This rule applies across ALL meals in the week, including any PINNED MEALS listed above. Before choosing a pasta dish, check whether any pinned meal already uses that shape and pick a different one if so.
+7. Never use the same pasta shape twice in the same week (hard rule). This rule applies across ALL meals including PINNED MEALS.
+
+7c. PASTA FREQUENCY — maximum 1 pasta dish per week (any shape, fresh or dried). Only include a second pasta dish if pasta appears in 2 or more CARRY FORWARD meals that must be honoured.
 
 7b. PASTA SPECIFICITY — When adding pasta as a shopping ingredient, always name the exact shape (e.g. "Rigatoni", "Spaghetti", "Linguine", "Orecchiette", "Penne", "Fusilli", "Tagliatelle"). NEVER use generic names like "Pasta", "Dry Pasta", "Dried Pasta", or "Pasta Shapes". The ingredient name must be the actual shape the recipe uses. This rule applies to both dry pasta and fresh pasta. If a dish uses a specific pasta shape in its meal name (e.g. "Rigatoni with Sausage Ragù"), the ingredient must be that exact shape ("Rigatoni"), not a generic term.
 
 7a. FRESH PASTA — if a meal uses fresh pasta (pappardelle, tagliatelle, fettuccine, etc.), mark it as is_pantry_staple: true and from_fridge: false — the user makes their own fresh pasta and does not buy it. Do not add fresh pasta to the shopping list.
 
-8. Omit days the user is away entirely — do not generate a meal for those day_of_week values.
+8. Generate a meal for EVERY day 0–6 that is (a) not listed in NIGHTS AWAY and (b) not listed in PINNED MEALS. NIGHTS AWAY = user genuinely not home, no meal at all. PINNED MEALS = meal already locked in, do not replace it. For all remaining days you MUST produce a meal — never leave a slot empty.
 
 9. Set needs_recipe: true for any dish with a non-obvious technique or more than 6 fresh components.
 
