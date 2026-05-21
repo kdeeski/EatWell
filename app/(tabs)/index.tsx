@@ -10,6 +10,8 @@ import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
 import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook, loadCookedMealForDate } from '../../lib/data';
+import { getWineMatch } from '../../lib/claude';
+import type { WineMatchResult } from '../../lib/claude';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -28,7 +30,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName, inventoryItems, userPreferences } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
@@ -60,8 +62,42 @@ export default function TodayScreen() {
   const [elseLogSaving, setElseLogSaving]   = useState(false);
   const [elseLogDone, setElseLogDone]       = useState(false);
 
+  // Drink pairing for tonight's meal
+  const [wineResult, setWineResult]   = useState<WineMatchResult | null>(null);
+  const [wineLoading, setWineLoading] = useState(false);
+  const [wineError, setWineError]     = useState<string | null>(null);
+
+  const handleDrinkPairing = async (mealName: string, description: string | null) => {
+    if (wineLoading) return;
+    setWineLoading(true);
+    setWineError(null);
+    setWineResult(null);
+    try {
+      const barNames = inventoryItems
+        .filter((i) => (i.location === 'bar' || i.location === 'cellar') && !i.depleted)
+        .map((i) => i.name);
+      const result = await getWineMatch({
+        meal_name: mealName,
+        description: description ?? undefined,
+        detail_level: userPreferences?.wine_detail_level ?? 'simple',
+        bar_inventory: barNames.length > 0 ? barNames : undefined,
+      });
+      setWineResult(result);
+    } catch (e: any) {
+      setWineError('Could not load pairing — tap to retry');
+    } finally {
+      setWineLoading(false);
+    }
+  };
+
   const todayIndex = (new Date().getDay() + 6) % 7;
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
+
+  // Reset wine result when tonight's meal changes
+  useEffect(() => {
+    setWineResult(null);
+    setWineError(null);
+  }, [tonightsMeal?.id]);
 
   const [lastNightAlreadyLogged, setLastNightAlreadyLogged] = useState(false);
   useEffect(() => {
@@ -319,6 +355,42 @@ export default function TodayScreen() {
                 {tonightsMeal.is_fish ? '  ·  Buy fresh today' : ''}
               </Text>
             ) : null}
+
+            {/* Drink pairing */}
+            {wineResult ? (
+              <View style={styles.winePanel}>
+                {wineResult.pairings.map((p, i) => (
+                  <View key={i} style={styles.wineRow}>
+                    <Text style={styles.wineVarietal}>🍷 {p.varietal}</Text>
+                    <Text style={styles.wineReason}>{p.reason}</Text>
+                    {p.pairing_note ? <Text style={styles.winePairingNote}>{p.pairing_note}</Text> : null}
+                  </View>
+                ))}
+                {wineResult.cocktail && (
+                  <View style={[styles.wineRow, styles.cocktailRow]}>
+                    <Text style={styles.cocktailName}>🍸 {wineResult.cocktail.name}</Text>
+                    <Text style={styles.wineReason}>{wineResult.cocktail.reason}</Text>
+                  </View>
+                )}
+                <TouchableOpacity onPress={() => { setWineResult(null); setWineError(null); }}>
+                  <Text style={styles.wineDismiss}>Hide</Text>
+                </TouchableOpacity>
+              </View>
+            ) : wineError ? (
+              <TouchableOpacity onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}>
+                <Text style={styles.wineLink}>{wineError}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.wineButton}
+                onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}
+                disabled={wineLoading}
+              >
+                {wineLoading
+                  ? <ActivityIndicator size="small" color="#7C3AED" />
+                  : <Text style={styles.wineLinkText}>🍷 What should I drink with this? →</Text>}
+              </TouchableOpacity>
+            )}
 
             {/* Inline "log as cooked" */}
             {logDone ? (
@@ -658,6 +730,18 @@ const styles = StyleSheet.create({
   stashNudge: { marginTop: 4 },
   stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+
+  wineButton: { marginTop: 10 },
+  wineLinkText: { fontSize: 13, color: '#7C3AED', fontWeight: '600' },
+  wineLink: { fontSize: 13, color: '#EF4444', marginTop: 10 },
+  winePanel: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6', gap: 10 },
+  wineRow: { gap: 2 },
+  wineVarietal: { fontSize: 14, fontWeight: '700', color: '#1C1C1E' },
+  wineReason: { fontSize: 13, color: '#6B7280', lineHeight: 18 },
+  winePairingNote: { fontSize: 13, color: '#374151', lineHeight: 18, marginTop: 2 },
+  cocktailRow: { paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  cocktailName: { fontSize: 14, fontWeight: '700', color: '#7C3AED' },
+  wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
 
   logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   logButtonText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
