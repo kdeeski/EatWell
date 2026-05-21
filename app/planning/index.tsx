@@ -13,12 +13,13 @@ import { generateMealPlan } from '../../lib/claude';
 import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem, depleteInventoryItems } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
-type Step = 'week_picker' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
+type Step = 'week_picker' | 'quick_replan' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
 
 export default function PlanningFlow() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { weekOffset: weekOffsetParam, pinnedIds: pinnedIdsParam } = useLocalSearchParams<{ weekOffset?: string; pinnedIds?: string }>();
+  const { weekOffset: weekOffsetParam, pinnedIds: pinnedIdsParam, quickReplan: quickReplanParam } = useLocalSearchParams<{ weekOffset?: string; pinnedIds?: string; quickReplan?: string }>();
+  const isQuickReplan = quickReplanParam === 'true';
   // IDs of meals the user pinned on the plan tab — these days are locked from regeneration
   const pinnedIds: string[] = pinnedIdsParam ? pinnedIdsParam.split(',').filter(Boolean) : [];
   const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore } = useAppStore();
@@ -42,6 +43,7 @@ export default function PlanningFlow() {
     return adjusted === 6 ? 1 : 0; // Sunday defaults to next week
   });
   const [step, setStep] = useState<Step>(() => {
+    if (quickReplanParam === 'true') return 'quick_replan'; // skip full wizard
     if (weekOffsetParam !== undefined) return 'fridge'; // explicit target — skip picker
     // Show week picker on Friday, Saturday, or Sunday so the user can choose this or next week
     const adjusted = (new Date().getDay() + 6) % 7; // 0=Mon … 6=Sun
@@ -248,6 +250,14 @@ export default function PlanningFlow() {
         // Previous week's meals — pass to Claude to avoid repetition
         if (prevPlan) {
           previousMealNames = prevPlan.meals.map((m) => m.meal_name);
+        }
+        // On a replan, also treat the current week's non-pinned meals as "already seen"
+        // so Claude generates genuinely different meals rather than minor variations.
+        if (isQuickReplan && existingPlan) {
+          const replacedNames = existingPlan.meals
+            .filter((m) => !lockedDays.includes(m.day_of_week))
+            .map((m) => m.meal_name);
+          previousMealNames = [...new Set([...previousMealNames, ...replacedNames])];
         }
       }
       const effectiveNightsAway = [...new Set([...nightsAway, ...lockedDays])];
@@ -461,6 +471,53 @@ export default function PlanningFlow() {
             })}
             <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('fridge')}>
               <Text style={styles.primaryButtonText}>Continue →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Quick Replan — skips the full wizard */}
+        {step === 'quick_replan' && (
+          <View>
+            <Text style={styles.stepTitle}>
+              {pinnedIds.length > 0
+                ? `Regenerating ${7 - pinnedIds.length} meal${7 - pinnedIds.length !== 1 ? 's' : ''}…`
+                : 'Regenerating the week…'}
+            </Text>
+            <Text style={styles.stepBody}>
+              {pinnedIds.length > 0
+                ? `Your ${pinnedIds.length} pinned meal${pinnedIds.length !== 1 ? 's' : ''} will stay. Claude will pick fresh ideas for the rest — different from what was already there.`
+                : 'Claude will generate a completely fresh set of meals, different from this week\'s plan.'}
+            </Text>
+            <Text style={styles.stepBody}>Any nights you won't be home?</Text>
+            <View style={styles.dayGrid}>
+              {DAY_LABELS.map((label, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.dayChip, nightsAway.includes(index) && styles.dayChipSelected]}
+                  onPress={() => toggleNightAway(index)}
+                >
+                  <Text style={[styles.dayChipText, nightsAway.includes(index) && styles.dayChipTextSelected]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.stepBody}>Any nights Holly's joining you?</Text>
+            <View style={styles.dayGrid}>
+              {DAY_LABELS.map((label, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.dayChip, hollyHomeNights.includes(index) && styles.dayChipHolly]}
+                  onPress={() => toggleHollyNight(index)}
+                >
+                  <Text style={[styles.dayChipText, hollyHomeNights.includes(index) && styles.dayChipTextHolly]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleGenerate}>
+              <Text style={styles.primaryButtonText}>Generate →</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -609,6 +609,7 @@ export default function PlanScreen() {
                   pathname: '/planning',
                   params: {
                     weekOffset: '0',
+                    quickReplan: 'true',
                     ...(pinnedMealIds.size > 0 && { pinnedIds: [...pinnedMealIds].join(',') }),
                   },
                 })}
@@ -628,6 +629,7 @@ export default function PlanScreen() {
                   pathname: '/planning',
                   params: {
                     weekOffset: '1',
+                    ...(displayedMeals.length > 0 && { quickReplan: 'true' }),
                     ...(pinnedMealIds.size > 0 && { pinnedIds: [...pinnedMealIds].join(',') }),
                   },
                 })}
