@@ -358,38 +358,41 @@ export default function TodayScreen() {
 
             {/* Drink pairing */}
             {wineResult ? (
-              <View style={styles.winePanel}>
+              <View style={styles.wineSection}>
+                <Text style={styles.wineSectionLabel}>Drink pairing</Text>
                 {wineResult.pairings.map((p, i) => (
-                  <View key={i} style={styles.wineRow}>
-                    <Text style={styles.wineVarietal}>🍷 {p.varietal}</Text>
+                  <View key={i} style={styles.wineCard}>
+                    <Text style={styles.wineVarietal}>{p.varietal}</Text>
                     <Text style={styles.wineReason}>{p.reason}</Text>
-                    {p.pairing_note ? <Text style={styles.winePairingNote}>{p.pairing_note}</Text> : null}
+                    {p.pairing_note ? <Text style={styles.wineNote}>{p.pairing_note}</Text> : null}
                   </View>
                 ))}
                 {wineResult.cocktail && (
-                  <View style={[styles.wineRow, styles.cocktailRow]}>
-                    <Text style={styles.cocktailName}>🍸 {wineResult.cocktail.name}</Text>
+                  <View style={[styles.wineCard, styles.cocktailCard]}>
+                    <Text style={[styles.wineVarietal, styles.cocktailName]}>🍸 {wineResult.cocktail.name}</Text>
                     <Text style={styles.wineReason}>{wineResult.cocktail.reason}</Text>
                   </View>
                 )}
                 <TouchableOpacity onPress={() => { setWineResult(null); setWineError(null); }}>
-                  <Text style={styles.wineDismiss}>Hide</Text>
+                  <Text style={styles.wineDismiss}>Clear</Text>
                 </TouchableOpacity>
               </View>
-            ) : wineError ? (
-              <TouchableOpacity onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}>
-                <Text style={styles.wineLink}>{wineError}</Text>
-              </TouchableOpacity>
             ) : (
-              <TouchableOpacity
-                style={styles.wineButton}
-                onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}
-                disabled={wineLoading}
-              >
-                {wineLoading
-                  ? <ActivityIndicator size="small" color="#7C3AED" />
-                  : <Text style={styles.wineLinkText}>🍷 What should I drink with this? →</Text>}
-              </TouchableOpacity>
+              <View style={styles.wineSection}>
+                <TouchableOpacity
+                  onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}
+                  disabled={wineLoading}
+                >
+                  {wineLoading
+                    ? <ActivityIndicator size="small" color="#3B7A57" />
+                    : <Text style={styles.drinkPairingLink}>Drink pairing →</Text>}
+                </TouchableOpacity>
+                {wineError ? (
+                  <TouchableOpacity onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}>
+                    <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             )}
 
             {/* Inline "log as cooked" */}
@@ -731,17 +734,17 @@ const styles = StyleSheet.create({
   stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
 
-  wineButton: { marginTop: 10 },
-  wineLinkText: { fontSize: 13, color: '#7C3AED', fontWeight: '600' },
-  wineLink: { fontSize: 13, color: '#EF4444', marginTop: 10 },
-  winePanel: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6', gap: 10 },
-  wineRow: { gap: 2 },
-  wineVarietal: { fontSize: 14, fontWeight: '700', color: '#1C1C1E' },
-  wineReason: { fontSize: 13, color: '#6B7280', lineHeight: 18 },
-  winePairingNote: { fontSize: 13, color: '#374151', lineHeight: 18, marginTop: 2 },
-  cocktailRow: { paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-  cocktailName: { fontSize: 14, fontWeight: '700', color: '#7C3AED' },
+  wineSection: { marginTop: 10, gap: 8 },
+  wineSectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  drinkPairingLink: { fontSize: 15, fontWeight: '600', color: '#3B7A57' },
+  wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, gap: 4 },
+  cocktailCard: { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' },
+  wineVarietal: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  wineReason: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  wineNote: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 4 },
+  cocktailName: { color: '#7C3AED' },
   wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+  wineError: { fontSize: 13, color: '#EF4444', marginTop: 4 },
 
   logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   logButtonText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
