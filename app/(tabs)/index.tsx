@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
 
   wineSection: { marginTop: 10, gap: 8 },
   wineSectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
-  drinkPairingLink: { fontSize: 15, fontWeight: '600', color: '#3B7A57' },
+  drinkPairingLink: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
   wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, gap: 4 },
   cocktailCard: { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' },
   wineVarietal: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
