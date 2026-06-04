@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform, Share,
+  TouchableOpacity, KeyboardAvoidingView, Platform, Share, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
+import { formatRecipeFromText } from '../../lib/claude';
 import SaveRecipeModal from './SaveRecipeModal';
 
 const VALID_CATEGORIES: RecipeCategory[] = [
@@ -23,6 +24,8 @@ const PROMPT_TEXT = `Please format this recipe as JSON using exactly this struct
 Recipe to format:
 [paste your recipe here]`;
 
+type Mode = 'paste' | 'manual';
+
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -32,9 +35,19 @@ interface Props {
 
 export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: Props) {
   const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<Mode>('paste');
+
+  // Paste-text mode state
+  const [pasteText, setPasteText] = useState('');
+  const [formatting, setFormatting] = useState(false);
+  const [pasteError, setPasteError] = useState<string | null>(null);
+
+  // Manual JSON mode state
   const [copied, setCopied] = useState(false);
   const [json, setJson] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  // Shared save state
   const [prefill, setPrefill] = useState<Partial<Pick<Recipe, 'name' | 'category' | 'description' | 'ingredients' | 'method'>> | null>(null);
   const [showSave, setShowSave] = useState(false);
 
@@ -44,26 +57,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleLoad = () => {
-    setError(null);
-    if (!json.trim()) { setError('Paste the JSON from Claude first.'); return; }
-
-    let parsed: any;
-    try {
-      // Extract the first {...} block from whatever Claude returned
-      const match = json.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('No JSON object found');
-      parsed = JSON.parse(match[0]);
-    } catch {
-      setError('Could not parse the JSON. Make sure you copied it correctly.');
-      return;
-    }
-
-    if (typeof parsed.name !== 'string' || !parsed.name.trim()) {
-      setError('Missing required field: name');
-      return;
-    }
-
+  const applyParsed = (parsed: any) => {
     const category: RecipeCategory = VALID_CATEGORIES.includes(parsed.category)
       ? parsed.category
       : 'mains';
@@ -77,11 +71,8 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
     };
 
     if (onPrefill) {
-      // Callback mode — fill parent form and close
-      setJson('');
-      setError(null);
       onPrefill(data);
-      onClose();
+      handleClose();
       return;
     }
 
@@ -89,9 +80,50 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
     setShowSave(true);
   };
 
+  const handleFormat = async () => {
+    if (formatting) return;
+    setPasteError(null);
+    if (!pasteText.trim()) { setPasteError('Paste your recipe text first.'); return; }
+
+    setFormatting(true);
+    try {
+      const result = await formatRecipeFromText(pasteText.trim());
+      if (!result.name?.trim()) { setPasteError('Claude couldn\'t find a recipe name — make sure you\'ve pasted the full recipe.'); return; }
+      applyParsed(result);
+    } catch (e: any) {
+      setPasteError(e.message ?? 'Something went wrong — please try again.');
+    } finally {
+      setFormatting(false);
+    }
+  };
+
+  const handleLoadJson = () => {
+    setJsonError(null);
+    if (!json.trim()) { setJsonError('Paste the JSON from Claude first.'); return; }
+
+    let parsed: any;
+    try {
+      const match = json.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('No JSON object found');
+      parsed = JSON.parse(match[0]);
+    } catch {
+      setJsonError('Could not parse the JSON. Make sure you copied it correctly.');
+      return;
+    }
+
+    if (typeof parsed.name !== 'string' || !parsed.name.trim()) {
+      setJsonError('Missing required field: name');
+      return;
+    }
+
+    applyParsed(parsed);
+  };
+
   const handleClose = () => {
+    setPasteText('');
+    setPasteError(null);
     setJson('');
-    setError(null);
+    setJsonError(null);
     setCopied(false);
     onClose();
   };
@@ -115,59 +147,110 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
               <View style={{ minWidth: 56 }} />
             </View>
 
+            {/* Mode toggle */}
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[styles.toggleTab, mode === 'paste' && styles.toggleTabActive]}
+                onPress={() => setMode('paste')}
+              >
+                <Text style={[styles.toggleTabText, mode === 'paste' && styles.toggleTabTextActive]}>Paste recipe text</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleTab, mode === 'manual' && styles.toggleTabActive]}
+                onPress={() => setMode('manual')}
+              >
+                <Text style={[styles.toggleTabText, mode === 'manual' && styles.toggleTabTextActive]}>Use Claude.ai</Text>
+              </TouchableOpacity>
+            </View>
+
             <ScrollView
               style={styles.scroll}
               contentContainerStyle={[styles.scrollContent, { paddingBottom: 20 }]}
               keyboardShouldPersistTaps="handled"
             >
-              {/* Step 1 */}
-              <View style={styles.step}>
-                <Text style={styles.stepNumber}>1</Text>
-                <View style={styles.stepBody}>
-                  <Text style={styles.stepTitle}>Copy the prompt</Text>
-                  <Text style={styles.stepDesc}>
-                    Tap below to share the prompt, then paste it into Claude with your recipe. Claude will return a JSON block.
+              {mode === 'paste' ? (
+                /* ── Paste text mode ── */
+                <View style={styles.pasteSection}>
+                  <Text style={styles.pasteDesc}>
+                    Copy any recipe text — from NYT Cooking, a cookbook, anywhere — and paste it below. Claude will structure it automatically.
                   </Text>
-                  <TouchableOpacity style={styles.promptBox} onPress={handleCopy} activeOpacity={0.8}>
-                    <Text style={styles.promptText} numberOfLines={6}>{PROMPT_TEXT}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.copyBtn, copied && styles.copyBtnDone]}
-                    onPress={handleCopy}
-                  >
-                    <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
-                      {copied ? 'Shared ✓' : 'Share Prompt'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Step 2 */}
-              <View style={styles.step}>
-                <Text style={styles.stepNumber}>2</Text>
-                <View style={styles.stepBody}>
-                  <Text style={styles.stepTitle}>Paste Claude's JSON here</Text>
-                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                  {pasteError ? <Text style={styles.errorText}>{pasteError}</Text> : null}
                   <TextInput
-                    style={styles.jsonInput}
-                    value={json}
-                    onChangeText={(v) => { setJson(v); setError(null); }}
-                    placeholder={'{\n  "name": "...",\n  ...\n}'}
+                    style={styles.pasteInput}
+                    value={pasteText}
+                    onChangeText={(v) => { setPasteText(v); setPasteError(null); }}
+                    placeholder="Paste recipe text here…"
                     placeholderTextColor="#9CA3AF"
                     multiline
                     textAlignVertical="top"
-                    autoCapitalize="none"
+                    autoCapitalize="sentences"
                     autoCorrect={false}
                   />
                 </View>
-              </View>
+              ) : (
+                /* ── Manual JSON mode ── */
+                <>
+                  <View style={styles.step}>
+                    <Text style={styles.stepNumber}>1</Text>
+                    <View style={styles.stepBody}>
+                      <Text style={styles.stepTitle}>Copy the prompt</Text>
+                      <Text style={styles.stepDesc}>
+                        Tap below to share the prompt, then paste it into Claude with your recipe. Claude will return a JSON block.
+                      </Text>
+                      <TouchableOpacity style={styles.promptBox} onPress={handleCopy} activeOpacity={0.8}>
+                        <Text style={styles.promptText} numberOfLines={6}>{PROMPT_TEXT}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.copyBtn, copied && styles.copyBtnDone]}
+                        onPress={handleCopy}
+                      >
+                        <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
+                          {copied ? 'Shared ✓' : 'Share Prompt'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.step}>
+                    <Text style={styles.stepNumber}>2</Text>
+                    <View style={styles.stepBody}>
+                      <Text style={styles.stepTitle}>Paste Claude's JSON here</Text>
+                      {jsonError ? <Text style={styles.errorText}>{jsonError}</Text> : null}
+                      <TextInput
+                        style={styles.jsonInput}
+                        value={json}
+                        onChangeText={(v) => { setJson(v); setJsonError(null); }}
+                        placeholder={'{\n  "name": "...",\n  ...\n}'}
+                        placeholderTextColor="#9CA3AF"
+                        multiline
+                        textAlignVertical="top"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
             </ScrollView>
 
-            {/* Sticky footer — stays above keyboard */}
+            {/* Sticky footer */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-              <TouchableOpacity style={styles.loadBtn} onPress={handleLoad}>
-                <Text style={styles.loadBtnText}>Load Recipe →</Text>
-              </TouchableOpacity>
+              {mode === 'paste' ? (
+                <TouchableOpacity
+                  style={[styles.loadBtn, formatting && styles.loadBtnDisabled]}
+                  onPress={handleFormat}
+                  disabled={formatting}
+                >
+                  {formatting
+                    ? <ActivityIndicator size="small" color="#FFFFFF" />
+                    : <Text style={styles.loadBtnText}>Format with Claude →</Text>
+                  }
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.loadBtn} onPress={handleLoadJson}>
+                  <Text style={styles.loadBtnText}>Load Recipe →</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -179,6 +262,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
           prefill={prefill}
           onSave={() => {
             setShowSave(false);
+            setPasteText('');
             setJson('');
             setPrefill(null);
             onClose();
@@ -204,8 +288,32 @@ const styles = StyleSheet.create({
   headerBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 56 },
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
 
+  toggleRow: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 3,
+  },
+  toggleTab: {
+    flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+  },
+  toggleTabActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, elevation: 2 },
+  toggleTabText: { fontSize: 14, fontWeight: '500', color: '#9CA3AF' },
+  toggleTabTextActive: { color: '#1C1C1E', fontWeight: '700' },
+
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 28 },
+
+  pasteSection: { gap: 12 },
+  pasteDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  pasteInput: {
+    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    borderRadius: 12, padding: 14, minHeight: 260,
+    fontSize: 14, color: '#1C1C1E', lineHeight: 20,
+    textAlignVertical: 'top',
+  },
 
   step: { flexDirection: 'row', gap: 14 },
   stepNumber: {
@@ -251,5 +359,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E', borderRadius: 14,
     paddingVertical: 16, alignItems: 'center',
   },
+  loadBtnDisabled: { opacity: 0.5 },
   loadBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });
