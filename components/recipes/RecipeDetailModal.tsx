@@ -11,6 +11,7 @@ import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
 import { findStashMatch } from '../../lib/recipes';
+import { getGrapeGuideUrl } from '../../lib/grapeGuide';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -290,7 +291,9 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                   <Text style={styles.sectionLabel}>Drink pairing</Text>
                   {wineResult.pairings.map((p, i) => (
                     <View key={i} style={styles.wineCard}>
-                      <Text style={styles.wineVarietal}>{p.varietal}</Text>
+                      <TouchableOpacity onPress={() => Linking.openURL(getGrapeGuideUrl(p.varietal))}>
+                        <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
+                      </TouchableOpacity>
                       <Text style={styles.wineReason}>{p.reason}</Text>
                       {p.pairing_note ? (
                         <Text style={styles.wineNote}>{p.pairing_note}</Text>

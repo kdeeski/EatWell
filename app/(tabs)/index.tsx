@@ -12,6 +12,7 @@ import type { PlannedIngredient, Recipe } from '../../types';
 import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook, loadCookedMealForDate } from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
+import { getGrapeGuideUrl } from '../../lib/grapeGuide';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -362,7 +363,9 @@ export default function TodayScreen() {
                 <Text style={styles.wineSectionLabel}>Drink pairing</Text>
                 {wineResult.pairings.map((p, i) => (
                   <View key={i} style={styles.wineCard}>
-                    <Text style={styles.wineVarietal}>{p.varietal}</Text>
+                    <TouchableOpacity onPress={() => Linking.openURL(getGrapeGuideUrl(p.varietal))}>
+                      <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
+                    </TouchableOpacity>
                     <Text style={styles.wineReason}>{p.reason}</Text>
                     {p.pairing_note ? <Text style={styles.wineNote}>{p.pairing_note}</Text> : null}
                   </View>
