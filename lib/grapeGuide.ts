@@ -1,10 +1,6 @@
-export function getGrapeGuideUrl(varietal: string): string {
-  const slug = varietal
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
-  return `https://www.goodpairdays.com/guides/wine-grapes/article/${slug}/`;
+const DEFAULT_WINE_SITE = 'goodpairdays.com';
+
+export function getGrapeSearchUrl(varietal: string, site?: string): string {
+  const domain = (site || DEFAULT_WINE_SITE).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  return `https://www.google.com/search?q=${encodeURIComponent(varietal + ' site:' + domain)}`;
 }

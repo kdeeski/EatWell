@@ -11,7 +11,8 @@ import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
 import { findStashMatch } from '../../lib/recipes';
-import { getGrapeGuideUrl } from '../../lib/grapeGuide';
+import { getGrapeSearchUrl } from '../../lib/grapeGuide';
+import { saveRecipe } from '../../lib/data';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -105,7 +106,7 @@ function GuideComponentCard({ component }: { component: NonNullable<Recipe['guid
 
 export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
-  const { userPreferences, userId, inventoryItems } = useAppStore();
+  const { userPreferences, userId, inventoryItems, recipes, addRecipe } = useAppStore();
   const [screenOn, setScreenOn] = useState(false);
   const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
   const [wineLoading, setWineLoading] = useState(false);
@@ -289,17 +290,30 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               {wineResult ? (
                 <>
                   <Text style={styles.sectionLabel}>Drink pairing</Text>
-                  {wineResult.pairings.map((p, i) => (
-                    <View key={i} style={styles.wineCard}>
-                      <TouchableOpacity onPress={() => Linking.openURL(getGrapeGuideUrl(p.varietal))}>
-                        <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.wineReason}>{p.reason}</Text>
-                      {p.pairing_note ? (
-                        <Text style={styles.wineNote}>{p.pairing_note}</Text>
-                      ) : null}
-                    </View>
-                  ))}
+                  {wineResult.pairings.map((p, i) => {
+                    const inGlossary = recipes.some((r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase());
+                    return (
+                      <View key={i} style={styles.wineCard}>
+                        <TouchableOpacity onPress={() => Linking.openURL(getGrapeSearchUrl(p.varietal, userPreferences?.wine_guide_site))}>
+                          <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.wineReason}>{p.reason}</Text>
+                        {p.pairing_note ? (
+                          <Text style={styles.wineNote}>{p.pairing_note}</Text>
+                        ) : null}
+                        {userId && (
+                          inGlossary
+                            ? <Text style={styles.glossarySaved}>In glossary ✓</Text>
+                            : <TouchableOpacity onPress={async () => {
+                                const saved = await saveRecipe(userId, { name: p.varietal, category: 'glossary', description: p.reason + (p.pairing_note ? '\n' + p.pairing_note : ''), ingredients: null, method: null, source_url: null, source_book: null, page_number: null, rating: null, would_cook_again: null, cooked_meal_id: null, guide_json: null, bite_pairing: null });
+                                addRecipe(saved);
+                              }}>
+                                <Text style={styles.glossaryAdd}>+ Save to glossary</Text>
+                              </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
                   {wineResult.cocktail && (
                     <View style={[styles.wineCard, styles.cocktailCard]}>
                       <Text style={[styles.wineVarietal, styles.cocktailName]}>🍸 {wineResult.cocktail.name}</Text>
@@ -448,4 +462,6 @@ const styles = StyleSheet.create({
   wineNote: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 4 },
   wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
   wineError: { fontSize: 13, color: '#EF4444', marginTop: 4 },
+  glossaryAdd: { fontSize: 12, color: '#3B7A57', fontWeight: '600', marginTop: 6 },
+  glossarySaved: { fontSize: 12, color: '#9CA3AF', marginTop: 6 },
 });

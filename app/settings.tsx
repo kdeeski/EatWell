@@ -41,6 +41,8 @@ export default function SettingsScreen() {
   const [rotationMinRated, setRotationMinRated] = useState<number>(userPreferences?.rotation_min_rated ?? 10);
   const [gardenLocation, setGardenLocation]   = useState<string>(userPreferences?.garden_location ?? 'Canterbury, New Zealand');
   const [wineDetailLevel, setWineDetailLevel] = useState<WineDetailLevel>(userPreferences?.wine_detail_level ?? 'simple');
+  const [wineGuideSite, setWineGuideSite]     = useState<string>(userPreferences?.wine_guide_site ?? 'goodpairdays.com');
+  const [recipeSearchSite, setRecipeSearchSite] = useState<string>(userPreferences?.recipe_search_site ?? 'recipetineats.com');
   const [saving, setSaving]                   = useState(false);
 
   const handleSave = async () => {
@@ -61,6 +63,8 @@ export default function SettingsScreen() {
         rotation_min_rated: rotationMinRated,
         garden_location: gardenLocation.trim() || 'Canterbury, New Zealand',
         wine_detail_level: wineDetailLevel,
+        wine_guide_site: wineGuideSite.trim() || 'goodpairdays.com',
+        recipe_search_site: recipeSearchSite.trim() || 'recipetineats.com',
       });
       setUserPreferences(saved);
       router.back();
@@ -276,6 +280,35 @@ export default function SettingsScreen() {
           ))}
         </View>
         <Text style={styles.hint}>Simple shows varietal + one-line reason. Detailed adds food-wine interaction notes.</Text>
+
+        <FieldLabel>Wine guide site</FieldLabel>
+        <TextInput
+          style={styles.input}
+          value={wineGuideSite}
+          onChangeText={setWineGuideSite}
+          placeholder="goodpairdays.com"
+          placeholderTextColor="#9CA3AF"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+        <Text style={styles.hint}>Tapping a varietal in drink pairing searches this site via Google.</Text>
+
+        {/* ── Recipes ────────────────────────────────────────── */}
+        <SectionHeader>Recipes</SectionHeader>
+
+        <FieldLabel>Recipe search site</FieldLabel>
+        <TextInput
+          style={styles.input}
+          value={recipeSearchSite}
+          onChangeText={setRecipeSearchSite}
+          placeholder="recipetineats.com"
+          placeholderTextColor="#9CA3AF"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+        <Text style={styles.hint}>The "Find →" recipe browser searches this site by default.</Text>
 
       </ScrollView>
     </View>

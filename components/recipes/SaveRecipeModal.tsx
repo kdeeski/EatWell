@@ -42,7 +42,7 @@ interface Props {
 
 export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
-  const { userId, addRecipe, updateRecipeInStore } = useAppStore();
+  const { userId, addRecipe, updateRecipeInStore, userPreferences } = useAppStore();
 
   const isEdit = !!existingRecipe;
 
@@ -120,6 +120,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
         <RecipeBrowserModal
           recipeName={name || 'recipe'}
           visible={showBrowser}
+          searchSite={userPreferences?.recipe_search_site}
           onUseUrl={(url) => { setSourceUrl(url); setShowBrowser(false); }}
           onClose={() => setShowBrowser(false)}
         />

@@ -66,6 +66,8 @@ export interface UserPreferences {
   rotation_min_rated: number;
   garden_location: string;
   wine_detail_level?: 'simple' | 'detailed';
+  wine_guide_site?: string;
+  recipe_search_site?: string;
   created_at: string;
   updated_at: string;
 }

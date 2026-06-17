@@ -12,7 +12,8 @@ import type { PlannedIngredient, Recipe } from '../../types';
 import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook, loadCookedMealForDate } from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
-import { getGrapeGuideUrl } from '../../lib/grapeGuide';
+import { getGrapeSearchUrl } from '../../lib/grapeGuide';
+import { saveRecipe } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -31,7 +32,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName, inventoryItems, userPreferences } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName, inventoryItems, userPreferences, addRecipe } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
@@ -361,15 +362,28 @@ export default function TodayScreen() {
             {wineResult ? (
               <View style={styles.wineSection}>
                 <Text style={styles.wineSectionLabel}>Drink pairing</Text>
-                {wineResult.pairings.map((p, i) => (
-                  <View key={i} style={styles.wineCard}>
-                    <TouchableOpacity onPress={() => Linking.openURL(getGrapeGuideUrl(p.varietal))}>
-                      <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.wineReason}>{p.reason}</Text>
-                    {p.pairing_note ? <Text style={styles.wineNote}>{p.pairing_note}</Text> : null}
-                  </View>
-                ))}
+                {wineResult.pairings.map((p, i) => {
+                  const inGlossary = recipes.some((r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase());
+                  return (
+                    <View key={i} style={styles.wineCard}>
+                      <TouchableOpacity onPress={() => Linking.openURL(getGrapeSearchUrl(p.varietal, userPreferences?.wine_guide_site))}>
+                        <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.wineReason}>{p.reason}</Text>
+                      {p.pairing_note ? <Text style={styles.wineNote}>{p.pairing_note}</Text> : null}
+                      {userId && (
+                        inGlossary
+                          ? <Text style={styles.glossarySaved}>In glossary ✓</Text>
+                          : <TouchableOpacity onPress={async () => {
+                              const saved = await saveRecipe(userId, { name: p.varietal, category: 'glossary', description: p.reason + (p.pairing_note ? '\n' + p.pairing_note : ''), ingredients: null, method: null, source_url: null, source_book: null, page_number: null, rating: null, would_cook_again: null, cooked_meal_id: null, guide_json: null, bite_pairing: null });
+                              addRecipe(saved);
+                            }}>
+                              <Text style={styles.glossaryAdd}>+ Save to glossary</Text>
+                            </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
                 {wineResult.cocktail && (
                   <View style={[styles.wineCard, styles.cocktailCard]}>
                     <Text style={[styles.wineVarietal, styles.cocktailName]}>🍸 {wineResult.cocktail.name}</Text>
@@ -748,6 +762,8 @@ const styles = StyleSheet.create({
   cocktailName: { color: '#7C3AED' },
   wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
   wineError: { fontSize: 13, color: '#EF4444', marginTop: 4 },
+  glossaryAdd: { fontSize: 12, color: '#3B7A57', fontWeight: '600', marginTop: 6 },
+  glossarySaved: { fontSize: 12, color: '#9CA3AF', marginTop: 6 },
 
   logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   logButtonText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },

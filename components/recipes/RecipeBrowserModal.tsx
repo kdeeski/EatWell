@@ -10,18 +10,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface Props {
   recipeName: string;
   visible: boolean;
+  searchSite?: string;
   onUseUrl: (url: string) => void;
   onClose: () => void;
 }
 
-function buildSearchUrl(recipeName: string) {
-  return `https://www.google.com/search?q=${encodeURIComponent('recipetineats.com ' + recipeName)}`;
+function buildSearchUrl(recipeName: string, site: string = 'recipetineats.com') {
+  const domain = site.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  return `https://www.google.com/search?q=${encodeURIComponent(domain + ' ' + recipeName)}`;
 }
 
-export default function RecipeBrowserModal({ recipeName, visible, onUseUrl, onClose }: Props) {
+export default function RecipeBrowserModal({ recipeName, visible, searchSite, onUseUrl, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
-  const [currentUrl, setCurrentUrl] = useState(buildSearchUrl(recipeName));
+  const [currentUrl, setCurrentUrl] = useState(buildSearchUrl(recipeName, searchSite));
   const [loading, setLoading] = useState(true);
   const [canGoBack, setCanGoBack] = useState(false);
 
@@ -66,7 +68,7 @@ export default function RecipeBrowserModal({ recipeName, visible, onUseUrl, onCl
         {/* WebView */}
         <WebView
           ref={webViewRef}
-          source={{ uri: buildSearchUrl(recipeName) }}
+          source={{ uri: buildSearchUrl(recipeName, searchSite) }}
           onNavigationStateChange={handleNavigationStateChange}
           style={styles.webView}
           startInLoadingState
