@@ -1,8 +1,8 @@
 # EatWell Backlog
 
 ## UI Polish
-- [ ] Create centralised theme/colours file (e.g. `constants/theme.ts`) with named colour tokens (e.g. `colors.primary`, `colors.textPrimary`, `colors.border`). Replace all 50+ hardcoded hex values across 20+ files. Fix inconsistencies: two near-black text colours (#1C1C1E vs #111827), two off-white backgrounds (#FAFAF8 vs #F9FAFB), cocktails category colour mismatch (#0891B2 vs #DB2777).
-- [ ] Unify "Shop Mode" / keep-screen-on toggle styling — appears in three places with inconsistent look. Standardise button style, label, and placement across all instances.
+- [x] Create centralised theme/colours file (`constants/theme.ts`) with semantic colour tokens. Replaced 50+ hardcoded hex values across 24 files. Fixed cocktails category colour inconsistency.
+- [x] Unify "Shop Mode" / keep-screen-on toggle styling — all three instances now use consistent small header pill style.
 
 ## Bugs to Investigate
 - [ ] Cooking guide shows duplicate glossary terms — "Braise" appears twice: once from Recipe Stash (saved glossary entry) and once from Claude-generated guide glossary. Need to deduplicate: either filter guide glossary terms that already exist in stash, or merge them into a single display.
