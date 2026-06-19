@@ -1,6 +1,7 @@
 # EatWell Backlog
 
 ## UI Polish
+- [ ] Create centralised theme/colours file (e.g. `constants/theme.ts`) with named colour tokens (e.g. `colors.primary`, `colors.textPrimary`, `colors.border`). Replace all 50+ hardcoded hex values across 20+ files. Fix inconsistencies: two near-black text colours (#1C1C1E vs #111827), two off-white backgrounds (#FAFAF8 vs #F9FAFB), cocktails category colour mismatch (#0891B2 vs #DB2777).
 - [ ] Unify "Shop Mode" / keep-screen-on toggle styling — appears in three places with inconsistent look. Standardise button style, label, and placement across all instances.
 
 ## Bugs to Investigate
