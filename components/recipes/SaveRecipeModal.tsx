@@ -386,9 +386,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
     borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.background.elevated,
   },
-  sourceToggleBtnActive: { backgroundColor: '#3B7A5722', borderColor: '#3B7A57' },
-  sourceToggleBtnText: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
-  sourceToggleBtnTextActive: { color: '#3B7A57', fontWeight: '600' },
+  sourceToggleBtnActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
+  sourceToggleBtnText: { fontSize: 14, color: colors.text.muted, fontWeight: '500' },
+  sourceToggleBtnTextActive: { color: colors.brand.primary, fontWeight: '600' },
   bookRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   pageInput: { width: 72 },
 
@@ -400,6 +400,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  pillUnselected: { backgroundColor: '#F9FAFB', borderColor: '#E5E7EB' },
-  pillText: { fontSize: 14, color: '#6B7280' },
+  pillUnselected: { backgroundColor: colors.background.elevated, borderColor: colors.border.default },
+  pillText: { fontSize: 14, color: colors.text.muted },
 });

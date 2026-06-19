@@ -198,36 +198,36 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8 },
   statusText: { fontSize: 13, fontWeight: '600' },
   cutBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, backgroundColor: colors.state.warningSoft },
-  cutBadgeText: { fontSize: 13, fontWeight: '600', color: '#D97706' },
+  cutBadgeText: { fontSize: 13, fontWeight: '600', color: colors.state.warning },
 
-  metaRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  metaLabel: { width: 130, fontSize: 13, color: '#6B7280', fontWeight: '500' },
-  metaValue: { flex: 1, fontSize: 13, color: '#111827' },
+  metaRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
+  metaLabel: { width: 130, fontSize: 13, color: colors.text.muted, fontWeight: '500' },
+  metaValue: { flex: 1, fontSize: 13, color: colors.text.primary },
 
   actionSection: { marginTop: 20, marginBottom: 8, gap: 8 },
   actionButton: {
     borderRadius: 12, paddingVertical: 13, alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.elevated,
   },
-  actionButtonText: { fontSize: 15, fontWeight: '600', color: '#374151' },
-  harvestButton: { backgroundColor: '#3B7A57' },
-  harvestButtonText: { color: '#fff' },
+  actionButtonText: { fontSize: 15, fontWeight: '600', color: colors.text.secondary },
+  harvestButton: { backgroundColor: colors.brand.primary },
+  harvestButtonText: { color: colors.text.inverse },
 
   sectionLabel: {
-    fontSize: 13, fontWeight: '600', color: '#6B7280',
+    fontSize: 13, fontWeight: '600', color: colors.text.muted,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginTop: 24, marginBottom: 8,
   },
-  emptyText: { fontSize: 14, color: '#9CA3AF' },
+  emptyText: { fontSize: 14, color: colors.text.placeholder },
 
   harvestRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border.hairline,
   },
   harvestInfo: { gap: 2 },
-  harvestDate: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  harvestQty: { fontSize: 13, color: '#6B7280' },
+  harvestDate: { fontSize: 14, fontWeight: '600', color: colors.text.primary },
+  harvestQty: { fontSize: 13, color: colors.text.muted },
   harvestNotes: { fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' },
 
   deleteButton: {

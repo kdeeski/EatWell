@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
   pillTextSelected: { color: colors.text.inverse },
 
   harvestNote: { fontSize: 13, color: colors.text.muted, lineHeight: 20, marginTop: 12, fontStyle: 'italic' },
-  confirmButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
-  confirmButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  confirmButton: { backgroundColor: colors.brand.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
+  confirmButtonText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
 });

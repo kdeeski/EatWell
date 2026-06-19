@@ -327,25 +327,25 @@ const styles = StyleSheet.create({
   stepDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20 },
 
   promptBox: {
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 12, padding: 14,
   },
-  promptText: { fontSize: 13, color: '#374151', lineHeight: 19, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
+  promptText: { fontSize: 13, color: colors.text.secondary, lineHeight: 19, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
 
   copyBtn: {
-    backgroundColor: '#3B7A57', borderRadius: 12,
+    backgroundColor: colors.brand.primary, borderRadius: 12,
     paddingVertical: 12, alignItems: 'center',
   },
-  copyBtnDone: { backgroundColor: '#059669' },
-  copyBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  copyBtnTextDone: { color: '#FFFFFF' },
+  copyBtnDone: { backgroundColor: colors.brand.olive },
+  copyBtnText: { color: colors.text.inverse, fontSize: 15, fontWeight: '700' },
+  copyBtnTextDone: { color: colors.text.inverse },
 
-  errorText: { fontSize: 14, color: '#EF4444', backgroundColor: '#FEF2F2', borderRadius: 8, padding: 10 },
+  errorText: { fontSize: 14, color: colors.state.dangerBright, backgroundColor: colors.state.dangerLighter, borderRadius: 8, padding: 10 },
 
   jsonInput: {
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 12, padding: 14, minHeight: 160,
-    fontSize: 13, color: '#1C1C1E', lineHeight: 19,
+    fontSize: 13, color: colors.text.primary, lineHeight: 19,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 
@@ -353,13 +353,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border.hairline,
+    backgroundColor: colors.background.surface,
   },
   loadBtn: {
-    backgroundColor: '#1C1C1E', borderRadius: 14,
+    backgroundColor: colors.brand.ink, borderRadius: 14,
     paddingVertical: 16, alignItems: 'center',
   },
   loadBtnDisabled: { opacity: 0.5 },
-  loadBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  loadBtnText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
 });

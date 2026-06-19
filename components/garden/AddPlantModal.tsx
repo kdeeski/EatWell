@@ -247,12 +247,12 @@ const styles = StyleSheet.create({
   },
   toggleInfo: { flex: 1 },
   toggleLabel: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
-  toggleHint: { fontSize: 12, color: '#6B7280', marginTop: 2, lineHeight: 16 },
+  toggleHint: { fontSize: 12, color: colors.text.muted, marginTop: 2, lineHeight: 16 },
   toggle: {
     width: 44, height: 26, borderRadius: 13,
-    backgroundColor: '#E5E7EB', justifyContent: 'center', padding: 2,
+    backgroundColor: colors.border.default, justifyContent: 'center', padding: 2,
   },
-  toggleOn: { backgroundColor: '#3B7A57' },
-  toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  toggleOn: { backgroundColor: colors.brand.primary },
+  toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.background.surface },
   toggleThumbOn: { alignSelf: 'flex-end' },
 });

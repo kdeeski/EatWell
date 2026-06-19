@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dismissButtonText: {
-    color: '#065F46',
+    color: colors.brand.primaryDark,
     fontSize: 14,
     fontWeight: '600',
   },

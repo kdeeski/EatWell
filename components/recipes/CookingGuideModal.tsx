@@ -339,25 +339,25 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   cookModeBtn: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  cookModeBtnActive: { backgroundColor: '#3B7A57' },
-  cookModeBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  cookModeBtnActive: { backgroundColor: colors.brand.primary },
+  cookModeBtnText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
 
   stepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  stepNum: { fontSize: 15, fontWeight: '700', color: '#3B7A57', minWidth: 22 },
-  stepText: { flex: 1, fontSize: 15, color: '#374151', lineHeight: 22 },
+  stepNum: { fontSize: 15, fontWeight: '700', color: colors.brand.primary, minWidth: 22 },
+  stepText: { flex: 1, fontSize: 15, color: colors.text.secondary, lineHeight: 22 },
 
-  componentCard: { backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', padding: 14, gap: 8 },
+  componentCard: { backgroundColor: colors.background.elevated, borderRadius: 12, borderWidth: 1, borderColor: colors.border.default, padding: 14, gap: 8 },
   componentHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  componentName: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
-  stashBadge: { fontSize: 11, color: '#3B7A57', fontWeight: '600', marginTop: 2 },
-  chevron: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
-  componentHint: { fontSize: 12, color: '#9CA3AF' },
-  componentDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  componentName: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
+  stashBadge: { fontSize: 11, color: colors.brand.primary, fontWeight: '600', marginTop: 2 },
+  chevron: { fontSize: 11, color: colors.text.placeholder, marginTop: 2 },
+  componentHint: { fontSize: 12, color: colors.text.placeholder },
+  componentDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20 },
 
   saveItemBtn: { alignSelf: 'flex-end', marginTop: 4 },
-  saveItemBtnText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  saveItemBtnText: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   glossaryRow: { gap: 2 },
-  glossaryTerm: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
-  glossaryDef: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  glossaryTerm: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
+  glossaryDef: { fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
 });
