@@ -129,7 +129,7 @@ export default function PlanningFlow() {
         const ids = new Set(cooked.map((c) => c.planned_meal_id).filter(Boolean) as string[]);
         setCookedThisWeekIds(ids);
       })
-      .catch(() => {});
+      .catch((e) => console.error('Failed to load cooked meals for carry-forward', e));
   }, [userId, plannedMeals.length]);
 
   const toggleCarryForward = (id: string) =>
