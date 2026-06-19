@@ -11,7 +11,6 @@ import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
 import { findStashMatch } from '../../lib/recipes';
-import { getGrapeSearchUrl } from '../../lib/grapeGuide';
 import { saveRecipe } from '../../lib/data';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
@@ -294,9 +293,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                     const inGlossary = recipes.some((r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase());
                     return (
                       <View key={i} style={styles.wineCard}>
-                        <TouchableOpacity onPress={() => Linking.openURL(getGrapeSearchUrl(p.varietal, userPreferences?.wine_guide_site))}>
-                          <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.wineVarietal}>{p.varietal}</Text>
                         <Text style={styles.wineReason}>{p.reason}</Text>
                         {p.pairing_note ? (
                           <Text style={styles.wineNote}>{p.pairing_note}</Text>

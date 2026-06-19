@@ -12,7 +12,6 @@ import type { PlannedIngredient, Recipe } from '../../types';
 import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook, loadCookedMealForDate } from '../../lib/data';
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
-import { getGrapeSearchUrl } from '../../lib/grapeGuide';
 import { saveRecipe } from '../../lib/data';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
@@ -366,9 +365,7 @@ export default function TodayScreen() {
                   const inGlossary = recipes.some((r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase());
                   return (
                     <View key={i} style={styles.wineCard}>
-                      <TouchableOpacity onPress={() => Linking.openURL(getGrapeSearchUrl(p.varietal, userPreferences?.wine_guide_site))}>
-                        <Text style={styles.wineVarietal}>{p.varietal} ↗</Text>
-                      </TouchableOpacity>
+                      <Text style={styles.wineVarietal}>{p.varietal}</Text>
                       <Text style={styles.wineReason}>{p.reason}</Text>
                       {p.pairing_note ? <Text style={styles.wineNote}>{p.pairing_note}</Text> : null}
                       {userId && (
