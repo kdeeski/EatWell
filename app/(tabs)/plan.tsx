@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 10, gap: 3 },
   wineVarietal: { fontSize: 13, fontWeight: '700', color: colors.text.primary },
   wineReason: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
-  wineNote: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 3 },
-  wineDismiss: { fontSize: 12, color: '#9CA3AF' },
-  wineError: { fontSize: 12, color: '#EF4444' },
+  wineNote: { fontSize: 12, color: colors.text.muted, lineHeight: 17, marginTop: 3 },
+  wineDismiss: { fontSize: 12, color: colors.text.placeholder },
+  wineError: { fontSize: 12, color: colors.state.dangerBright },
 });
