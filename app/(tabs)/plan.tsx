@@ -19,6 +19,7 @@ import {
 import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import type { MealPlan, PlannedMeal, PlannedIngredient, Recipe, CookedMeal } from '../../types';
+import { colors } from '../../constants/theme';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -333,7 +334,7 @@ export default function PlanScreen() {
           <Text style={styles.heading}>{formatWeekRange(viewedWeekStart)}</Text>
           <View style={styles.weekHeaderRight}>
             {(weekLoading || weekDataPending) && (
-              <ActivityIndicator size="small" color="#9CA3AF" style={{ marginRight: 8 }} />
+              <ActivityIndicator size="small" color={colors.text.placeholder} style={{ marginRight: 8 }} />
             )}
             {!isCurrentWeek && (
               <TouchableOpacity onPress={() => setWeekOffset(0)}>
@@ -346,7 +347,7 @@ export default function PlanScreen() {
         {(weekLoading || weekDataPending) ? (
           // Data is on its way — show a full-screen spinner so no empty/stale content flashes
           <View style={styles.weekLoadingState}>
-            <ActivityIndicator size="large" color="#3B7A57" />
+            <ActivityIndicator size="large" color={colors.brand.primary} />
           </View>
         ) : weekError ? (
           // Network or DB error loading this week's data
@@ -530,7 +531,7 @@ export default function PlanScreen() {
                                 ) : (
                                   <TouchableOpacity onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
                                     {wineLoading
-                                      ? <ActivityIndicator size="small" color="#3B7A57" />
+                                      ? <ActivityIndicator size="small" color={colors.brand.primary} />
                                       : <Text style={styles.howToButtonText}>Drink pairing →</Text>
                                     }
                                   </TouchableOpacity>
@@ -586,7 +587,7 @@ export default function PlanScreen() {
                                 }}
                               >
                                 {pushing === meal.id
-                                  ? <ActivityIndicator size="small" color="#9CA3AF" />
+                                  ? <ActivityIndicator size="small" color={colors.text.placeholder} />
                                   : <Text style={styles.pushNextWeekText}>→ Add to next week</Text>
                                 }
                               </TouchableOpacity>
@@ -712,50 +713,50 @@ export default function PlanScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
   content:   { padding: 20, paddingBottom: 20 },
-  heading:   { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
-  hint:      { fontSize: 12, color: '#9CA3AF', marginBottom: 20 },
+  heading:   { fontSize: 28, fontWeight: '700', color: colors.text.primary },
+  hint:      { fontSize: 12, color: colors.text.placeholder, marginBottom: 20 },
   weekHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   weekHeaderRight: { flexDirection: 'row', alignItems: 'center' },
-  thisWeekLink:    { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  thisWeekLink:    { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   weekLoadingState: { alignItems: 'center', paddingTop: 80 },
   emptyState: { alignItems: 'center', paddingTop: 40 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },
-  emptyBody:  { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
-  errorText:  { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 16, paddingHorizontal: 12 },
-  planButton:     { backgroundColor: '#3B7A57', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
-  planButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 10 },
+  emptyBody:  { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22, marginBottom: 16 },
+  errorText:  { fontSize: 12, color: colors.state.dangerBright, textAlign: 'center', marginBottom: 16, paddingHorizontal: 12 },
+  planButton:     { backgroundColor: colors.brand.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
+  planButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 16 },
 
   dayRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
-  dayLabel: { width: 36, fontSize: 13, fontWeight: '600', color: '#9CA3AF' },
-  dayLabelSelected: { color: '#3B7A57' },
+  dayLabel: { width: 36, fontSize: 13, fontWeight: '600', color: colors.text.placeholder },
+  dayLabelSelected: { color: colors.brand.primary },
 
   mealCard: {
-    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: '#E5E7EB',
+    flex: 1, backgroundColor: colors.background.surface, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: colors.border.default,
   },
-  mealCardSelected: { borderColor: '#3B7A57', borderWidth: 2 },
-  mealCardEmpty:    { backgroundColor: '#F9FAFB', borderColor: '#F3F4F6' },
-  mealCardCooked:   { backgroundColor: '#F3F4F6' },
-  mealNameCooked:   { color: '#9CA3AF' },
+  mealCardSelected: { borderColor: colors.brand.primary, borderWidth: 2 },
+  mealCardEmpty:    { backgroundColor: colors.background.elevated, borderColor: colors.border.hairline },
+  mealCardCooked:   { backgroundColor: colors.background.elevated },
+  mealNameCooked:   { color: colors.text.placeholder },
   cookedBadge: {
-    fontSize: 11, fontWeight: '600', color: '#166534', backgroundColor: '#F0FDF4',
+    fontSize: 11, fontWeight: '600', color: colors.brand.primaryDark, backgroundColor: colors.brand.primaryLighter,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
 
   badgeRow:    { flexDirection: 'row', gap: 6, marginBottom: 4 },
   fishBadge:   {
-    fontSize: 11, fontWeight: '600', color: '#3B7A57', backgroundColor: '#D1FAE5',
+    fontSize: 11, fontWeight: '600', color: colors.brand.primary, backgroundColor: colors.brand.primaryLight,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
   recipeBadge: {
-    fontSize: 11, fontWeight: '600', color: '#92400E', backgroundColor: '#FEF3C7',
+    fontSize: 11, fontWeight: '600', color: colors.state.warningDark, backgroundColor: colors.state.warningSoft,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
 
-  mealName:    { fontSize: 16, fontWeight: '600', color: '#1C1C1E', marginBottom: 2 },
+  mealName:    { fontSize: 16, fontWeight: '600', color: colors.text.primary, marginBottom: 2 },
   mealMeta:    { fontSize: 12, color: '#9CA3AF' },
   description: { fontSize: 14, color: '#374151', lineHeight: 21, marginTop: 8 },
   mealRating: { fontSize: 12, fontWeight: '600', color: '#F59E0B', marginTop: 4 },

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { GardenSuggestion } from '../../types';
+import { colors } from '../../constants/theme';
 
 interface Props {
   suggestion: GardenSuggestion;
@@ -68,7 +69,7 @@ export default function SuggestionCard({ suggestion, onAddToGarden, onDismiss }:
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: colors.brand.primaryLight,
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
@@ -81,15 +82,15 @@ const styles = StyleSheet.create({
   plantName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#064E3B',
+    color: colors.brand.primaryDark,
   },
   chevron: {
     fontSize: 11,
-    color: '#059669',
+    color: colors.brand.olive,
   },
   hint: {
     fontSize: 12,
-    color: '#059669',
+    color: colors.brand.olive,
     marginTop: 3,
   },
 
@@ -99,14 +100,14 @@ const styles = StyleSheet.create({
   whyLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#065F46',
+    color: colors.brand.primaryDark,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 2,
   },
   whyText: {
     fontSize: 13,
-    color: '#064E3B',
+    color: colors.brand.primaryDark,
     lineHeight: 19,
   },
 
@@ -117,12 +118,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#A7F3D0',
+    borderTopColor: colors.brand.oliveLight,
   },
   growingNote: {
     fontSize: 12,
-    color: '#065F46',
-    backgroundColor: '#A7F3D0',
+    color: colors.brand.primaryDark,
+    backgroundColor: colors.brand.oliveLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -135,13 +136,13 @@ const styles = StyleSheet.create({
   },
   addButton: {
     flex: 1,
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    color: colors.text.inverse,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#A7F3D0',
+    backgroundColor: colors.brand.oliveLight,
     alignItems: 'center',
   },
   dismissButtonText: {

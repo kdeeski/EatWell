@@ -12,6 +12,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
 import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem, depleteInventoryItems, type EarmarkedIngredient } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
+import { colors } from '../../constants/theme';
 
 type Step = 'week_picker' | 'quick_replan' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
 
@@ -478,7 +479,7 @@ export default function PlanningFlow() {
                   onPress={() => setTargetWeekOffset(offset)}
                 >
                   <Text style={[styles.tapOptionText, selected && styles.tapOptionTextSelected]}>{label}</Text>
-                  <Text style={[styles.carryForwardDesc, selected && { color: '#065F46' }]}>{range}</Text>
+                  <Text style={[styles.carryForwardDesc, selected && { color: colors.brand.primaryDark }]}>{range}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -745,7 +746,7 @@ export default function PlanningFlow() {
         {/* Generating */}
         {step === 'generating' && (
           <View style={styles.centeredBlock}>
-            <ActivityIndicator size="large" color="#3B7A57" />
+            <ActivityIndicator size="large" color={colors.brand.primary} />
             <Text style={styles.generatingText}>{GENERATING_MESSAGES[generatingMessage]}</Text>
             <Text style={styles.generatingSubtext}>This usually takes 20–40 seconds</Text>
           </View>
@@ -789,7 +790,7 @@ export default function PlanningFlow() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8', flexShrink: 1 },
+  container: { flex: 1, backgroundColor: colors.background.app, flexShrink: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -797,39 +798,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border.hairline,
   },
-  cancel: { fontSize: 16, color: '#6B7280' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
+  cancel: { fontSize: 16, color: colors.text.muted },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
 
   content: { padding: 24, paddingTop: 28 },
-  stepTitle: { fontSize: 22, fontWeight: '700', color: '#1C1C1E', marginBottom: 10 },
-  stepBody: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 20 },
-  question: { fontSize: 15, fontWeight: '500', color: '#374151', marginBottom: 10 },
-  mutedText: { fontSize: 14, color: '#9CA3AF', fontStyle: 'italic' },
+  stepTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary, marginBottom: 10 },
+  stepBody: { fontSize: 15, color: colors.text.muted, lineHeight: 22, marginBottom: 20 },
+  question: { fontSize: 15, fontWeight: '500', color: colors.text.secondary, marginBottom: 10 },
+  mutedText: { fontSize: 14, color: colors.text.placeholder, fontStyle: 'italic' },
 
   fridgeSummary: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background.elevated,
     borderRadius: 14,
     padding: 16,
     marginBottom: 20,
     gap: 2,
   },
   fridgeItemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 10 },
-  fridgeItemTick: { fontSize: 14, color: '#3B7A57', fontWeight: '700', width: 16 },
-  fridgeItemTickGone: { color: '#EF4444' },
-  fridgeItem: { fontSize: 15, color: '#374151', lineHeight: 22, flex: 1 },
-  fridgeItemGone: { color: '#D1D5DB', textDecorationLine: 'line-through' },
-  fridgeStapleNote: { fontSize: 12, color: '#9CA3AF', fontStyle: 'italic', marginTop: 8, lineHeight: 16 },
+  fridgeItemTick: { fontSize: 14, color: colors.brand.primary, fontWeight: '700', width: 16 },
+  fridgeItemTickGone: { color: colors.state.dangerBright },
+  fridgeItem: { fontSize: 15, color: colors.text.secondary, lineHeight: 22, flex: 1 },
+  fridgeItemGone: { color: colors.border.default, textDecorationLine: 'line-through' },
+  fridgeStapleNote: { fontSize: 12, color: colors.text.placeholder, fontStyle: 'italic', marginTop: 8, lineHeight: 16 },
 
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border.default,
     padding: 14,
     fontSize: 15,
-    color: '#1C1C1E',
+    color: colors.text.primary,
     minHeight: 80,
     textAlignVertical: 'top',
     marginBottom: 20,
@@ -837,16 +838,16 @@ const styles = StyleSheet.create({
 
   tapOption: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border.default,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
   },
-  tapOptionSelected: { borderColor: '#3B7A57', backgroundColor: '#D1FAE5' },
-  tapOptionText: { fontSize: 15, color: '#374151' },
-  tapOptionTextSelected: { color: '#065F46', fontWeight: '600' },
+  tapOptionSelected: { borderColor: colors.brand.primary, backgroundColor: colors.brand.primaryLight },
+  tapOptionText: { fontSize: 15, color: colors.text.secondary },
+  tapOptionTextSelected: { color: colors.brand.primaryDark, fontWeight: '600' },
 
   dayGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
   dayChip: {
@@ -854,36 +855,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.surface,
   },
-  dayChipSelected: { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
-  dayChipHolly: { backgroundColor: '#EDE9FE', borderColor: '#7C3AED' },
-  dayChipText: { fontSize: 14, color: '#374151' },
-  dayChipTextSelected: { color: '#B91C1C', fontWeight: '600' },
-  dayChipTextHolly: { color: '#5B21B6', fontWeight: '600' },
+  dayChipSelected: { backgroundColor: colors.state.dangerSoft, borderColor: colors.state.dangerBright },
+  dayChipHolly: { backgroundColor: colors.brand.plumLight, borderColor: colors.brand.plum },
+  dayChipText: { fontSize: 14, color: colors.text.secondary },
+  dayChipTextSelected: { color: colors.state.dangerText, fontWeight: '600' },
+  dayChipTextHolly: { color: colors.brand.plumDark, fontWeight: '600' },
 
   primaryButton: {
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
+  primaryButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 16 },
 
   centeredBlock: { paddingTop: 60, gap: 20, alignItems: 'center' },
-  generatingText: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
-  generatingSubtext: { fontSize: 13, color: '#9CA3AF', textAlign: 'center' },
-  doneTitle: { fontSize: 26, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
-  doneBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, maxWidth: 280 },
+  generatingText: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
+  generatingSubtext: { fontSize: 13, color: colors.text.placeholder, textAlign: 'center' },
+  doneTitle: { fontSize: 26, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
+  doneBody: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
   centeredButton: { alignSelf: 'stretch' },
 
   carryForwardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  carryForwardToggleAll: { fontSize: 14, color: '#3B7A57', fontWeight: '600', paddingTop: 6 },
-  carryForwardDesc: { fontSize: 13, color: '#9CA3AF', marginTop: 3, lineHeight: 18 },
+  carryForwardToggleAll: { fontSize: 14, color: colors.brand.primary, fontWeight: '600', paddingTop: 6 },
+  carryForwardDesc: { fontSize: 13, color: colors.text.placeholder, marginTop: 3, lineHeight: 18 },
   carryForwardButtons: { flexDirection: 'row', gap: 12, marginTop: 16 },
   carryForwardDone: { flex: 1, marginTop: 0 },
-  skipButton: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  skipButtonText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
+  skipButton: { borderWidth: 1, borderColor: colors.border.default, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  skipButtonText: { fontSize: 16, fontWeight: '600', color: colors.text.muted },
 });

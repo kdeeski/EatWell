@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
 import { formatRecipeFromText } from '../../lib/claude';
 import SaveRecipeModal from './SaveRecipeModal';
+import { colors } from '../../constants/theme';
 
 const VALID_CATEGORIES: RecipeCategory[] = [
   'mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary', 'cocktails',
@@ -180,7 +181,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
                     value={pasteText}
                     onChangeText={(v) => { setPasteText(v); setPasteError(null); }}
                     placeholder="Paste recipe text here…"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                     multiline
                     textAlignVertical="top"
                     autoCapitalize="sentences"
@@ -221,7 +222,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
                         value={json}
                         onChangeText={(v) => { setJson(v); setJsonError(null); }}
                         placeholder={'{\n  "name": "...",\n  ...\n}'}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.text.placeholder}
                         multiline
                         textAlignVertical="top"
                         autoCapitalize="none"
@@ -242,7 +243,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
                   disabled={formatting}
                 >
                   {formatting
-                    ? <ActivityIndicator size="small" color="#FFFFFF" />
+                    ? <ActivityIndicator size="small" color={colors.text.inverse} />
                     : <Text style={styles.loadBtnText}>Format with Claude →</Text>
                   }
                 </TouchableOpacity>
@@ -278,52 +279,52 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background.surface },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  headerBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 56 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
+  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 56 },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
 
   toggleRow: {
     flexDirection: 'row',
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.elevated,
     borderRadius: 10,
     padding: 3,
   },
   toggleTab: {
     flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
   },
-  toggleTabActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, elevation: 2 },
-  toggleTabText: { fontSize: 14, fontWeight: '500', color: '#9CA3AF' },
-  toggleTabTextActive: { color: '#1C1C1E', fontWeight: '700' },
+  toggleTabActive: { backgroundColor: colors.background.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, elevation: 2 },
+  toggleTabText: { fontSize: 14, fontWeight: '500', color: colors.text.placeholder },
+  toggleTabTextActive: { color: colors.text.primary, fontWeight: '700' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 28 },
 
   pasteSection: { gap: 12 },
-  pasteDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  pasteDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20 },
   pasteInput: {
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 12, padding: 14, minHeight: 260,
-    fontSize: 14, color: '#1C1C1E', lineHeight: 20,
+    fontSize: 14, color: colors.text.primary, lineHeight: 20,
     textAlignVertical: 'top',
   },
 
   step: { flexDirection: 'row', gap: 14 },
   stepNumber: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#3B7A57', color: '#FFFFFF',
+    backgroundColor: colors.brand.primary, color: colors.text.inverse,
     fontSize: 14, fontWeight: '700', textAlign: 'center', lineHeight: 28,
   },
   stepBody: { flex: 1, gap: 10 },
-  stepTitle: { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
-  stepDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  stepTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary },
+  stepDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20 },
 
   promptBox: {
     backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',

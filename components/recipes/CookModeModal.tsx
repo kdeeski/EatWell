@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
+import { colors } from '../../constants/theme';
 
 // Keep screen awake on native only — no equivalent on web
 function KeepAwakeGuard() { useKeepAwake(); return null; }
@@ -83,7 +84,7 @@ export default function CookModeModal({ recipeName, method, onClose }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.brand.ink,
     paddingHorizontal: 24,
   },
 
@@ -94,13 +95,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   exitBtn: { minWidth: 72 },
-  exitBtnText: { fontSize: 16, color: '#9CA3AF', fontWeight: '500' },
-  recipeName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', marginHorizontal: 8 },
+  exitBtnText: { fontSize: 16, color: colors.text.placeholder, fontWeight: '500' },
+  recipeName: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text.inverse, textAlign: 'center', marginHorizontal: 8 },
 
   stepCounter: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.text.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'center',
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: 22,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     textAlign: 'center',
     lineHeight: 34,
   },
@@ -131,18 +132,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#374151',
-    backgroundColor: '#2C2C2E',
+    borderColor: colors.text.secondary,
+    backgroundColor: colors.brand.ink,
   },
   navBtnDisabled: {
-    borderColor: '#2C2C2E',
-    backgroundColor: '#1C1C1E',
+    borderColor: colors.brand.ink,
+    backgroundColor: colors.brand.ink,
   },
   navBtnPrimary: {
-    backgroundColor: '#3B7A57',
-    borderColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
+    borderColor: colors.brand.primary,
   },
-  navBtnText: { fontSize: 16, fontWeight: '600', color: '#9CA3AF' },
-  navBtnTextDisabled: { color: '#4B5563' },
-  navBtnTextPrimary: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  navBtnText: { fontSize: 16, fontWeight: '600', color: colors.text.placeholder },
+  navBtnTextDisabled: { color: colors.text.secondary },
+  navBtnTextPrimary: { fontSize: 16, fontWeight: '600', color: colors.text.inverse },
 });

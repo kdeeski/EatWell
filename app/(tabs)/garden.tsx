@@ -26,6 +26,7 @@ import AddPlantModal from '../../components/garden/AddPlantModal';
 import HarvestModal from '../../components/garden/HarvestModal';
 import PlantDetailModal from '../../components/garden/PlantDetailModal';
 import SuggestionCard from '../../components/garden/SuggestionCard';
+import { colors } from '../../constants/theme';
 
 const STATUS_LABELS: Record<string, string> = {
   planted:   'Planted',
@@ -36,11 +37,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  planted:   '#6B7280',
-  growing:   '#D97706',
-  ready:     '#3B7A57',
-  harvested: '#9CA3AF',
-  finished:  '#D1D5DB',
+  planted:   colors.garden.planted,
+  growing:   colors.garden.growing,
+  ready:     colors.garden.ready,
+  harvested: colors.garden.harvested,
+  finished:  colors.garden.finished,
 };
 
 function extractIngredientFrequency(meals: ReturnType<typeof useAppStore.getState>['plannedMeals']) {
@@ -313,7 +314,7 @@ export default function GardenScreen() {
 
         {suggestionsLoading ? (
           <View style={styles.loadingRow}>
-            <ActivityIndicator color="#3B7A57" />
+            <ActivityIndicator color={colors.brand.primary} />
             <Text style={styles.loadingText}>{LOADING_MESSAGES[loadingMsgIndex]}</Text>
           </View>
         ) : suggestionsError ? (
@@ -474,9 +475,9 @@ export default function GardenScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
   content: { padding: 20, paddingBottom: 40 },
-  heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', marginBottom: 24 },
+  heading: { fontSize: 28, fontWeight: '700', color: colors.text.primary, marginBottom: 24 },
 
   section: { marginBottom: 28 },
   sectionHeader: {
@@ -484,46 +485,46 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
-    fontSize: 13, fontWeight: '600', color: '#6B7280',
+    fontSize: 13, fontWeight: '600', color: colors.text.muted,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
-  refreshLink: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
-  collapseToggle: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  refreshLink: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
+  collapseToggle: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
 
   addButton: {
     paddingHorizontal: 12, paddingVertical: 5,
-    backgroundColor: '#3B7A57', borderRadius: 8,
+    backgroundColor: colors.brand.primary, borderRadius: 8,
   },
-  addButtonText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  addButtonText: { fontSize: 13, fontWeight: '600', color: colors.text.inverse },
 
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
-  loadingText: { fontSize: 14, color: '#6B7280' },
-  emptyText: { fontSize: 14, color: '#9CA3AF', lineHeight: 20 },
+  loadingText: { fontSize: 14, color: colors.text.muted },
+  emptyText: { fontSize: 14, color: colors.text.placeholder, lineHeight: 20 },
   errorBox: {
-    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    backgroundColor: colors.state.dangerLighter, borderWidth: 1, borderColor: colors.state.dangerBorder,
     borderRadius: 10, padding: 12, gap: 4,
   },
-  errorTitle: { fontSize: 14, fontWeight: '600', color: '#DC2626' },
-  errorDetail: { fontSize: 12, color: '#991B1B', lineHeight: 18 },
+  errorTitle: { fontSize: 14, fontWeight: '600', color: colors.state.danger },
+  errorDetail: { fontSize: 12, color: colors.state.dangerText, lineHeight: 18 },
 
   plantRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', gap: 8,
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border.hairline, gap: 8,
   },
   plantRowMuted: { opacity: 0.6 },
   plantInfo: { flex: 1 },
-  plantName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
-  plantVariety: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
-  plantDate: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-  plantNameMuted: { fontSize: 15, color: '#9CA3AF', flex: 1 },
+  plantName: { fontSize: 16, fontWeight: '600', color: colors.text.primary },
+  plantVariety: { fontSize: 12, color: colors.text.placeholder, marginTop: 1 },
+  plantDate: { fontSize: 12, color: colors.text.placeholder, marginTop: 2 },
+  plantNameMuted: { fontSize: 15, color: colors.text.placeholder, flex: 1 },
   plantActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 12, fontWeight: '600' },
-  statusTextMuted: { fontSize: 12, color: '#9CA3AF' },
+  statusTextMuted: { fontSize: 12, color: colors.text.placeholder },
 
-  quickButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#F3F4F6' },
-  quickButtonText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  harvestQuickButton: { backgroundColor: '#3B7A57' },
-  harvestQuickButtonText: { color: '#fff' },
+  quickButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: colors.background.elevated },
+  quickButtonText: { fontSize: 12, fontWeight: '600', color: colors.text.secondary },
+  harvestQuickButton: { backgroundColor: colors.brand.primary },
+  harvestQuickButtonText: { color: colors.text.inverse },
 });

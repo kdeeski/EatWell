@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { saveCheckin, logCookedMeal, localDateString, updateRecipe, loadMealPlanForWeek, getThisWeekMonday, fetchCookedMealForPlannedMeal, loadCookedMealForDate } from '../../lib/data';
 import { findStashMatch } from '../../lib/recipes';
+import { colors } from '../../constants/theme';
 
 type Step = 'debrief' | 'something_else_detail' | 'rating' | 'tonight' | 'done';
 
@@ -186,7 +187,7 @@ export default function CheckinFlow() {
               onPress={() => { startEditing(); setStep('tonight'); }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.summaryLabel, { color: '#3B7A57' }]}>Tonight</Text>
+              <Text style={[styles.summaryLabel, { color: colors.brand.primary }]}>Tonight</Text>
               <Text style={styles.summaryMeal}>{tonightMeal.meal_name}</Text>
               {tonightMeal.is_fish && (
                 <Text style={styles.fishNote}>Don't forget to pick up the fish today.</Text>
@@ -352,7 +353,7 @@ export default function CheckinFlow() {
         {step === 'debrief' && (
           <View>
             {lastNightCookedLoading ? (
-              <ActivityIndicator color="#3B7A57" style={{ marginTop: 40 }} />
+              <ActivityIndicator color={colors.brand.primary} style={{ marginTop: 40 }} />
             ) : lastNightCooked ? (
               <>
                 <Text style={styles.sectionMicro}>Last night</Text>
@@ -643,7 +644,7 @@ export default function CheckinFlow() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -651,33 +652,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border.hairline,
   },
-  cancel: { fontSize: 16, color: '#6B7280' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
+  cancel: { fontSize: 16, color: colors.text.muted },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
   content: { padding: 24, paddingTop: 28 },
 
-  stepTitle: { fontSize: 22, fontWeight: '700', color: '#1C1C1E', marginBottom: 20 },
-  subLabel: { fontSize: 15, fontWeight: '600', color: '#374151', marginBottom: 10, marginTop: 20 },
-  mutedText: { fontSize: 15, color: '#9CA3AF', fontStyle: 'italic' },
+  stepTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary, marginBottom: 20 },
+  subLabel: { fontSize: 15, fontWeight: '600', color: colors.text.secondary, marginBottom: 10, marginTop: 20 },
+  mutedText: { fontSize: 15, color: colors.text.placeholder, fontStyle: 'italic' },
 
   mealOption: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
-  mealOptionSelected: { borderColor: '#3B7A57', borderWidth: 2 },
-  mealOptionMuted: { backgroundColor: '#F9FAFB' },
-  mealOptionName: { fontSize: 17, fontWeight: '600', color: '#1C1C1E' },
-  mealOptionDesc: { fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 18 },
-  mealOptionMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
-  fishNote: { fontSize: 12, fontWeight: '600', color: '#3B7A57', marginTop: 4 },
+  mealOptionSelected: { borderColor: colors.brand.primary, borderWidth: 2 },
+  mealOptionMuted: { backgroundColor: colors.background.elevated },
+  mealOptionName: { fontSize: 17, fontWeight: '600', color: colors.text.primary },
+  mealOptionDesc: { fontSize: 13, color: colors.text.muted, marginTop: 4, lineHeight: 18 },
+  mealOptionMeta: { fontSize: 12, color: colors.text.placeholder, marginTop: 4 },
+  fishNote: { fontSize: 12, fontWeight: '600', color: colors.brand.primary, marginTop: 4 },
 
   ratingRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
   ratingChip: {
@@ -685,15 +686,15 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
-  ratingNum: { fontSize: 16, fontWeight: '700', color: '#374151' },
-  ratingNumSelected: { color: '#FFFFFF' },
-  ratingSelectedLabel: { fontSize: 14, color: '#3B7A57', fontWeight: '600', marginBottom: 16 },
+  ratingChipSelected: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  ratingNum: { fontSize: 16, fontWeight: '700', color: colors.text.secondary },
+  ratingNumSelected: { color: colors.text.inverse },
+  ratingSelectedLabel: { fontSize: 14, color: colors.brand.primary, fontWeight: '600', marginBottom: 16 },
 
   yesNoRow: { flexDirection: 'row', gap: 12, marginBottom: 8 },
   yesNoChip: {
@@ -701,62 +702,62 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.surface,
     alignItems: 'center',
   },
-  yesChipSelected: { backgroundColor: '#D1FAE5', borderColor: '#3B7A57' },
-  noChipSelected: { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
-  yesNoText: { fontSize: 15, fontWeight: '600', color: '#374151' },
-  yesNoTextSelected: { color: '#1C1C1E' },
+  yesChipSelected: { backgroundColor: colors.brand.primaryLight, borderColor: colors.brand.primary },
+  noChipSelected: { backgroundColor: colors.state.dangerSoft, borderColor: colors.state.dangerBright },
+  yesNoText: { fontSize: 15, fontWeight: '600', color: colors.text.secondary },
+  yesNoTextSelected: { color: colors.text.primary },
 
   notesInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border.default,
     padding: 14,
     fontSize: 15,
-    color: '#1C1C1E',
+    color: colors.text.primary,
     minHeight: 80,
     textAlignVertical: 'top',
     marginBottom: 20,
   },
 
   primaryButton: {
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
+  primaryButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 16 },
 
   doneBlock: { paddingTop: 60, gap: 16 },
-  doneTitle: { fontSize: 28, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
+  doneTitle: { fontSize: 28, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
 
   summaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border.default,
   },
-  summaryCardGreen: { borderColor: '#3B7A57' },
-  summaryLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  summaryMeal: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
-  summaryDetail: { fontSize: 14, color: '#6B7280', marginBottom: 4 },
-  summaryNotes: { fontSize: 14, color: '#374151', fontStyle: 'italic', marginTop: 4 },
+  summaryCardGreen: { borderColor: colors.brand.primary },
+  summaryLabel: { fontSize: 11, fontWeight: '700', color: colors.text.placeholder, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  summaryMeal: { fontSize: 18, fontWeight: '700', color: colors.text.primary, marginBottom: 4 },
+  summaryDetail: { fontSize: 14, color: colors.text.muted, marginBottom: 4 },
+  summaryNotes: { fontSize: 14, color: colors.text.secondary, fontStyle: 'italic', marginTop: 4 },
 
   editButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  editButtonText: { fontSize: 15, color: '#9CA3AF', fontWeight: '500' },
+  editButtonText: { fontSize: 15, color: colors.text.placeholder, fontWeight: '500' },
   skipLink: { paddingVertical: 14, alignItems: 'center' },
-  skipLinkText: { fontSize: 14, color: '#9CA3AF' },
-  summaryTapHint: { fontSize: 11, color: '#9CA3AF', marginTop: 6 },
+  skipLinkText: { fontSize: 14, color: colors.text.placeholder },
+  summaryTapHint: { fontSize: 11, color: colors.text.placeholder, marginTop: 6 },
 
   sectionMicro: {
-    fontSize: 11, fontWeight: '700', color: '#9CA3AF',
+    fontSize: 11, fontWeight: '700', color: colors.text.placeholder,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
   },
   knownMealCard: {

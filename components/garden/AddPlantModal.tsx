@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addGardenPlant, updateGardenPlant } from '../../lib/data';
 import type { GardenPlant } from '../../types';
+import { colors } from '../../constants/theme';
 
 interface Props {
   visible: boolean;
@@ -126,7 +127,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={plantName}
               onChangeText={setPlantName}
               placeholder="e.g. Basil"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               autoFocus={!isEditing}
             />
 
@@ -136,7 +137,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={variety}
               onChangeText={setVariety}
               placeholder="e.g. Genovese"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
             />
 
             <FieldLabel>Location</FieldLabel>
@@ -145,7 +146,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={locationNote}
               onChangeText={setLocationNote}
               placeholder="e.g. north fence bed, pot on deck"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
             />
 
             <FieldLabel>Planted Date (YYYY-MM-DD)</FieldLabel>
@@ -154,7 +155,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={plantedDate}
               onChangeText={setPlantedDate}
               placeholder="e.g. 2026-04-02"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               keyboardType="numbers-and-punctuation"
             />
 
@@ -164,7 +165,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={expectedReady}
               onChangeText={setExpectedReady}
               placeholder="e.g. 2026-06-01"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               keyboardType="numbers-and-punctuation"
             />
 
@@ -174,7 +175,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={quantityPlanted}
               onChangeText={setQuantityPlanted}
               placeholder="e.g. 4 (optional)"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               keyboardType="decimal-pad"
             />
 
@@ -198,7 +199,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               value={notes}
               onChangeText={setNotes}
               placeholder="Any notes…"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               multiline
               numberOfLines={3}
             />
@@ -214,38 +215,38 @@ function FieldLabel({ children }: { children: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  cancel: { fontSize: 16, color: '#6B7280', width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  save: { fontSize: 16, color: '#3B7A57', fontWeight: '600', width: 60, textAlign: 'right' },
+  cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
+  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
+  save: { fontSize: 16, color: colors.text.link, fontWeight: '600', width: 60, textAlign: 'right' },
   saveDim: { opacity: 0.4 },
 
   body: { flex: 1 },
   bodyContent: { padding: 20, gap: 4, paddingBottom: 40 },
 
   fieldLabel: {
-    fontSize: 12, fontWeight: '600', color: '#6B7280',
+    fontSize: 12, fontWeight: '600', color: colors.text.muted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14, marginBottom: 4,
   },
   input: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-    fontSize: 15, color: '#111827',
+    fontSize: 15, color: colors.text.primary,
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 11 },
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, padding: 14, marginTop: 14, gap: 12,
   },
   toggleInfo: { flex: 1 },
-  toggleLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  toggleLabel: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
   toggleHint: { fontSize: 12, color: '#6B7280', marginTop: 2, lineHeight: 16 },
   toggle: {
     width: 44, height: 26, borderRadius: 13,

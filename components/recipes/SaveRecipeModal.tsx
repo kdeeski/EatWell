@@ -9,6 +9,7 @@ import { saveRecipe, updateRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
 import RecipeBrowserModal from './RecipeBrowserModal';
 import ImportFromClaudeModal from './ImportFromClaudeModal';
+import { colors } from '../../constants/theme';
 
 const CATEGORIES: { key: RecipeCategory; label: string }[] = [
   { key: 'mains',          label: 'Mains' },
@@ -22,14 +23,14 @@ const CATEGORIES: { key: RecipeCategory; label: string }[] = [
 ];
 
 const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
-  mains: '#3B7A57',
-  sauces_dressings: '#D97706',
-  sides: '#6B7280',
-  desserts: '#9333EA',
-  baking: '#EA580C',
-  marinades_rubs: '#0369A1',
-  cocktails: '#0891B2',
-  glossary: '#374151',
+  mains: colors.category.mains,
+  sauces_dressings: colors.category.sauces_dressings,
+  sides: colors.category.sides,
+  desserts: colors.category.desserts,
+  baking: colors.category.baking,
+  marinades_rubs: colors.category.marinades_rubs,
+  cocktails: colors.category.cocktails,
+  glossary: colors.category.glossary,
 };
 
 interface Props {
@@ -155,7 +156,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
               <Text style={styles.headerTitle}>{isEdit ? 'Edit Recipe' : 'Add Recipe'}</Text>
               <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 {saving
-                  ? <ActivityIndicator size="small" color="#3B7A57" />
+                  ? <ActivityIndicator size="small" color={colors.brand.primary} />
                   : <Text style={styles.headerSaveBtn}>Save</Text>
                 }
               </TouchableOpacity>
@@ -190,7 +191,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                   value={name}
                   onChangeText={setName}
                   placeholder="Recipe name"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.text.placeholder}
                   returnKeyType="next"
                 />
               </View>
@@ -248,7 +249,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                       value={sourceUrl}
                       onChangeText={setSourceUrl}
                       placeholder="https://..."
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.text.placeholder}
                       keyboardType="url"
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -264,7 +265,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                       value={sourceBook}
                       onChangeText={setSourceBook}
                       placeholder="Book title"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.text.placeholder}
                       autoCapitalize="words"
                     />
                     <TextInput
@@ -272,7 +273,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                       value={pageNumber}
                       onChangeText={setPageNumber}
                       placeholder="p."
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.text.placeholder}
                       keyboardType="number-pad"
                     />
                   </View>
@@ -287,7 +288,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                   value={description}
                   onChangeText={setDescription}
                   placeholder="Brief description..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.text.placeholder}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
@@ -302,7 +303,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                   value={ingredients}
                   onChangeText={setIngredients}
                   placeholder="One item per line..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.text.placeholder}
                   multiline
                   scrollEnabled={false}
                   textAlignVertical="top"
@@ -317,7 +318,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                   value={method}
                   onChangeText={setMethod}
                   placeholder="One step per line..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.text.placeholder}
                   multiline
                   scrollEnabled={false}
                   textAlignVertical="top"
@@ -333,7 +334,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background.surface },
 
   header: {
     flexDirection: 'row',
@@ -342,34 +343,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border.hairline,
   },
-  headerBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 56 },
-  headerSaveBtn: { fontSize: 16, color: '#3B7A57', fontWeight: '700', minWidth: 56, textAlign: 'right' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
+  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 56 },
+  headerSaveBtn: { fontSize: 16, color: colors.text.link, fontWeight: '700', minWidth: 56, textAlign: 'right' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 20 },
 
-  errorText: { fontSize: 14, color: '#EF4444', backgroundColor: '#FEF2F2', borderRadius: 8, padding: 12 },
+  errorText: { fontSize: 14, color: colors.state.dangerBright, backgroundColor: colors.state.dangerLighter, borderRadius: 8, padding: 12 },
 
   fieldGroup: { gap: 8 },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
   importLinks: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  importLink: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  findOnWebBtn: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
-  required: { color: '#EF4444' },
+  importLink: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
+  findOnWebBtn: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
+  required: { color: colors.state.dangerBright },
 
   textInput: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background.elevated,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border.default,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#1C1C1E',
+    color: colors.text.primary,
   },
   multiline: {
     minHeight: 90,
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   sourceToggle: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   sourceToggleBtn: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+    borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.background.elevated,
   },
   sourceToggleBtnActive: { backgroundColor: '#3B7A5722', borderColor: '#3B7A57' },
   sourceToggleBtnText: { fontSize: 14, color: '#6B7280', fontWeight: '500' },

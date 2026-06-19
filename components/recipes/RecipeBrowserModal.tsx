@@ -6,6 +6,7 @@ import {
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../constants/theme';
 
 interface Props {
   recipeName: string;
@@ -52,7 +53,7 @@ export default function RecipeBrowserModal({ recipeName, visible, searchSite, on
           </TouchableOpacity>
 
           <View style={styles.urlBar}>
-            {loading && <ActivityIndicator size="small" color="#9CA3AF" style={{ marginRight: 6 }} />}
+            {loading && <ActivityIndicator size="small" color={colors.text.placeholder} style={{ marginRight: 6 }} />}
             <Text style={styles.urlBarText} numberOfLines={1}>{displayHost}</Text>
           </View>
 
@@ -74,7 +75,7 @@ export default function RecipeBrowserModal({ recipeName, visible, searchSite, on
           startInLoadingState
           renderLoading={() => (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#3B7A57" />
+              <ActivityIndicator size="large" color={colors.brand.primary} />
             </View>
           )}
         />
@@ -91,7 +92,7 @@ export default function RecipeBrowserModal({ recipeName, visible, searchSite, on
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background.surface },
 
   header: {
     flexDirection: 'row',
@@ -99,42 +100,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border.hairline,
     gap: 10,
   },
-  cancelBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 52 },
-  backBtn: { fontSize: 16, color: '#3B7A57', fontWeight: '600', minWidth: 52, textAlign: 'right' },
-  backBtnDisabled: { color: '#D1D5DB' },
+  cancelBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 52 },
+  backBtn: { fontSize: 16, color: colors.brand.primary, fontWeight: '600', minWidth: 52, textAlign: 'right' },
+  backBtnDisabled: { color: colors.border.default },
 
   urlBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.elevated,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  urlBarText: { flex: 1, fontSize: 13, color: '#374151' },
+  urlBarText: { flex: 1, fontSize: 13, color: colors.text.secondary },
 
   webView: { flex: 1 },
   loadingOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF',
+    justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.surface,
   },
 
   footer: {
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border.hairline,
+    backgroundColor: colors.background.surface,
   },
   useUrlBtn: {
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  useUrlBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  useUrlBtnText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
 });

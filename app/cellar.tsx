@@ -13,6 +13,7 @@ import { useAppStore } from '../store/useAppStore';
 import { saveCellarItem, updateCellarItem, removeCellarItem, addAdHocShoppingItem, updateShoppingItem } from '../lib/data';
 import { normaliseIngredientName } from '../lib/recipes';
 import type { CellarItem } from '../types';
+import { colors } from '../constants/theme';
 
 const BOTTLE_SIZES = [375, 750, 1500, 3000];
 const SIZE_LABELS: Record<number, string> = {
@@ -231,7 +232,7 @@ export default function CellarScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search cellar..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.text.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -301,7 +302,7 @@ export default function CellarScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g. Sauvignon Blanc"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 autoFocus={!modal.item?.id}
               />
 
@@ -314,7 +315,7 @@ export default function CellarScreen() {
                     value={producer}
                     onChangeText={setProducer}
                     placeholder="e.g. Cloudy Bay"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                   />
                 </View>
                 <View style={[styles.fieldFixed, { width: 88 }]}>
@@ -324,7 +325,7 @@ export default function CellarScreen() {
                     value={vintage}
                     onChangeText={setVintage}
                     placeholder="2022"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                     keyboardType="number-pad"
                     maxLength={4}
                   />
@@ -338,7 +339,7 @@ export default function CellarScreen() {
                 value={varietal}
                 onChangeText={setVarietal}
                 placeholder="e.g. Pinot Noir, Chardonnay"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
               />
 
               {/* Region + Country row */}
@@ -350,7 +351,7 @@ export default function CellarScreen() {
                     value={region}
                     onChangeText={setRegion}
                     placeholder="e.g. Marlborough"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                   />
                 </View>
                 <View style={styles.fieldGrow}>
@@ -360,7 +361,7 @@ export default function CellarScreen() {
                     value={country}
                     onChangeText={setCountry}
                     placeholder="e.g. New Zealand"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                   />
                 </View>
               </View>
@@ -397,7 +398,7 @@ export default function CellarScreen() {
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Tasting notes, occasion, food pairings…"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 multiline
               />
 
@@ -477,82 +478,82 @@ function CellarRow({ item, onRestock, onRemove, onEdit }: {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  headerBtn:    { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
+  headerBtn:    { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 48 },
   headerCenter: { alignItems: 'center' },
-  headerTitle:  { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
-  headerCount:  { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
-  headerAdd:    { fontSize: 16, color: '#7C3AED', fontWeight: '700', minWidth: 48, textAlign: 'right' },
+  headerTitle:  { fontSize: 20, fontWeight: '700', color: colors.text.primary },
+  headerCount:  { fontSize: 12, color: colors.text.placeholder, marginTop: 1 },
+  headerAdd:    { fontSize: 16, color: colors.brand.plum, fontWeight: '700', minWidth: 48, textAlign: 'right' },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
-  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
-  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
+  searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
-  emptyBody:  { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary, marginBottom: 8 },
+  emptyBody:  { fontSize: 14, color: colors.text.placeholder, textAlign: 'center' },
 
-  swipeHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginBottom: 8 },
+  swipeHint: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', marginBottom: 8 },
   swipeBg: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', borderRadius: 12 },
-  swipeBgRight: { backgroundColor: '#7C3AED', alignItems: 'flex-start', paddingLeft: 20 },
-  swipeBgLeft:  { backgroundColor: '#EF4444', alignItems: 'flex-end',   paddingRight: 20 },
-  swipeBgText:  { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  swipeBgRight: { backgroundColor: colors.brand.plum, alignItems: 'flex-start', paddingLeft: 20 },
+  swipeBgLeft:  { backgroundColor: colors.state.dangerBright, alignItems: 'flex-end',   paddingRight: 20 },
+  swipeBgText:  { color: colors.text.inverse, fontWeight: '700', fontSize: 14 },
 
   listContent: { padding: 20, gap: 24 },
   group: { gap: 8 },
   groupHeader: {
-    fontSize: 13, fontWeight: '600', color: '#6B7280',
+    fontSize: 13, fontWeight: '600', color: colors.text.muted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4,
   },
 
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', borderRadius: 12,
-    borderWidth: 1, borderColor: '#E5E7EB', padding: 14, gap: 12,
+    backgroundColor: colors.background.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: colors.border.default, padding: 14, gap: 12,
   },
   rowMain:      { flex: 1, gap: 2 },
   rowTitleRow:  { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline' },
-  rowProducer:  { fontSize: 13, fontWeight: '500', color: '#6B7280' },
-  rowName:      { fontSize: 15, fontWeight: '600', color: '#1C1C1E' },
-  rowMeta:      { fontSize: 12, color: '#6B7280' },
-  rowNotes:     { fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' },
+  rowProducer:  { fontSize: 13, fontWeight: '500', color: colors.text.muted },
+  rowName:      { fontSize: 15, fontWeight: '600', color: colors.text.primary },
+  rowMeta:      { fontSize: 12, color: colors.text.muted },
+  rowNotes:     { fontSize: 12, color: colors.text.placeholder, fontStyle: 'italic' },
   rowRight:     { alignItems: 'center' },
-  rowQty:       { fontSize: 18, fontWeight: '700', color: '#1C1C1E' },
-  rowQtyLabel:  { fontSize: 11, color: '#9CA3AF' },
+  rowQty:       { fontSize: 18, fontWeight: '700', color: colors.text.primary },
+  rowQtyLabel:  { fontSize: 11, color: colors.text.placeholder },
 
   // Modal
-  modalContainer: { flex: 1, backgroundColor: '#FFFFFF' },
+  modalContainer: { flex: 1, backgroundColor: colors.background.surface },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  modalCancel: { fontSize: 16, color: '#6B7280', fontWeight: '500' },
-  modalTitle:  { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
-  modalSave:   { fontSize: 16, color: '#7C3AED', fontWeight: '700' },
-  modalSaveDisabled: { color: '#9CA3AF' },
+  modalCancel: { fontSize: 16, color: colors.text.muted, fontWeight: '500' },
+  modalTitle:  { fontSize: 17, fontWeight: '700', color: colors.text.primary },
+  modalSave:   { fontSize: 16, color: colors.brand.plum, fontWeight: '700' },
+  modalSaveDisabled: { color: colors.text.placeholder },
   modalContent: { padding: 20, gap: 4 },
 
-  fieldLabel:    { fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 12, marginBottom: 6 },
-  fieldInput:    { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, fontSize: 15, color: '#1C1C1E' },
+  fieldLabel:    { fontSize: 12, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 12, marginBottom: 6 },
+  fieldInput:    { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, fontSize: 15, color: colors.text.primary },
   fieldMultiline:{ minHeight: 80, textAlignVertical: 'top' },
   fieldRow:      { flexDirection: 'row', gap: 12, alignItems: 'flex-end' },
   fieldGrow:     { flex: 1 },
   fieldFixed:    {},
 
   sizeRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  sizePill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6' },
-  sizePillActive: { backgroundColor: '#7C3AED' },
-  sizePillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  sizePillTextActive: { color: '#FFFFFF' },
+  sizePill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.background.elevated },
+  sizePillActive: { backgroundColor: colors.brand.plum },
+  sizePillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  sizePillTextActive: { color: colors.text.inverse },
 
-  deleteBtn: { marginTop: 24, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, alignItems: 'center' },
-  deleteBtnText: { fontSize: 15, color: '#EF4444', fontWeight: '600' },
+  deleteBtn: { marginTop: 24, backgroundColor: colors.state.dangerLighter, borderRadius: 12, padding: 14, alignItems: 'center' },
+  deleteBtnText: { fontSize: 15, color: colors.state.dangerBright, fontWeight: '600' },
 });

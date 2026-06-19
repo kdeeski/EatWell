@@ -13,6 +13,7 @@ import { toTitleCase } from '../../lib/titleCase';
 import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
 import { getWineMatch, generateBitePairing } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
+import { colors } from '../../constants/theme';
 
 type FilterKey = 'all' | RecipeCategory;
 
@@ -40,14 +41,14 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
 };
 
 const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
-  mains: '#3B7A57',
-  sauces_dressings: '#D97706',
-  sides: '#6B7280',
-  desserts: '#9333EA',
-  baking: '#EA580C',
-  marinades_rubs: '#0369A1',
-  cocktails: '#0891B2',
-  glossary: '#374151',
+  mains: colors.category.mains,
+  sauces_dressings: colors.category.sauces_dressings,
+  sides: colors.category.sides,
+  desserts: colors.category.desserts,
+  baking: colors.category.baking,
+  marinades_rubs: colors.category.marinades_rubs,
+  cocktails: colors.category.cocktails,
+  glossary: colors.category.glossary,
 };
 
 export default function RecipesScreen() {
@@ -140,7 +141,7 @@ export default function RecipesScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={{ backgroundColor: '#F9FAFB' }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.elevated }}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.heading}>Recipes</Text>
@@ -165,7 +166,7 @@ export default function RecipesScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search recipes..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.text.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -316,7 +317,7 @@ export default function RecipesScreen() {
                           hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                         >
                           {isWineLoading
-                            ? <ActivityIndicator size="small" color="#3B7A57" style={{ alignSelf: 'flex-start', marginTop: 8 }} />
+                            ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
                             : <Text style={styles.expandedDrinkPairing}>Drink pairing →</Text>
                           }
                         </TouchableOpacity>
@@ -339,7 +340,7 @@ export default function RecipesScreen() {
                             hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
                           >
                             {isBiteLoading
-                              ? <ActivityIndicator size="small" color="#3B7A57" style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+                              ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
                               : <Text style={styles.biteRegenerate}>Regenerate</Text>
                             }
                           </TouchableOpacity>
@@ -351,7 +352,7 @@ export default function RecipesScreen() {
                           hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                         >
                           {isBiteLoading
-                            ? <ActivityIndicator size="small" color="#3B7A57" style={{ alignSelf: 'flex-start', marginTop: 8 }} />
+                            ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
                             : <Text style={styles.expandedBitePairing}>Bite pairing →</Text>
                           }
                         </TouchableOpacity>
@@ -451,7 +452,7 @@ export default function RecipesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
 
   header: {
     flexDirection: 'row',
@@ -460,30 +461,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background.elevated,
   },
-  heading: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
+  heading: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
   headerButtons: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   importBtn: {
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border.default,
   },
-  importBtnText: { color: '#6B7280', fontSize: 14, fontWeight: '600' },
+  importBtnText: { color: colors.text.muted, fontSize: 14, fontWeight: '600' },
   addBtn: {
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  addBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  addBtnText: { color: colors.text.inverse, fontSize: 14, fontWeight: '700' },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
-  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
-  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
+  searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
   pillScroll: { flexGrow: 0, backgroundColor: '#F9FAFB' },
   pillContent: { paddingHorizontal: 20, paddingBottom: 12, gap: 8 },

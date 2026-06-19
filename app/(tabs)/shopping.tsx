@@ -16,6 +16,7 @@ import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 import { toTitleCase } from '../../lib/titleCase';
 import { normaliseIngredientName, findStashMatch, parseRecipeIngredients } from '../../lib/recipes';
+import { colors } from '../../constants/theme';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -117,7 +118,7 @@ function SwipeableRow({ item, rightLabel, rightColor, onSwipeRight, onSwipeLeft,
         <Text style={styles.swipeActionText}>{rightLabel}</Text>
       </Animated.View>
       {/* Left action background */}
-      <Animated.View style={[styles.swipeAction, styles.swipeActionLeft, { opacity: leftOpacity, backgroundColor: '#3B82F6' }]}>
+      <Animated.View style={[styles.swipeAction, styles.swipeActionLeft, { opacity: leftOpacity, backgroundColor: colors.state.infoBright }]}>
         <Text style={styles.swipeActionText}>Need to Buy</Text>
       </Animated.View>
       <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
@@ -416,7 +417,7 @@ export default function ShoppingScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
             {refreshing
-              ? <ActivityIndicator size="small" color="#3B7A57" />
+              ? <ActivityIndicator size="small" color={colors.brand.primary} />
               : <Text style={styles.refreshText}>Refresh</Text>
             }
           </TouchableOpacity>
@@ -496,7 +497,7 @@ export default function ShoppingScreen() {
                   disabled={expandingId === item.id}
                 >
                   {expandingId === item.id
-                    ? <ActivityIndicator size="small" color="#0369A1" />
+                    ? <ActivityIndicator size="small" color={colors.state.info} />
                     : <Text style={styles.recipeNudgeText}>
                         You have a recipe for {toTitleCase(recipeMatch.name)} — use your ingredients?
                       </Text>
@@ -558,7 +559,7 @@ export default function ShoppingScreen() {
                     <SwipeableRow
                       item={item}
                       rightLabel="✓ Have It"
-                      rightColor="#3B7A57"
+                      rightColor={colors.brand.primary}
                       onSwipeRight={() => handlePantryHaveIt(item)}
                       onSwipeLeft={() => handlePantryNeedToBuy(item.id)}
                     >
@@ -636,7 +637,7 @@ export default function ShoppingScreen() {
         </TouchableOpacity>
         <TouchableOpacity style={styles.clearDoneLink} onPress={handleDoneShopping} disabled={clearingDone}>
           {clearingDone
-            ? <ActivityIndicator size="small" color="#EF4444" />
+            ? <ActivityIndicator size="small" color={colors.state.dangerBright} />
             : <Text style={styles.clearDoneLinkText}>Clear completed items</Text>
           }
         </TouchableOpacity>
@@ -717,7 +718,7 @@ function ShoppingEditModal({ visible, item, onClose, onSaved }: {
             <TouchableOpacity onPress={onClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
             <Text style={modalStyles.title}>Edit Item</Text>
             <TouchableOpacity onPress={handleSave} disabled={saving}>
-              <Text style={[modalStyles.cancel, { color: '#3B7A57', fontWeight: '700' }]}>
+              <Text style={[modalStyles.cancel, { color: colors.text.link, fontWeight: '700' }]}>
                 {saving ? 'Saving…' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -793,13 +794,13 @@ function ShoppingEditModal({ visible, item, onClose, onSaved }: {
 }
 
 const editStyles = StyleSheet.create({
-  label: { fontSize: 13, fontWeight: '600', color: '#6B7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#111827' },
+  label: { fontSize: 13, fontWeight: '600', color: colors.text.muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.text.primary },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  pill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  pillActive: { backgroundColor: '#F0FDF4', borderColor: '#3B7A57' },
-  pillText: { fontSize: 13, color: '#374151' },
-  pillTextActive: { color: '#3B7A57', fontWeight: '600' },
+  pill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default },
+  pillActive: { backgroundColor: colors.brand.primaryLighter, borderColor: colors.brand.primary },
+  pillText: { fontSize: 13, color: colors.text.secondary },
+  pillTextActive: { color: colors.text.link, fontWeight: '600' },
 });
 
 // ── Shopping bulk add modal ───────────────────────────────────────────────────
@@ -882,7 +883,7 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
                 multiline
                 autoFocus
                 placeholder={'olive oil\nchicken thighs\nsourdough bread'}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 autoCapitalize="none"
                 textAlignVertical="top"
               />
@@ -893,7 +894,7 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
 
         {step === 'categorising' && (
           <View style={modalStyles.centred}>
-            <ActivityIndicator size="large" color="#3B7A57" />
+            <ActivityIndicator size="large" color={colors.brand.primary} />
             <Text style={modalStyles.hint}>Categorising your items…</Text>
           </View>
         )}
@@ -923,7 +924,7 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
             <View style={modalStyles.saveRow}>
               <TouchableOpacity style={[modalStyles.primaryButton, saving && { opacity: 0.6 }]} onPress={saveAll} disabled={saving}>
                 {saving
-                  ? <ActivityIndicator color="#fff" />
+                  ? <ActivityIndicator color={colors.text.inverse} />
                   : <Text style={modalStyles.primaryButtonText}>Add {pending.filter((i) => i.name.trim()).length} Items to List</Text>
                 }
               </TouchableOpacity>
@@ -967,34 +968,34 @@ function ShoppingPendingRow({ item, onChange, onRemove }: {
 }
 
 const modalStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  cancel: { fontSize: 16, color: '#6B7280', width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  goBtn: { fontSize: 16, color: '#3B7A57', fontWeight: '700', width: 60, textAlign: 'right' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
+  cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
+  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
+  goBtn: { fontSize: 16, color: colors.text.link, fontWeight: '700', width: 60, textAlign: 'right' },
   inputStep: { padding: 20, paddingBottom: 40 },
-  hint: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 16 },
-  textArea: { height: 260, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 14, fontSize: 15, color: '#111827' },
-  error: { fontSize: 14, color: '#DC2626', marginTop: 12, textAlign: 'center' },
-  primaryButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  hint: { fontSize: 15, color: colors.text.muted, lineHeight: 22, marginBottom: 16 },
+  textArea: { height: 260, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, borderRadius: 12, padding: 14, fontSize: 15, color: colors.text.primary },
+  error: { fontSize: 14, color: colors.state.danger, marginTop: 12, textAlign: 'center' },
+  primaryButton: { backgroundColor: colors.brand.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
+  primaryButtonText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
   centred: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  reviewHint: { fontSize: 14, color: '#6B7280', paddingHorizontal: 16, paddingVertical: 12 },
-  pendingRow: { backgroundColor: '#fff', borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
-  pendingName: { fontSize: 15, color: '#111827', fontWeight: '500', marginBottom: 8, textTransform: 'capitalize' },
+  reviewHint: { fontSize: 14, color: colors.text.muted, paddingHorizontal: 16, paddingVertical: 12 },
+  pendingRow: { backgroundColor: colors.background.surface, borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border.default },
+  pendingName: { fontSize: 15, color: colors.text.primary, fontWeight: '500', marginBottom: 8, textTransform: 'capitalize' },
   pendingMeta: { flexDirection: 'row', alignItems: 'center' },
-  catPill: { backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  catPillText: { fontSize: 12, color: '#374151' },
+  catPill: { backgroundColor: colors.background.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  catPillText: { fontSize: 12, color: colors.text.secondary },
   removeButton: { padding: 4, marginLeft: 8 },
-  removeButtonText: { fontSize: 16, color: '#9CA3AF' },
-  dropdown: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden', marginTop: 4 },
+  removeButtonText: { fontSize: 16, color: colors.text.placeholder },
+  dropdown: { backgroundColor: colors.background.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, overflow: 'hidden', marginTop: 4 },
   dropdownOption: { paddingHorizontal: 14, paddingVertical: 11 },
-  dropdownOptionActive: { backgroundColor: '#F0FDF4' },
-  dropdownText: { fontSize: 14, color: '#374151' },
-  dropdownTextActive: { color: '#3B7A57', fontWeight: '600' },
-  addManual: { borderWidth: 1, borderColor: '#D1D5DB', borderStyle: 'dashed', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginBottom: 16 },
-  addManualText: { fontSize: 15, color: '#6B7280' },
-  saveRow: { padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingBottom: 32 },
+  dropdownOptionActive: { backgroundColor: colors.brand.primaryLighter },
+  dropdownText: { fontSize: 14, color: colors.text.secondary },
+  dropdownTextActive: { color: colors.text.link, fontWeight: '600' },
+  addManual: { borderWidth: 1, borderColor: colors.border.default, borderStyle: 'dashed', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginBottom: 16 },
+  addManualText: { fontSize: 15, color: colors.text.muted },
+  saveRow: { padding: 16, backgroundColor: colors.background.surface, borderTopWidth: 1, borderTopColor: colors.border.hairline, paddingBottom: 32 },
 });
 
 const styles = StyleSheet.create({

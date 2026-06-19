@@ -12,6 +12,7 @@ import { useAppStore } from '../store/useAppStore';
 import { saveUserPreferences } from '../lib/data';
 import type { SpiceLevel, WeekendCooking, UserPreferences } from '../types';
 type WineDetailLevel = NonNullable<UserPreferences['wine_detail_level']>;
+import { colors } from '../constants/theme';
 
 const CUISINES = [
   'Asian', 'Mediterranean', 'Middle Eastern', 'French', 'Italian',
@@ -88,7 +89,7 @@ export default function SettingsScreen() {
         <Text style={styles.title}>Preferences</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           {saving
-            ? <ActivityIndicator color="#3B7A57" />
+            ? <ActivityIndicator color={colors.brand.primary} />
             : <Text style={styles.save}>Save</Text>
           }
         </TouchableOpacity>
@@ -110,7 +111,7 @@ export default function SettingsScreen() {
         <PillGroup
           items={CUISINES}
           selected={cuisineLikes}
-          color="#3B7A57"
+          color={colors.brand.primary}
           onToggle={(item) => {
             toggleItem(cuisineLikes, setCuisineLikes, item);
             setCuisineDislikes(cuisineDislikes.filter((i) => i !== item));
@@ -121,7 +122,7 @@ export default function SettingsScreen() {
         <PillGroup
           items={CUISINES}
           selected={cuisineDislikes}
-          color="#DC2626"
+          color={colors.state.danger}
           onToggle={(item) => {
             toggleItem(cuisineDislikes, setCuisineDislikes, item);
             setCuisineLikes(cuisineLikes.filter((i) => i !== item));
@@ -132,7 +133,7 @@ export default function SettingsScreen() {
         <PillGroup
           items={PROTEINS}
           selected={proteinsExcluded}
-          color="#DC2626"
+          color={colors.state.danger}
           onToggle={(item) => toggleItem(proteinsExcluded, setProteinsExcluded, item)}
         />
 
@@ -187,7 +188,7 @@ export default function SettingsScreen() {
           value={cookingNotes}
           onChangeText={setCookingNotes}
           placeholder="e.g. love umami, go easy on cream, always have anchovies…"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.text.placeholder}
           multiline
           numberOfLines={3}
         />
@@ -198,7 +199,7 @@ export default function SettingsScreen() {
           value={standingOrders}
           onChangeText={setStandingOrders}
           placeholder="Always apply to every meal plan — e.g. family of 4 (2 adults, 2 kids), one child is coeliac so no gluten."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.text.placeholder}
           multiline
           numberOfLines={4}
         />
@@ -257,7 +258,7 @@ export default function SettingsScreen() {
           value={gardenLocation}
           onChangeText={setGardenLocation}
           placeholder="Canterbury, New Zealand"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.text.placeholder}
           autoCapitalize="words"
         />
         <Text style={styles.hint}>Used to tailor planting suggestions to your climate.</Text>
@@ -287,7 +288,7 @@ export default function SettingsScreen() {
           value={wineGuideSite}
           onChangeText={setWineGuideSite}
           placeholder="goodpairdays.com"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.text.placeholder}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
@@ -303,7 +304,7 @@ export default function SettingsScreen() {
           value={recipeSearchSite}
           onChangeText={setRecipeSearchSite}
           placeholder="recipetineats.com"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.text.placeholder}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
@@ -372,63 +373,63 @@ function PillGroup({ items, selected, color, onToggle }: {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  cancel: { fontSize: 16, color: '#6B7280', width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  save: { fontSize: 16, color: '#3B7A57', fontWeight: '600', width: 60, textAlign: 'right' },
+  cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
+  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
+  save: { fontSize: 16, color: colors.text.link, fontWeight: '600', width: 60, textAlign: 'right' },
 
   body: { flex: 1 },
   bodyContent: { padding: 20, gap: 4 },
 
   sectionHeader: {
-    fontSize: 13, fontWeight: '700', color: '#6B7280',
+    fontSize: 13, fontWeight: '700', color: colors.text.muted,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginTop: 28, marginBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6', paddingBottom: 6,
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline, paddingBottom: 6,
   },
   fieldLabel: {
-    fontSize: 13, fontWeight: '600', color: '#374151',
+    fontSize: 13, fontWeight: '600', color: colors.text.secondary,
     marginTop: 16, marginBottom: 6,
   },
-  hint: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+  hint: { fontSize: 12, color: colors.text.placeholder, marginTop: 4 },
 
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, padding: 14, gap: 12,
   },
   rowText: { flex: 1 },
-  rowLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  rowHint: { fontSize: 12, color: '#6B7280', marginTop: 2, lineHeight: 16 },
+  rowLabel: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
+  rowHint: { fontSize: 12, color: colors.text.muted, marginTop: 2, lineHeight: 16 },
 
   pillRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   pillWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     flexShrink: 0,
   },
-  pillSelectedGreen: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
-  pillText: { fontSize: 14, fontWeight: '500', color: '#374151' },
-  pillTextSelected: { color: '#fff' },
+  pillSelectedGreen: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  pillText: { fontSize: 14, fontWeight: '500', color: colors.text.secondary },
+  pillTextSelected: { color: colors.text.inverse },
 
   toggle: {
     width: 44, height: 26, borderRadius: 13,
-    backgroundColor: '#E5E7EB', justifyContent: 'center', padding: 2,
+    backgroundColor: colors.border.default, justifyContent: 'center', padding: 2,
   },
-  toggleOn: { backgroundColor: '#3B7A57' },
-  toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  toggleOn: { backgroundColor: colors.brand.primary },
+  toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.background.surface },
   toggleThumbOn: { alignSelf: 'flex-end' },
 
   input: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-    fontSize: 15, color: '#111827',
+    fontSize: 15, color: colors.text.primary,
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 11 },
 });

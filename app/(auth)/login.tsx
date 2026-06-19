@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { colors } from '../../constants/theme';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.text.placeholder}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -63,7 +64,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.text.placeholder}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -78,7 +79,7 @@ export default function LoginScreen() {
             disabled={loading}
           >
             {loading
-              ? <ActivityIndicator color="#FFFFFF" />
+              ? <ActivityIndicator color={colors.text.inverse} />
               : <Text style={styles.submitButtonText}>
                   {isSignUp ? 'Create account' : 'Sign in'}
                 </Text>
@@ -102,7 +103,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
   inner: {
     flex: 1,
     justifyContent: 'center',
@@ -112,39 +113,39 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 40,
     fontWeight: '800',
-    color: '#3B7A57',
+    color: colors.brand.primary,
     letterSpacing: -1,
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: colors.text.placeholder,
     fontStyle: 'italic',
   },
   form: { gap: 12 },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border.default,
     padding: 16,
     fontSize: 16,
-    color: '#1C1C1E',
+    color: colors.text.primary,
   },
   errorText: {
     fontSize: 14,
-    color: '#EF4444',
+    color: colors.state.dangerBright,
     textAlign: 'center',
     marginTop: 4,
   },
   submitButton: {
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  submitButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
+  submitButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 16 },
   switchMode: { alignItems: 'center', paddingVertical: 8 },
-  switchModeText: { fontSize: 14, color: '#6B7280' },
+  switchModeText: { fontSize: 14, color: colors.text.muted },
 });

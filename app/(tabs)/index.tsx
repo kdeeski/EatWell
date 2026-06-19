@@ -20,6 +20,7 @@ function formatIngredients(ingredients: PlannedIngredient[]): string {
     .join('\n');
 }
 import { useAppStore } from '../../store/useAppStore';
+import { colors } from '../../constants/theme';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
@@ -398,7 +399,7 @@ export default function TodayScreen() {
                   disabled={wineLoading}
                 >
                   {wineLoading
-                    ? <ActivityIndicator size="small" color="#3B7A57" />
+                    ? <ActivityIndicator size="small" color={colors.brand.primary} />
                     : <Text style={styles.drinkPairingLink}>Drink pairing →</Text>}
                 </TouchableOpacity>
                 {wineError ? (
@@ -479,7 +480,7 @@ export default function TodayScreen() {
                     disabled={logSaving}
                   >
                     {logSaving
-                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      ? <ActivityIndicator size="small" color={colors.text.inverse} />
                       : <Text style={styles.logSaveText}>Save</Text>
                     }
                   </TouchableOpacity>
@@ -561,7 +562,7 @@ export default function TodayScreen() {
                     onPress={handleElseLogCooked}
                     disabled={elseLogSaving}
                   >
-                    {elseLogSaving ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.logSaveText}>Save</Text>}
+                    {elseLogSaving ? <ActivityIndicator size="small" color={colors.text.inverse} /> : <Text style={styles.logSaveText}>Save</Text>}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -595,7 +596,7 @@ export default function TodayScreen() {
               ref={elseSearchRef}
               style={styles.sheetSearch}
               placeholder="Search your recipes…"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               value={elseSearch}
               onChangeText={setElseSearch}
               autoFocus
@@ -686,132 +687,132 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
   content: { padding: 20 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
-  greeting: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
-  gearIcon: { fontSize: 22, color: '#9CA3AF' },
+  greeting: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
+  gearIcon: { fontSize: 22, color: colors.text.placeholder },
 
   checkinCard: {
-    backgroundColor: '#3B7A57',
+    backgroundColor: colors.brand.primary,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
   },
   checkinCardDone: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.brand.primaryLighter,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: colors.brand.primaryLight,
   },
-  checkinTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF', marginBottom: 6 },
-  checkinTitleDone: { color: '#166534', marginBottom: 10 },
-  checkinSub: { fontSize: 14, color: '#D1FAE5', lineHeight: 20, marginBottom: 12 },
-  checkinCta: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  checkinTitle: { fontSize: 17, fontWeight: '700', color: colors.text.inverse, marginBottom: 6 },
+  checkinTitleDone: { color: colors.brand.primaryDark, marginBottom: 10 },
+  checkinSub: { fontSize: 14, color: colors.brand.primaryLight, lineHeight: 20, marginBottom: 12 },
+  checkinCta: { fontSize: 14, fontWeight: '600', color: colors.text.inverse },
   checkinRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  checkinRowLabel: { fontSize: 13, fontWeight: '600', color: '#4B7A5B', minWidth: 72 },
-  checkinRowValue: { fontSize: 13, color: '#166534', flex: 1 },
+  checkinRowLabel: { fontSize: 13, fontWeight: '600', color: colors.brand.primary, minWidth: 72 },
+  checkinRowValue: { fontSize: 13, color: colors.brand.primaryDark, flex: 1 },
 
   section: { marginBottom: 24 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
 
   mealCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.surface,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  mealName: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 6 },
-  mealDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20, marginBottom: 8 },
-  mealMeta: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  mealName: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 6 },
+  mealDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20, marginBottom: 8 },
+  mealMeta: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500' },
 
   emptyCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background.elevated,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border.default,
     borderStyle: 'dashed',
   },
-  emptyText: { fontSize: 15, color: '#9CA3AF', textAlign: 'center' },
+  emptyText: { fontSize: 15, color: colors.text.placeholder, textAlign: 'center' },
 
   linkRow: { paddingVertical: 4 },
-  linkText: { fontSize: 15, color: '#3B7A57', fontWeight: '600' },
+  linkText: { fontSize: 15, color: colors.brand.primary, fontWeight: '600' },
 
   howToButton: { marginTop: 8, marginBottom: 4 },
-  howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  howToButtonText: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   stashNudge: { marginTop: 4 },
-  stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
-  saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
+  saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
   wineSection: { marginTop: 10, gap: 8 },
-  wineSectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
-  drinkPairingLink: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
-  wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, gap: 4 },
-  cocktailCard: { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' },
-  wineVarietal: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
-  wineReason: { fontSize: 14, color: '#374151', lineHeight: 20 },
-  wineNote: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 4 },
-  cocktailName: { color: '#7C3AED' },
-  wineDismiss: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
-  wineError: { fontSize: 13, color: '#EF4444', marginTop: 4 },
-  glossaryAdd: { fontSize: 12, color: '#3B7A57', fontWeight: '600', marginTop: 6 },
-  glossarySaved: { fontSize: 12, color: '#9CA3AF', marginTop: 6 },
+  wineSectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  drinkPairingLink: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
+  wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, gap: 4 },
+  cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
+  wineVarietal: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
+  wineReason: { fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
+  wineNote: { fontSize: 13, color: colors.text.muted, lineHeight: 19, marginTop: 4 },
+  cocktailName: { color: colors.brand.plum },
+  wineDismiss: { fontSize: 12, color: colors.text.placeholder, marginTop: 4 },
+  wineError: { fontSize: 13, color: colors.state.dangerBright, marginTop: 4 },
+  glossaryAdd: { fontSize: 12, color: colors.brand.primary, fontWeight: '600', marginTop: 6 },
+  glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
 
-  logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-  logButtonText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  logDoneRow: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-  logDoneText: { fontSize: 13, fontWeight: '600', color: '#3B7A57' },
+  logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.hairline },
+  logButtonText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
+  logDoneRow: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.hairline },
+  logDoneText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
 
-  logPanel: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6', gap: 10 },
-  logPanelLabel: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  logPanel: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.hairline, gap: 10 },
+  logPanelLabel: { fontSize: 15, fontWeight: '600', color: colors.text.secondary },
 
   ratingRow: { flexDirection: 'row', gap: 8 },
   ratingChip: {
     width: 44, height: 44, borderRadius: 10,
-    borderWidth: 1, borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.surface, alignItems: 'center', justifyContent: 'center',
   },
-  ratingChipSelected: { backgroundColor: '#3B7A57', borderColor: '#3B7A57' },
-  ratingNum: { fontSize: 16, fontWeight: '700', color: '#374151' },
-  ratingNumSelected: { color: '#FFFFFF' },
-  ratingLabel: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  ratingChipSelected: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  ratingNum: { fontSize: 16, fontWeight: '700', color: colors.text.secondary },
+  ratingNumSelected: { color: colors.text.inverse },
+  ratingLabel: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   yesNoRow: { flexDirection: 'row', gap: 10 },
   yesNoChip: {
     flex: 1, paddingVertical: 10, borderRadius: 12,
-    borderWidth: 1, borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.surface, alignItems: 'center',
   },
-  yesChipSelected: { backgroundColor: '#D1FAE5', borderColor: '#3B7A57' },
-  noChipSelected:  { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
-  yesNoText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  yesChipSelected: { backgroundColor: colors.brand.primaryLight, borderColor: colors.brand.primary },
+  noChipSelected:  { backgroundColor: colors.state.dangerSoft, borderColor: colors.state.dangerBright },
+  yesNoText: { fontSize: 14, fontWeight: '600', color: colors.text.secondary },
 
   notesInput: {
-    backgroundColor: '#F9FAFB', borderRadius: 12,
-    borderWidth: 1, borderColor: '#E5E7EB',
-    padding: 12, fontSize: 14, color: '#1C1C1E',
+    backgroundColor: colors.background.elevated, borderRadius: 12,
+    borderWidth: 1, borderColor: colors.border.default,
+    padding: 12, fontSize: 14, color: colors.text.primary,
     minHeight: 60, textAlignVertical: 'top',
   },
   logBtnRow: { flexDirection: 'row', gap: 10 },
   logCancelBtn: {
     paddingVertical: 12, paddingHorizontal: 20,
-    borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+    borderRadius: 12, borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.background.elevated,
   },
-  logCancelText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  logCancelText: { fontSize: 14, fontWeight: '600', color: colors.text.muted },
   logSaveBtn: {
     flex: 1, paddingVertical: 12, borderRadius: 12,
-    backgroundColor: '#3B7A57', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.brand.primary, alignItems: 'center', justifyContent: 'center',
   },
   logSaveBtnDisabled: { opacity: 0.5 },
-  logSaveText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  logSaveText: { fontSize: 14, fontWeight: '700', color: colors.text.inverse },
 
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  somethingElseLink: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  somethingElseLink: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   sheetDismiss: { flex: 1 },

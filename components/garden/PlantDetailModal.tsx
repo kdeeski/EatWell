@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadGardenHarvestsForPlant } from '../../lib/data';
 import type { GardenPlant, GardenHarvest, PlantStatus } from '../../types';
+import { colors } from '../../constants/theme';
 
 interface Props {
   plant: GardenPlant | null;
@@ -25,11 +26,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  planted:   '#6B7280',
-  growing:   '#D97706',
-  ready:     '#3B7A57',
-  harvested: '#9CA3AF',
-  finished:  '#D1D5DB',
+  planted:   colors.garden.planted,
+  growing:   colors.garden.growing,
+  ready:     colors.garden.ready,
+  harvested: colors.garden.harvested,
+  finished:  colors.garden.finished,
 };
 
 const STORAGE_LABELS: Record<string, string> = {
@@ -139,7 +140,7 @@ export default function PlantDetailModal({ plant, onClose, onStatusChange, onHar
           {/* Harvest history */}
           <Text style={styles.sectionLabel}>Harvest History</Text>
           {loadingHarvests ? (
-            <ActivityIndicator color="#3B7A57" style={{ marginVertical: 16 }} />
+            <ActivityIndicator color={colors.brand.primary} style={{ marginVertical: 16 }} />
           ) : harvests.length === 0 ? (
             <Text style={styles.emptyText}>No harvests recorded yet.</Text>
           ) : (
@@ -180,15 +181,15 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingBottom: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  closeText: { fontSize: 16, color: '#6B7280', width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, textAlign: 'center' },
-  editText: { fontSize: 16, color: '#3B7A57', fontWeight: '600', width: 60, textAlign: 'right' },
+  closeText: { fontSize: 16, color: colors.text.muted, width: 60 },
+  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary, flex: 1, textAlign: 'center' },
+  editText: { fontSize: 16, color: colors.text.link, fontWeight: '600', width: 60, textAlign: 'right' },
 
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8 },
   statusText: { fontSize: 13, fontWeight: '600' },
-  cutBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, backgroundColor: '#FEF3C7' },
+  cutBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, backgroundColor: colors.state.warningSoft },
   cutBadgeText: { fontSize: 13, fontWeight: '600', color: '#D97706' },
 
   metaRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },

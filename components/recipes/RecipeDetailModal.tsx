@@ -12,6 +12,7 @@ import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
 import { findStashMatch } from '../../lib/recipes';
 import { saveRecipe } from '../../lib/data';
+import { colors } from '../../constants/theme';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -25,14 +26,14 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
 };
 
 const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
-  mains: '#3B7A57',
-  sauces_dressings: '#D97706',
-  sides: '#6B7280',
-  desserts: '#9333EA',
-  baking: '#EA580C',
-  marinades_rubs: '#0369A1',
-  glossary: '#374151',
-  cocktails: '#DB2777',
+  mains: colors.category.mains,
+  sauces_dressings: colors.category.sauces_dressings,
+  sides: colors.category.sides,
+  desserts: colors.category.desserts,
+  baking: colors.category.baking,
+  marinades_rubs: colors.category.marinades_rubs,
+  glossary: colors.category.glossary,
+  cocktails: colors.category.cocktails,
 };
 
 interface Props {
@@ -324,7 +325,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               ) : (
                 <TouchableOpacity onPress={handleWineMatch} disabled={wineLoading}>
                   {wineLoading
-                    ? <ActivityIndicator size="small" color="#3B7A57" />
+                    ? <ActivityIndicator size="small" color={colors.brand.primary} />
                     : <Text style={styles.sourceLinkLabel}>Drink pairing →</Text>
                   }
                 </TouchableOpacity>
@@ -383,16 +384,16 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background.surface },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  headerBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
-  headerBtnRight: { fontSize: 16, color: '#3B7A57', fontWeight: '600', minWidth: 48, textAlign: 'right' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1C1C1E', textAlign: 'center', marginHorizontal: 8 },
+  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 48 },
+  headerBtnRight: { fontSize: 16, color: colors.text.link, fontWeight: '600', minWidth: 48, textAlign: 'right' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center', marginHorizontal: 8 },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 20 },
@@ -400,20 +401,20 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   categoryBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
   categoryBadgeText: { fontSize: 13, fontWeight: '600' },
-  rating: { fontSize: 14, fontWeight: '700', color: '#F59E0B' },
+  rating: { fontSize: 14, fontWeight: '700', color: colors.rating.star },
 
   section: { gap: 12 },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
-  bodyText: { fontSize: 15, color: '#374151', lineHeight: 22 },
-  preText: { fontSize: 14, color: '#374151', lineHeight: 22 },
-  linkText: { fontSize: 14, color: '#3B7A57', textDecorationLine: 'underline' },
+  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  bodyText: { fontSize: 15, color: colors.text.secondary, lineHeight: 22 },
+  preText: { fontSize: 14, color: colors.text.secondary, lineHeight: 22 },
+  linkText: { fontSize: 14, color: colors.text.link, textDecorationLine: 'underline' },
 
-  sectionLabelText: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabelText: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   stepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  stepNum: { fontSize: 15, fontWeight: '700', color: '#3B7A57', minWidth: 22 },
-  stepText: { flex: 1, fontSize: 15, color: '#374151', lineHeight: 22 },
+  stepNum: { fontSize: 15, fontWeight: '700', color: colors.brand.primary, minWidth: 22 },
+  stepText: { flex: 1, fontSize: 15, color: colors.text.secondary, lineHeight: 22 },
 
   componentCard: { backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', padding: 14, gap: 8 },
   componentHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

@@ -16,6 +16,7 @@ import { categorisePantryItems } from '../../lib/claude';
 import { upsertInventoryItem, updateInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem, updateShoppingItem } from '../../lib/data';
 import { normaliseIngredientName } from '../../lib/recipes';
 import type { ItemCategory, ItemLocation, InventoryItem } from '../../types';
+import { colors } from '../../constants/theme';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ export default function PantryScreen() {
   return (
     <View style={styles.container}>
       {/* Header + filter bar wrapped in SafeAreaView for top safe area */}
-      <SafeAreaView edges={['top']} style={{ backgroundColor: '#fff' }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.surface }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Pantry</Text>
@@ -197,7 +198,7 @@ export default function PantryScreen() {
         <TextInput
           style={styles.searchInput}
           placeholder="Search pantry..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.text.placeholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -486,7 +487,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
               value={name}
               onChangeText={setName}
               placeholder="e.g. chicken breast, cumin"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               autoFocus={!existingItem}
             />
 
@@ -565,7 +566,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
               onChangeText={setMinQty}
               keyboardType="decimal-pad"
               placeholder="0 = no alert"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
             />
 
             <Text style={styles.fieldLabel}>Notes (optional)</Text>
@@ -575,7 +576,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
               onChangeText={setNotes}
               multiline
               placeholder="e.g. almost empty, two jars"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
             />
 
             <TouchableOpacity
@@ -695,7 +696,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
                 multiline
                 autoFocus
                 placeholder={'olive oil\ncumin\nchickpeas\nsoy sauce\nchicken breast'}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 autoCapitalize="none"
                 textAlignVertical="top"
               />
@@ -706,7 +707,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
 
         {step === 'categorising' && (
           <View style={styles.analysingStep}>
-            <ActivityIndicator size="large" color="#3B7A57" />
+            <ActivityIndicator size="large" color={colors.brand.primary} />
             <Text style={styles.analysingText}>Categorising your items…</Text>
           </View>
         )}
@@ -736,7 +737,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
             <View style={[styles.saveRow, { paddingBottom: insets.bottom + 16 }]}>
               <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveAll} disabled={saving}>
                 {saving
-                  ? <ActivityIndicator color="#fff" />
+                  ? <ActivityIndicator color={colors.text.inverse} />
                   : <Text style={styles.saveButtonText}>Save {pendingItems.filter((i) => i.name.trim().length > 0).length} Items to Pantry</Text>
                 }
               </TouchableOpacity>
@@ -761,7 +762,7 @@ function PendingItemRow({ item, onChange, onRemove }: {
   return (
     <View style={styles.pendingRow}>
       <TextInput style={styles.pendingNameInput} value={item.name} onChangeText={(v) => onChange({ name: v })}
-        placeholder="Item name" placeholderTextColor="#9CA3AF" />
+        placeholder="Item name" placeholderTextColor={colors.text.placeholder} />
       <View style={styles.pendingRowMeta}>
         <TouchableOpacity style={[styles.catPill, { flex: 1 }]} onPress={() => { setCatOpen(!catOpen); setLocOpen(false); }}>
           <Text style={styles.catPillText}>{CAT_EMOJI[item.category]}  {CAT_LABEL[item.category]} ▾</Text>
@@ -824,40 +825,40 @@ function toItemLocation(raw: string): ItemLocation {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827' },
+  title: { fontSize: 24, fontWeight: '700', color: colors.text.primary },
   headerButtons: { flexDirection: 'row', gap: 8 },
-  addButton: { backgroundColor: '#F3F4F6', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  addButtonText: { color: '#374151', fontWeight: '600', fontSize: 14 },
-  bulkAddButton: { backgroundColor: '#3B7A57', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  bulkAddButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  addButton: { backgroundColor: colors.background.elevated, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  addButtonText: { color: colors.text.secondary, fontWeight: '600', fontSize: 14 },
+  bulkAddButton: { backgroundColor: colors.brand.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  bulkAddButtonText: { color: colors.text.inverse, fontWeight: '600', fontSize: 14 },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
-  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
-  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
+  searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
-  filterBar: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  filterBar: { backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0 },
-  filterPillActive: { backgroundColor: '#3B7A57' },
-  filterPillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  filterPillTextActive: { color: '#fff' },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.background.elevated, flexShrink: 0 },
+  filterPillActive: { backgroundColor: colors.brand.primary },
+  filterPillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  filterPillTextActive: { color: colors.text.inverse },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 8, textAlign: 'center' },
-  emptyBody: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 8, textAlign: 'center' },
+  emptyBody: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22 },
 
   list: { paddingBottom: 40 },
-  swipeHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingVertical: 8 },
+  swipeHint: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', paddingVertical: 8 },
   section: { marginTop: 16, paddingHorizontal: 16 },
-  sectionHeader: { fontSize: 13, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
+  sectionHeader: { fontSize: 13, fontWeight: '700', color: colors.text.muted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
 
   swipeBg: { position: 'absolute', top: 0, bottom: 0, width: 120, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
   swipeBgRight: { left: 0, backgroundColor: '#3B7A57' },

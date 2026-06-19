@@ -14,6 +14,7 @@ import { saveBarItem, updateBarItem, removeBarItem, addAdHocShoppingItem, update
 import { normaliseIngredientName } from '../lib/recipes';
 import type { BarItem, SpiritType } from '../types';
 import ImportBarItemModal from '../components/bar/ImportBarItemModal';
+import { colors } from '../constants/theme';
 
 const SPIRIT_TYPES: { key: SpiritType; label: string; emoji: string }[] = [
   { key: 'whiskey',            label: 'Whiskey',           emoji: '🥃' },
@@ -239,7 +240,7 @@ export default function BarScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search bar..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.text.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -325,7 +326,7 @@ export default function BarScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g. Wild Turkey Rare Breed"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 autoFocus={!modal.item?.id}
               />
 
@@ -354,7 +355,7 @@ export default function BarScreen() {
                     value={abv}
                     onChangeText={setAbv}
                     placeholder="e.g. 40.5"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                     keyboardType="decimal-pad"
                   />
                 </View>
@@ -385,7 +386,7 @@ export default function BarScreen() {
                     value={country}
                     onChangeText={setCountry}
                     placeholder="e.g. Scotland"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.text.placeholder}
                   />
                 </View>
                 <View style={[styles.fieldHalf, { maxWidth: 100 }]}>
@@ -406,7 +407,7 @@ export default function BarScreen() {
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Age, style, tasting notes…"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 multiline
               />
 
@@ -483,90 +484,90 @@ function BarRow({ item, onRestock, onRemove, onEdit }: {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  headerBtn:    { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
-  headerTitle:  { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
+  headerBtn:    { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 48 },
+  headerTitle:  { fontSize: 20, fontWeight: '700', color: colors.text.primary },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  headerImport: { fontSize: 14, color: '#7C3AED', fontWeight: '600' },
-  headerAdd:    { fontSize: 16, color: '#3B7A57', fontWeight: '700' },
+  headerImport: { fontSize: 14, color: colors.brand.plum, fontWeight: '600' },
+  headerAdd:    { fontSize: 16, color: colors.text.link, fontWeight: '700' },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12 },
-  searchInput: { flex: 1, height: 38, fontSize: 15, color: '#1C1C1E' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
-  searchClearText: { fontSize: 20, color: '#9CA3AF', lineHeight: 22 },
+  searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
-  filterBar: { height: 52, backgroundColor: '#FAFAF8', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  filterBar: { height: 52, backgroundColor: colors.background.app, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0, marginRight: 8 },
-  filterPillActive: { backgroundColor: '#3B7A57' },
-  filterPillText: { fontSize: 13, fontWeight: '500', color: '#374151' },
-  filterPillTextActive: { color: '#FFFFFF' },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.background.elevated, flexShrink: 0, marginRight: 8 },
+  filterPillActive: { backgroundColor: colors.brand.primary },
+  filterPillText: { fontSize: 13, fontWeight: '500', color: colors.text.secondary },
+  filterPillTextActive: { color: colors.text.inverse },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
-  emptyBody:  { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary, marginBottom: 8 },
+  emptyBody:  { fontSize: 14, color: colors.text.placeholder, textAlign: 'center' },
 
-  swipeHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginBottom: 8 },
+  swipeHint: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', marginBottom: 8 },
   swipeBg: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', borderRadius: 12 },
-  swipeBgRight: { backgroundColor: '#3B7A57', alignItems: 'flex-start', paddingLeft: 20 },
-  swipeBgLeft:  { backgroundColor: '#EF4444', alignItems: 'flex-end',   paddingRight: 20 },
-  swipeBgText:  { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  swipeBgRight: { backgroundColor: colors.brand.primary, alignItems: 'flex-start', paddingLeft: 20 },
+  swipeBgLeft:  { backgroundColor: colors.state.dangerBright, alignItems: 'flex-end',   paddingRight: 20 },
+  swipeBgText:  { color: colors.text.inverse, fontWeight: '700', fontSize: 14 },
 
   listContent: { padding: 20, gap: 24 },
   group: { gap: 8 },
-  groupHeader: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  groupHeader: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
 
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', borderRadius: 12,
-    borderWidth: 1, borderColor: '#E5E7EB', padding: 14, gap: 12,
+    backgroundColor: colors.background.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: colors.border.default, padding: 14, gap: 12,
   },
   rowMain:    { flex: 1, gap: 2 },
-  rowName:    { fontSize: 15, fontWeight: '600', color: '#1C1C1E' },
-  rowMeta:    { fontSize: 12, color: '#6B7280' },
-  rowNotes:   { fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' },
+  rowName:    { fontSize: 15, fontWeight: '600', color: colors.text.primary },
+  rowMeta:    { fontSize: 12, color: colors.text.muted },
+  rowNotes:   { fontSize: 12, color: colors.text.placeholder, fontStyle: 'italic' },
   rowRight:   { alignItems: 'center' },
-  rowQty:     { fontSize: 18, fontWeight: '700', color: '#1C1C1E' },
-  rowQtyLabel:{ fontSize: 11, color: '#9CA3AF' },
+  rowQty:     { fontSize: 18, fontWeight: '700', color: colors.text.primary },
+  rowQtyLabel:{ fontSize: 11, color: colors.text.placeholder },
 
   // Modal
-  modalContainer: { flex: 1, backgroundColor: '#FFFFFF' },
+  modalContainer: { flex: 1, backgroundColor: colors.background.surface },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  modalCancel: { fontSize: 16, color: '#6B7280', fontWeight: '500' },
-  modalTitle:  { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
-  modalSave:   { fontSize: 16, color: '#3B7A57', fontWeight: '700' },
-  modalSaveDisabled: { color: '#9CA3AF' },
+  modalCancel: { fontSize: 16, color: colors.text.muted, fontWeight: '500' },
+  modalTitle:  { fontSize: 17, fontWeight: '700', color: colors.text.primary },
+  modalSave:   { fontSize: 16, color: colors.text.link, fontWeight: '700' },
+  modalSaveDisabled: { color: colors.text.placeholder },
   modalContent: { padding: 20, gap: 4 },
 
-  fieldLabel:    { fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 12, marginBottom: 6 },
-  fieldInput:    { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, fontSize: 15, color: '#1C1C1E' },
+  fieldLabel:    { fontSize: 12, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 12, marginBottom: 6 },
+  fieldInput:    { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, fontSize: 15, color: colors.text.primary },
   fieldMultiline:{ minHeight: 80, textAlignVertical: 'top' },
   fieldRow:      { flexDirection: 'row', gap: 12 },
   fieldHalf:     { flex: 1 },
 
   typeBar: { flexGrow: 0, marginBottom: 4 },
   typeBarContent: { gap: 8, flexDirection: 'row', paddingVertical: 4 },
-  typePill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F3F4F6', flexShrink: 0 },
-  typePillActive: { backgroundColor: '#1C1C1E' },
-  typePillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  typePillTextActive: { color: '#FFFFFF' },
+  typePill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.background.elevated, flexShrink: 0 },
+  typePillActive: { backgroundColor: colors.brand.ink },
+  typePillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  typePillTextActive: { color: colors.text.inverse },
 
   sizeRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  sizePill: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: '#F3F4F6' },
-  sizePillActive: { backgroundColor: '#3B7A57' },
-  sizePillText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  sizePillTextActive: { color: '#FFFFFF' },
+  sizePill: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: colors.background.elevated },
+  sizePillActive: { backgroundColor: colors.brand.primary },
+  sizePillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  sizePillTextActive: { color: colors.text.inverse },
 
-  deleteBtn: { marginTop: 24, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, alignItems: 'center' },
-  deleteBtnText: { fontSize: 15, color: '#EF4444', fontWeight: '600' },
+  deleteBtn: { marginTop: 24, backgroundColor: colors.state.dangerLighter, borderRadius: 12, padding: 14, alignItems: 'center' },
+  deleteBtnText: { fontSize: 15, color: colors.state.dangerBright, fontWeight: '600' },
 });

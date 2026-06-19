@@ -11,6 +11,7 @@ import { saveRecipe, updateRecipe } from '../../lib/data';
 import { useAppStore } from '../../store/useAppStore';
 import type { RecipeGuideJson, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
+import { colors } from '../../constants/theme';
 
 interface Props {
   mealName: string;
@@ -217,7 +218,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#3B7A57" />
+              <ActivityIndicator size="large" color={colors.brand.primary} />
               <Text style={styles.loadingText}>Building your cooking guide…</Text>
             </View>
           ) : error ? (
@@ -307,7 +308,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background.surface },
 
   header: {
     flexDirection: 'row',
@@ -316,28 +317,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border.hairline,
   },
-  headerBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 48 },
-  headerSaveBtn: { fontSize: 16, color: '#3B7A57', fontWeight: '700', minWidth: 48, textAlign: 'right' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1C1C1E', textAlign: 'center', marginHorizontal: 8 },
+  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 48 },
+  headerSaveBtn: { fontSize: 16, color: colors.brand.primary, fontWeight: '700', minWidth: 48, textAlign: 'right' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center', marginHorizontal: 8 },
 
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
-  loadingText: { fontSize: 15, color: '#6B7280' },
+  loadingText: { fontSize: 15, color: colors.text.muted },
 
-  errorContainer: { margin: 20, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 16, gap: 12 },
-  errorText: { fontSize: 14, color: '#EF4444', lineHeight: 20 },
-  retryBtn: { backgroundColor: '#EF4444', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  retryBtnText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  errorContainer: { margin: 20, backgroundColor: colors.state.dangerLighter, borderRadius: 12, padding: 16, gap: 12 },
+  errorText: { fontSize: 14, color: colors.state.dangerBright, lineHeight: 20 },
+  retryBtn: { backgroundColor: colors.state.dangerBright, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  retryBtnText: { fontSize: 14, fontWeight: '600', color: colors.text.inverse },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 24 },
 
   section: { gap: 12 },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  cookModeBtn: { backgroundColor: '#1C1C1E', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+  cookModeBtn: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
   cookModeBtnActive: { backgroundColor: '#3B7A57' },
   cookModeBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
 

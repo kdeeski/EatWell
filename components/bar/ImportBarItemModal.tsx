@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BarItem, SpiritType } from '../../types';
+import { colors } from '../../constants/theme';
 
 const VALID_SPIRIT_TYPES: SpiritType[] = [
   'whiskey', 'cognac_brandy', 'gin', 'vodka', 'rum',
@@ -150,7 +151,7 @@ export default function ImportBarItemModal({ visible, onClose, onPrefill }: Prop
                   value={json}
                   onChangeText={(v) => { setJson(v); setError(null); }}
                   placeholder={'{\n  "name": "Hendrick\'s Gin",\n  "spirit_type": "gin",\n  ...\n}'}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.text.placeholder}
                   multiline
                   textAlignVertical="top"
                   autoCapitalize="none"
@@ -173,15 +174,15 @@ export default function ImportBarItemModal({ visible, onClose, onPrefill }: Prop
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background.surface },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  headerBtn: { fontSize: 16, color: '#6B7280', fontWeight: '500', minWidth: 56 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1C1C1E', textAlign: 'center' },
+  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 56 },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 28 },
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', gap: 14 },
   stepNumber: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#3B7A57', color: '#FFFFFF',
+    backgroundColor: colors.brand.primary, color: colors.text.inverse,
     fontSize: 14, fontWeight: '700', textAlign: 'center', lineHeight: 28,
   },
   stepBody: { flex: 1, gap: 10 },

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { GardenPlant, HarvestStorage } from '../../types';
+import { colors } from '../../constants/theme';
 
 interface Props {
   plant: GardenPlant;
@@ -62,7 +63,7 @@ export default function HarvestModal({ plant, onConfirm, onClose }: Props) {
                 value={unit}
                 onChangeText={setUnit}
                 placeholder="bunch, piece, g…"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.text.placeholder}
                 autoCapitalize="none"
               />
             </View>
@@ -88,7 +89,7 @@ export default function HarvestModal({ plant, onConfirm, onClose }: Props) {
               value={notes}
               onChangeText={setNotes}
               placeholder="Any notes… (optional)"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.text.placeholder}
               multiline
               numberOfLines={2}
             />
@@ -109,24 +110,24 @@ export default function HarvestModal({ plant, onConfirm, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: colors.background.elevated },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingBottom: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  cancel: { fontSize: 16, color: '#6B7280', width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
+  cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
+  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
 
   body: { padding: 20, gap: 8 },
   fieldLabel: {
-    fontSize: 12, fontWeight: '600', color: '#6B7280',
+    fontSize: 12, fontWeight: '600', color: colors.text.muted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4,
   },
   input: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-    fontSize: 15, color: '#111827',
+    fontSize: 15, color: colors.text.primary,
   },
   inputMultiline: { minHeight: 60, textAlignVertical: 'top', paddingTop: 11 },
   row: { flexDirection: 'row' },
@@ -134,13 +135,13 @@ const styles = StyleSheet.create({
   storagePills: { flexDirection: 'row', gap: 8 },
   pill: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.elevated,
   },
-  pillSelected: { backgroundColor: '#3B7A57' },
-  pillText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  pillTextSelected: { color: '#fff' },
+  pillSelected: { backgroundColor: colors.brand.primary },
+  pillText: { fontSize: 14, fontWeight: '600', color: colors.text.secondary },
+  pillTextSelected: { color: colors.text.inverse },
 
-  harvestNote: { fontSize: 13, color: '#6B7280', lineHeight: 20, marginTop: 12, fontStyle: 'italic' },
+  harvestNote: { fontSize: 13, color: colors.text.muted, lineHeight: 20, marginTop: 12, fontStyle: 'italic' },
   confirmButton: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
   confirmButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
