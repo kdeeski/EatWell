@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
-import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem, deleteShoppingItems } from '../../lib/data';
+import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem, deleteShoppingItems, refreshConditionalItems } from '../../lib/data';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { categorisePantryItems } from '../../lib/claude';
 import type { ShoppingListItem, ItemCategory, Store } from '../../types';
@@ -204,6 +204,7 @@ export default function ShoppingScreen() {
     setGardenConfirmed(buildGardenConfirmed(shoppingItems, gardenPlants));
   }, [shoppingItems, inventoryItems, gardenPlants]);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshSummary, setRefreshSummary] = useState<string[] | null>(null);
   const [bulkVisible, setBulkVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<ShoppingListItem | null>(null);
   const [expandingId, setExpandingId] = useState<string | null>(null);
@@ -256,13 +257,29 @@ export default function ShoppingScreen() {
   const handleRefresh = async () => {
     if (!userId) return;
     setRefreshing(true);
+    setRefreshSummary(null);
     try {
-      const [freshInv, freshPlants] = await Promise.all([
+      const [freshInv, freshPlants, conditionalResult] = await Promise.all([
         loadInventoryItems(userId),
         loadGardenPlants(userId),
+        refreshConditionalItems(userId, shoppingItems),
       ]);
       setInventoryItems(freshInv);
       setGardenPlants(freshPlants);
+
+      if (conditionalResult.updatedIds.length > 0) {
+        conditionalResult.updatedIds.forEach((id) =>
+          updateShoppingItemInStore(id, {
+            from_fridge: false,
+            is_pantry_staple: false,
+            checked: false,
+            conditional_note: null,
+            conditional_meal_ids: null,
+          })
+        );
+        setRefreshSummary(conditionalResult.summaries);
+      }
+
       setPantryConfirmed(buildConfirmed(shoppingItems, freshInv));
       setGardenConfirmed(buildGardenConfirmed(shoppingItems, freshPlants));
     } catch (e) {
@@ -406,6 +423,20 @@ export default function ShoppingScreen() {
         </View>
       </View>
 
+      {refreshSummary && refreshSummary.length > 0 && (
+        <View style={styles.refreshBanner}>
+          <View style={styles.refreshBannerHeader}>
+            <Text style={styles.refreshBannerTitle}>Updated Items</Text>
+            <TouchableOpacity onPress={() => setRefreshSummary(null)}>
+              <Text style={styles.refreshBannerDismiss}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          {refreshSummary.map((msg, i) => (
+            <Text key={i} style={styles.refreshBannerText}>• {msg}</Text>
+          ))}
+        </View>
+      )}
+
       <ShoppingBulkAddModal
         visible={bulkVisible}
         shoppingListId={useAppStore.getState().shoppingList?.id ?? null}
@@ -505,9 +536,14 @@ export default function ShoppingScreen() {
                       <View style={styles.fridgeBox}>
                         <Text style={styles.fridgeTick}>✓</Text>
                       </View>
-                      <Text style={[styles.itemName, styles.itemNameMuted]}>
-                        {itemQuantityLabel(item)}
-                      </Text>
+                      <View style={styles.itemTextBlock}>
+                        <Text style={[styles.itemName, styles.itemNameMuted]}>
+                          {itemQuantityLabel(item)}
+                        </Text>
+                        {item.conditional_note && (
+                          <Text style={styles.conditionalNote}>{item.conditional_note}</Text>
+                        )}
+                      </View>
                       <Text style={styles.fridgeBadge}>In Fridge</Text>
                     </TouchableOpacity>
                     {recipeNudge}
@@ -548,6 +584,9 @@ export default function ShoppingScreen() {
                           {cat === 'herbs_spices' && item.herb_backup && !isPantryConfirmed && (
                             <Text style={styles.herbBackup}>If Unavailable: {item.herb_backup}</Text>
                           )}
+                          {item.conditional_note && !isPantryConfirmed && (
+                            <Text style={styles.conditionalNote}>{item.conditional_note}</Text>
+                          )}
                         </View>
                         {item.buy_timing === 'day_of' && !isPantryConfirmed && (
                           <Text style={styles.dayOfBadge}>Buy Fresh</Text>
@@ -571,9 +610,14 @@ export default function ShoppingScreen() {
                     <View style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
                       {item.checked && <Text style={styles.checkTick}>✓</Text>}
                     </View>
-                    <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
-                      {itemQuantityLabel(item)}
-                    </Text>
+                    <View style={styles.itemTextBlock}>
+                      <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
+                        {itemQuantityLabel(item)}
+                      </Text>
+                      {item.conditional_note && !item.checked && (
+                        <Text style={styles.conditionalNote}>{item.conditional_note}</Text>
+                      )}
+                    </View>
                     {item.buy_timing === 'day_of' && !item.checked && (
                       <Text style={styles.dayOfBadge}>Buy fresh</Text>
                     )}
@@ -1020,6 +1064,13 @@ const styles = StyleSheet.create({
   itemNameMuted: { color: '#6B7280' },
 
   herbBackup: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  conditionalNote: { fontSize: 12, color: '#B45309', marginTop: 2, fontStyle: 'italic' },
+
+  refreshBanner: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', borderRadius: 10, padding: 14, marginBottom: 20 },
+  refreshBannerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  refreshBannerTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
+  refreshBannerDismiss: { fontSize: 16, color: '#9CA3AF', paddingLeft: 8 },
+  refreshBannerText: { fontSize: 13, color: '#78350F', lineHeight: 20 },
 
   recipeNudge: { paddingHorizontal: 14, paddingVertical: 8, marginBottom: 4 },
   recipeNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '500' },

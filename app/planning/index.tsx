@@ -10,7 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { generateMealPlan } from '../../lib/claude';
-import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem, depleteInventoryItems } from '../../lib/data';
+import { saveMealPlan, saveShoppingList, addGardenPlant, loadMealPlanForWeek, fetchWeekCookedMeals, upsertInventoryItem, depleteInventoryItems, type EarmarkedIngredient } from '../../lib/data';
 import { getPlantsDueForHarvest } from '../../constants/gardenCalendar';
 
 type Step = 'week_picker' | 'quick_replan' | 'fridge' | 'garden' | 'spontaneous' | 'week_ahead' | 'carry_forward' | 'generating' | 'done' | 'error';
@@ -374,7 +374,20 @@ export default function PlanningFlow() {
         ],
         pantry: pantryItems.map((i) => i.name),
       };
-      const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result, knownItems);
+      // When planning next week, compute earmarked ingredients from this week's
+      // uncooked meals so the shopping list can flag conditional items.
+      let earmarked: EarmarkedIngredient[] | undefined;
+      if (targetWeekOffset === 1) {
+        const uncookedMeals = plannedMeals.filter((m) => !cookedThisWeekIds.has(m.id));
+        earmarked = uncookedMeals.flatMap((m) =>
+          m.ingredients.map((ing) => ({
+            ingredient_name: ing.name,
+            meal_name: m.meal_name,
+            meal_id: m.id,
+          }))
+        );
+      }
+      const shoppingData = await saveShoppingList(userId!, plan.id, weekStartDate, result, knownItems, earmarked);
       setShoppingList(shoppingData.list, shoppingData.items);
 
       // Save fridge extras and spontaneous additions to inventory so they

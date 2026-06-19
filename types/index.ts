@@ -192,6 +192,8 @@ export interface ShoppingListItem {
   herb_backup: string | null;
   meal_names: string[];
   is_adhoc: boolean;
+  conditional_note: string | null;
+  conditional_meal_ids: string[] | null;
   created_at: string;
 }
 

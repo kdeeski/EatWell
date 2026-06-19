@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
+import { toTitleCase } from './titleCase';
 
 // Returns YYYY-MM-DD in the device's local timezone (not UTC).
 // toISOString() is UTC and gives the wrong date for NZ users in the morning.
@@ -517,12 +518,19 @@ function normalizeCategory(raw: string): ItemCategory {
   return 'pantry_dry_goods';
 }
 
+export interface EarmarkedIngredient {
+  ingredient_name: string;
+  meal_name: string;
+  meal_id: string;
+}
+
 export async function saveShoppingList(
   userId: string,
   mealPlanId: string,
   weekStartDate: string,
   generated: GeneratedMealPlan,
-  knownItems?: { fridge: string[]; pantry: string[] }
+  knownItems?: { fridge: string[]; pantry: string[] },
+  earmarkedItems?: EarmarkedIngredient[]
 ): Promise<{ list: ShoppingList; items: ShoppingListItem[] }> {
   // Rescue any ad-hoc items before wiping the old list
   const { data: existingLists } = await supabase
@@ -628,6 +636,8 @@ export async function saveShoppingList(
           herb_backup: ing.herb_backup ?? null,
           meal_names: [meal.meal_name],
           is_adhoc: false,
+          conditional_note: null,
+          conditional_meal_ids: null,
           created_at: '',
         });
       }
@@ -653,6 +663,31 @@ export async function saveShoppingList(
         // the user has this in inventory so "Have it" should already be ticked.
         if (!item.is_pantry_staple) item.is_pantry_staple = true;
         item.checked = true;
+      }
+    }
+  }
+
+  // Cross-reference earmarked items: ingredients from this week's uncooked meals
+  // that overlap with what the user has on hand. These are "conditional" — the user
+  // might need to buy them if they cook this week's meal first.
+  if (earmarkedItems && earmarkedItems.length > 0) {
+    const normEarmarked = earmarkedItems.map((e) => ({
+      ...e,
+      norm: normaliseIngredientName(e.ingredient_name.toLowerCase().trim()),
+    }));
+
+    for (const item of itemMap.values()) {
+      if (!item.from_fridge && !item.is_pantry_staple) continue;
+      const matches = normEarmarked.filter((e) => {
+        if (e.norm === item.name) return true;
+        if (e.norm.length < 3 || item.name.length < 3) return false;
+        return e.norm.includes(item.name) || item.name.includes(e.norm);
+      });
+      if (matches.length > 0) {
+        const mealNames = [...new Set(matches.map((m) => m.meal_name))];
+        const mealIds = [...new Set(matches.map((m) => m.meal_id))];
+        item.conditional_note = `Earmarked for ${mealNames.join(', ')} this week — may need to buy`;
+        item.conditional_meal_ids = mealIds;
       }
     }
   }
@@ -687,6 +722,51 @@ export async function saveShoppingList(
     list: list as ShoppingList,
     items: [...(planItems as ShoppingListItem[]), ...reinsertedItems],
   };
+}
+
+export async function refreshConditionalItems(
+  userId: string,
+  items: ShoppingListItem[]
+): Promise<{ updatedIds: string[]; summaries: string[] }> {
+  const conditionalItems = items.filter(
+    (i) => i.conditional_meal_ids && i.conditional_meal_ids.length > 0
+  );
+  if (conditionalItems.length === 0) return { updatedIds: [], summaries: [] };
+
+  const allMealIds = [...new Set(conditionalItems.flatMap((i) => i.conditional_meal_ids!))];
+  const { data: cookedRows } = await supabase
+    .from('cooked_meals')
+    .select('planned_meal_id')
+    .eq('user_id', userId)
+    .in('planned_meal_id', allMealIds);
+
+  const cookedMealIds = new Set((cookedRows ?? []).map((r) => r.planned_meal_id).filter(Boolean));
+  if (cookedMealIds.size === 0) return { updatedIds: [], summaries: [] };
+
+  const updatedIds: string[] = [];
+  const summaries: string[] = [];
+
+  for (const item of conditionalItems) {
+    const allCooked = item.conditional_meal_ids!.every((id) => cookedMealIds.has(id));
+    if (!allCooked) continue;
+
+    await supabase
+      .from('shopping_list_items')
+      .update({
+        from_fridge: false,
+        is_pantry_staple: false,
+        checked: false,
+        conditional_note: null,
+        conditional_meal_ids: null,
+      })
+      .eq('id', item.id);
+
+    updatedIds.push(item.id);
+    const note = item.conditional_note?.replace(/ — may need to buy$/, '') ?? item.name;
+    summaries.push(`${toTitleCase(item.name)} → need to buy (${note.toLowerCase()})`);
+  }
+
+  return { updatedIds, summaries };
 }
 
 export async function deleteShoppingItems(ids: string[]): Promise<void> {
