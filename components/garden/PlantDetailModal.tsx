@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   harvestInfo: { gap: 2 },
   harvestDate: { fontSize: 14, fontWeight: '600', color: colors.text.primary },
   harvestQty: { fontSize: 13, color: colors.text.muted },
-  harvestNotes: { fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' },
+  harvestNotes: { fontSize: 13, color: colors.text.placeholder, fontStyle: 'italic' },
 
   deleteButton: {
     marginTop: 32,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: colors.state.dangerBorder,
   },
-  deleteButtonText: { fontSize: 15, fontWeight: '600', color: '#EF4444' },
+  deleteButtonText: { fontSize: 15, fontWeight: '600', color: colors.state.dangerBright },
 });

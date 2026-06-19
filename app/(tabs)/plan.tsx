@@ -809,27 +809,27 @@ const styles = StyleSheet.create({
   replanButtonText: { fontSize: 15, color: colors.text.muted, fontWeight: '500' },
 
   pushNextWeekBtn:  { marginTop: 8 },
-  pushNextWeekText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  pushNextWeekText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
   pinBtn: { marginTop: 8 },
-  pinBtnText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  pinBtnTextActive: { color: '#3B7A57', fontWeight: '600' },
+  pinBtnText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
+  pinBtnTextActive: { color: colors.brand.primary, fontWeight: '600' },
   pinnedBadge: {
-    fontSize: 11, fontWeight: '600', color: '#065F46', backgroundColor: '#D1FAE5',
+    fontSize: 11, fontWeight: '600', color: colors.brand.primaryDark, backgroundColor: colors.brand.primaryLight,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
 
   howToButton: { marginTop: 8 },
-  howToButtonText: { fontSize: 13, color: '#3B7A57', fontWeight: '600' },
+  howToButtonText: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   stashNudge: { marginTop: 8 },
-  stashNudgeText: { fontSize: 13, color: '#0369A1', fontWeight: '600' },
-  saveRecipeText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
+  stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
+  saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
   wineSection: { marginTop: 8, gap: 6 },
-  wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 3 },
-  wineVarietal: { fontSize: 13, fontWeight: '700', color: '#1C1C1E' },
-  wineReason: { fontSize: 13, color: '#374151', lineHeight: 18 },
+  wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 10, gap: 3 },
+  wineVarietal: { fontSize: 13, fontWeight: '700', color: colors.text.primary },
+  wineReason: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
   wineNote: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 3 },
   wineDismiss: { fontSize: 12, color: '#9CA3AF' },
   wineError: { fontSize: 12, color: '#EF4444' },

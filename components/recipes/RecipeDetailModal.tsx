@@ -435,22 +435,22 @@ const styles = StyleSheet.create({
   glossaryTerm: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
   glossaryDef: { fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
 
-  cookModePill: { backgroundColor: '#1C1C1E', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  cookModePillActive: { backgroundColor: '#3B7A57' },
-  cookModePillText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  cookModePill: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+  cookModePillActive: { backgroundColor: colors.brand.primary },
+  cookModePillText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
 
-  cookModeBtn: { backgroundColor: '#3B7A57', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  cookModeBtnActive: { backgroundColor: '#166534' },
-  cookModeBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  cookModeBtn: { backgroundColor: colors.brand.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  cookModeBtnActive: { backgroundColor: colors.brand.primaryDark },
+  cookModeBtnText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
 
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 8 },
-  actionLink: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  actionLinkDestructive: { fontSize: 13, color: '#EF4444', fontWeight: '500' },
-  actionDivider: { fontSize: 13, color: '#D1D5DB' },
+  actionLink: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
+  actionLinkDestructive: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
+  actionDivider: { fontSize: 13, color: colors.border.default },
 
   sourceLink: { gap: 2 },
-  sourceLinkLabel: { fontSize: 15, fontWeight: '600', color: '#3B7A57' },
-  sourceLinkDomain: { fontSize: 12, color: '#9CA3AF' },
+  sourceLinkLabel: { fontSize: 15, fontWeight: '600', color: colors.text.link },
+  sourceLinkDomain: { fontSize: 12, color: colors.text.placeholder },
 
   wineCard: { backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, gap: 4 },
   cocktailCard: { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' },
