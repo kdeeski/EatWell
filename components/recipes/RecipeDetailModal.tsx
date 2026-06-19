@@ -212,7 +212,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                   <View style={styles.sectionLabelRow}>
                     <Text style={styles.sectionLabel}>How to cook it</Text>
                     <TouchableOpacity style={[styles.cookModePill, screenOn && styles.cookModePillActive]} onPress={toggleScreenOn}>
-                      <Text style={styles.cookModePillText}>{screenOn ? 'Screen On ✓' : 'Keep Screen On'}</Text>
+                      <Text style={styles.cookModePillText}>{screenOn ? 'Cook Mode On' : 'Cook Mode'}</Text>
                     </TouchableOpacity>
                   </View>
                   {guide.steps.map((step, i) => (
@@ -259,11 +259,6 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                   </View>
                 ) : null}
 
-                {recipe.method ? (
-                  <TouchableOpacity style={[styles.cookModeBtn, screenOn && styles.cookModeBtnActive]} onPress={toggleScreenOn}>
-                    <Text style={styles.cookModeBtnText}>{screenOn ? 'Screen On ✓' : 'Keep Screen On'}</Text>
-                  </TouchableOpacity>
-                ) : null}
               </>
             )}
 
@@ -439,9 +434,6 @@ const styles = StyleSheet.create({
   cookModePillActive: { backgroundColor: colors.brand.primary },
   cookModePillText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
 
-  cookModeBtn: { backgroundColor: colors.brand.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  cookModeBtnActive: { backgroundColor: colors.brand.primaryDark },
-  cookModeBtnText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
 
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 8 },
   actionLink: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
@@ -461,5 +453,5 @@ const styles = StyleSheet.create({
   wineDismiss: { fontSize: 12, color: colors.text.placeholder, marginTop: 4 },
   wineError: { fontSize: 13, color: colors.state.dangerBright, marginTop: 4 },
   glossaryAdd: { fontSize: 12, color: colors.text.link, fontWeight: '600', marginTop: 6 },
-  glossarySaved: { fontSize: 12, color: '#9CA3AF', marginTop: 6 },
+  glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
 });

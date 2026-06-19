@@ -406,6 +406,9 @@ export default function ShoppingScreen() {
       <View style={styles.headingRow}>
         <Text style={styles.heading}>Shopping</Text>
         <View style={styles.headingButtons}>
+          <TouchableOpacity style={[styles.shopModePill, shopMode && styles.shopModePillActive]} onPress={toggleShopMode}>
+            <Text style={styles.shopModePillText}>{shopMode ? 'Shop Mode On' : 'Shop Mode'}</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={() => {
             if (!useAppStore.getState().shoppingList) {
               Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
@@ -632,9 +635,6 @@ export default function ShoppingScreen() {
       })}
 
       <View style={styles.bottomActions}>
-        <TouchableOpacity style={[styles.shopModeBtn, shopMode && styles.shopModeBtnActive]} onPress={toggleShopMode}>
-          <Text style={styles.shopModeBtnText}>{shopMode ? 'Shop Mode On ✓' : 'Shop Mode'}</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.clearDoneLink} onPress={handleDoneShopping} disabled={clearingDone}>
           {clearingDone
             ? <ActivityIndicator size="small" color={colors.state.dangerBright} />
@@ -1009,9 +1009,9 @@ const styles = StyleSheet.create({
   addButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.brand.primary, alignItems: 'center' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: colors.text.inverse },
   bottomActions: { paddingTop: 24, paddingBottom: 8, gap: 12 },
-  shopModeBtn: { backgroundColor: colors.brand.ink, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  shopModeBtnActive: { backgroundColor: colors.brand.primary },
-  shopModeBtnText: { color: colors.text.inverse, fontSize: 16, fontWeight: '700' },
+  shopModePill: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+  shopModePillActive: { backgroundColor: colors.brand.primary },
+  shopModePillText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
   clearDoneLink: { alignItems: 'center', paddingVertical: 4 },
   clearDoneLinkText: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
   refreshButton: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.background.elevated, minWidth: 70, alignItems: 'center' },
