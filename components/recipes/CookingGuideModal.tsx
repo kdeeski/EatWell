@@ -198,25 +198,25 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
         <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={styles.headerBtn}>Close</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle} numberOfLines={1}>{mealName}</Text>
-            {guide && !prefillGuide ? (
-              <TouchableOpacity
-                onPress={() => setSavePrefill({
-                  name: mealName, category: 'mains', description,
-                  ingredients: ingredients ?? guide.ingredients?.join('\n'),
-                  method: numberedMethod(guide.steps),
-                  guideJson: guide,
-                })}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text style={styles.headerSaveBtn}>Save</Text>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <Text style={styles.headerClose}>×</Text>
               </TouchableOpacity>
-            ) : (
-              <View style={{ minWidth: 48 }} />
-            )}
+              {guide && !prefillGuide ? (
+                <TouchableOpacity
+                  onPress={() => setSavePrefill({
+                    name: mealName, category: 'mains', description,
+                    ingredients: ingredients ?? guide.ingredients?.join('\n'),
+                    method: numberedMethod(guide.steps),
+                    guideJson: guide,
+                  })}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text style={styles.headerSaveBtn}>Save</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <Text style={styles.headerTitle}>{mealName}</Text>
           </View>
 
           {loading ? (
@@ -320,17 +320,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 14,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.hairline,
+    marginBottom: 8,
   },
-  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 48 },
-  headerSaveBtn: { fontSize: 16, color: colors.brand.primary, fontWeight: '700', minWidth: 48, textAlign: 'right' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center', marginHorizontal: 8 },
+  headerClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  headerSaveBtn: { fontSize: 15, color: colors.brand.primary, fontWeight: '700' },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
 
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
   loadingText: { fontSize: 15, color: colors.text.muted },

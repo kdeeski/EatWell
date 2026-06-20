@@ -649,7 +649,7 @@ export default function ShoppingScreen() {
       activeLabel="Shop Mode On"
       active={shopMode}
       onPress={toggleShopMode}
-      bottom={insets.bottom + 70}
+      bottom={24}
     />
     </View>
   );

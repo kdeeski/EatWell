@@ -394,7 +394,7 @@ export default function TodayScreen() {
                   </View>
                 )}
                 <TouchableOpacity onPress={() => { setWineResult(null); setWineError(null); }}>
-                  <Text style={styles.wineDismiss}>Clear</Text>
+                  <Text style={styles.wineDismiss}>×</Text>
                 </TouchableOpacity>
               </View>
             ) : (

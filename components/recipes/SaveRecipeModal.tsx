@@ -150,16 +150,18 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
           <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
             {/* Header */}
             <View style={styles.header}>
-              <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text style={styles.headerBtn}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.headerTopRow}>
+                <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Text style={styles.headerClose}>×</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  {saving
+                    ? <ActivityIndicator size="small" color={colors.brand.primary} />
+                    : <Text style={styles.headerSaveBtn}>Save</Text>
+                  }
+                </TouchableOpacity>
+              </View>
               <Text style={styles.headerTitle}>{isEdit ? 'Edit Recipe' : 'Add Recipe'}</Text>
-              <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                {saving
-                  ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                  : <Text style={styles.headerSaveBtn}>Save</Text>
-                }
-              </TouchableOpacity>
             </View>
 
             <ScrollView
@@ -334,20 +336,17 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.surface },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.hairline,
+    paddingTop: 8,
+    paddingBottom: 14,
   },
-  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 56 },
-  headerSaveBtn: { fontSize: 16, color: colors.text.link, fontWeight: '700', minWidth: 56, textAlign: 'right' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  headerSaveBtn: { fontSize: 15, color: colors.brand.primary, fontWeight: '700' },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 20 },

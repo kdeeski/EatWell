@@ -16,6 +16,17 @@ import type { WineMatchResult } from '../../lib/claude';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
 
+function parseBitePairing(text: string): { name: string; reason: string }[] {
+  const parts = text.split(/\*\*/).filter(Boolean);
+  const items: { name: string; reason: string }[] = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const name = parts[i].trim();
+    const reason = (parts[i + 1] ?? '').replace(/^[\s—–-]+/, '').replace(/\.\s*$/, '.').trim();
+    if (name) items.push({ name, reason });
+  }
+  return items.length > 0 ? items : [{ name: 'Suggested bites', reason: text }];
+}
+
 type FilterKey = 'all' | RecipeCategory;
 
 const FILTER_LABELS: { key: FilterKey; label: string }[] = [
@@ -309,7 +320,7 @@ export default function RecipesScreen() {
                             </View>
                           ))}
                           <TouchableOpacity onPress={() => setWineResults((prev) => { const n = { ...prev }; delete n[item.id]; return n; })}>
-                            <Text style={styles.wineDismiss}>Clear</Text>
+                            <Text style={styles.wineDismiss}>×</Text>
                           </TouchableOpacity>
                         </View>
                       ) : (
@@ -337,19 +348,28 @@ export default function RecipesScreen() {
 
                     {isCocktail && (
                       item.bite_pairing ? (
-                        <View style={styles.biteSection}>
-                          <Text style={styles.biteLabel}>Suggested bites</Text>
-                          <Text style={styles.biteText}>{item.bite_pairing}</Text>
-                          <TouchableOpacity
-                            onPress={() => handleBitePairing(item)}
-                            disabled={isBiteLoading}
-                            hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
-                          >
-                            {isBiteLoading
-                              ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
-                              : <Text style={styles.biteRegenerate}>Regenerate</Text>
-                            }
-                          </TouchableOpacity>
+                        <View style={styles.wineSection}>
+                          {parseBitePairing(item.bite_pairing).map((b, i) => (
+                            <View key={i} style={styles.wineCard}>
+                              <Text style={styles.wineVarietal}>{b.name}</Text>
+                              <Text style={styles.wineReason}>{b.reason}</Text>
+                            </View>
+                          ))}
+                          <View style={styles.biteDismissRow}>
+                            <TouchableOpacity onPress={() => { updateRecipeInStore(item.id, { bite_pairing: null }); updateRecipe(item.id, { bite_pairing: null }); }}>
+                              <Text style={styles.wineDismiss}>×</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleBitePairing(item)}
+                              disabled={isBiteLoading}
+                              hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
+                            >
+                              {isBiteLoading
+                                ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start' }} />
+                                : <Text style={styles.wineDismiss}>Regenerate</Text>
+                              }
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       ) : (
                         <TouchableOpacity
@@ -529,10 +549,7 @@ const styles = StyleSheet.create({
   expandedEdit: { fontSize: 13, color: colors.text.muted, fontWeight: '500' },
   expandedActionDivider: { fontSize: 13, color: colors.border.default },
   expandedDelete: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
-  biteSection: { backgroundColor: colors.brand.oliveLighter, borderRadius: 10, borderWidth: 1, borderColor: colors.brand.oliveLight, padding: 10, gap: 4, marginTop: 2 },
-  biteLabel: { fontSize: 11, fontStyle: 'italic', color: colors.text.link, fontWeight: '600', marginBottom: 2 },
-  biteText: { fontSize: 13, color: colors.text.secondary, lineHeight: 20 },
-  biteRegenerate: { fontSize: 12, color: colors.text.placeholder, marginTop: 2 },
+  biteDismissRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
 
   ratingRow: { marginTop: 12, gap: 6 },
   ratingLabel: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500' },

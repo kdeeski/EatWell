@@ -530,7 +530,7 @@ export default function PlanScreen() {
                                       </View>
                                     ))}
                                     <TouchableOpacity onPress={() => setWineResult(null)}>
-                                      <Text style={styles.wineDismiss}>Clear</Text>
+                                      <Text style={styles.wineDismiss}>×</Text>
                                     </TouchableOpacity>
                                   </>
                                 ) : (
@@ -740,8 +740,8 @@ const styles = StyleSheet.create({
   planButton:     { backgroundColor: colors.brand.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
   planButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 16 },
 
-  dayRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
-  dayLabel: { width: 36, fontSize: 13, fontWeight: '600', color: colors.text.placeholder },
+  dayRow:   { marginBottom: 12 },
+  dayLabel: { fontSize: 13, fontWeight: '600', color: colors.text.placeholder, marginBottom: 4 },
   dayLabelSelected: { color: colors.brand.primary },
 
   mealCard: {
