@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, ActivityIndicator, Share,
+  TouchableOpacity, KeyboardAvoidingView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import RecipeBrowserModal from './RecipeBrowserModal';
 import ImportFromClaudeModal from './ImportFromClaudeModal';
 import { colors } from '../../constants/theme';
+import { shareOrCopy } from '../../lib/shareOrCopy';
 
 const CATEGORIES: { key: RecipeCategory; label: string }[] = [
   { key: 'mains',          label: 'Mains' },
@@ -56,7 +57,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   "ingredients": "150g Chicken Thighs\\n2 cloves Garlic\\n1 tsp Smoked Paprika",
   "method": "1. First step.\\n2. Second step.\\n3. Third step."
 }`;
-    await Share.share({ message: brief });
+    await shareOrCopy(brief);
   };
 
   const [name, setName]               = useState(existingRecipe?.name ?? prefill?.name ?? '');

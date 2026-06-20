@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform, Share, ActivityIndicator,
+  TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCategory } from '../../types';
 import { formatRecipeFromText } from '../../lib/claude';
 import SaveRecipeModal from './SaveRecipeModal';
 import { colors } from '../../constants/theme';
+import { shareOrCopy } from '../../lib/shareOrCopy';
 
 const VALID_CATEGORIES: RecipeCategory[] = [
   'mains', 'sauces_dressings', 'sides', 'desserts', 'baking', 'marinades_rubs', 'glossary', 'cocktails',
@@ -53,7 +54,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
   const [showSave, setShowSave] = useState(false);
 
   const handleCopy = async () => {
-    await Share.share({ message: PROMPT_TEXT });
+    const action = await shareOrCopy(PROMPT_TEXT);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -206,7 +207,7 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
                       onPress={handleCopy}
                     >
                       <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
-                        {copied ? 'Shared ✓' : 'Share Prompt'}
+                        {copied ? 'Copied ✓' : 'Copy Prompt'}
                       </Text>
                     </TouchableOpacity>
                   </View>

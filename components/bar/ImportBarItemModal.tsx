@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform, Share,
+  TouchableOpacity, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BarItem, SpiritType } from '../../types';
 import { colors } from '../../constants/theme';
+import { shareOrCopy } from '../../lib/shareOrCopy';
 
 const VALID_SPIRIT_TYPES: SpiritType[] = [
   'whiskey', 'cognac_brandy', 'gin', 'vodka', 'rum',
@@ -45,7 +46,7 @@ export default function ImportBarItemModal({ visible, onClose, onPrefill }: Prop
   const [error, setError] = useState<string | null>(null);
 
   const handleShare = async () => {
-    await Share.share({ message: PROMPT_TEXT });
+    await shareOrCopy(PROMPT_TEXT);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
