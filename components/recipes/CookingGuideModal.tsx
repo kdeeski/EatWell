@@ -243,6 +243,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
               showsVerticalScrollIndicator={false}
             >
+            <View style={styles.contentCard}>
               {/* How to cook it */}
               <View style={styles.section}>
                 <View style={styles.sectionLabelRow}>
@@ -284,6 +285,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
                   ))}
                 </View>
               )}
+            </View>
             </ScrollView>
           ) : null}
         </View>
@@ -310,7 +312,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.surface },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row',
@@ -334,7 +336,13 @@ const styles = StyleSheet.create({
   retryBtnText: { fontSize: 14, fontWeight: '600', color: colors.text.inverse },
 
   scroll: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24 },
+  scrollContent: { padding: 16, gap: 16 },
+  contentCard: {
+    backgroundColor: colors.background.surface,
+    borderRadius: 16,
+    padding: 20,
+    gap: 24,
+  },
 
   section: { gap: 12 },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

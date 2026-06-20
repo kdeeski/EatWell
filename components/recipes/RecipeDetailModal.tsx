@@ -175,6 +175,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
             contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
             showsVerticalScrollIndicator={false}
           >
+          <View style={styles.contentCard}>
             {/* Category badge + rating */}
             <View style={styles.metaRow}>
               <View style={[styles.categoryBadge, { backgroundColor: badgeColour + '22', borderColor: badgeColour + '44' }]}>
@@ -365,6 +366,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               </View>
             )}
 
+          </View>
             {/* Edit / Delete */}
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={onEdit}>
@@ -391,7 +393,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.surface },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -403,7 +405,13 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center', marginHorizontal: 8 },
 
   scroll: { flex: 1 },
-  scrollContent: { padding: 20, gap: 20 },
+  scrollContent: { padding: 16, gap: 16 },
+  contentCard: {
+    backgroundColor: colors.background.surface,
+    borderRadius: 16,
+    padding: 20,
+    gap: 20,
+  },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   categoryBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
