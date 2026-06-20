@@ -108,7 +108,7 @@ export default function ImportBarItemModal({ visible, onClose, onPrefill }: Prop
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={styles.headerBtn}>Cancel</Text>
+              <Text style={styles.headerClose}>×</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Import from Claude</Text>
             <View style={{ minWidth: 56 }} />
@@ -175,14 +175,14 @@ export default function ImportBarItemModal({ visible, onClose, onPrefill }: Prop
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.surface },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 56 },
+  headerClose: { fontSize: 28, fontWeight: '300', color: colors.text.muted, lineHeight: 28 },
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
 
   scroll: { flex: 1 },

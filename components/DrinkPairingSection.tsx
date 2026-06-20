@@ -156,7 +156,7 @@ const base = StyleSheet.create({
 
 const fs = StyleSheet.create({
   section: { gap: 8 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted },
+  sectionLabel: shared.sectionLabel,
   ctaText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
   card: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, gap: 4 },
   varietal: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
@@ -167,7 +167,7 @@ const fs = StyleSheet.create({
 
 const cs = StyleSheet.create({
   section: { gap: 6 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted },
+  sectionLabel: shared.sectionLabel,
   ctaText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
   card: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 10, gap: 3 },
   varietal: { fontSize: 13, fontWeight: '700', color: colors.text.primary },

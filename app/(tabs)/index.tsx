@@ -204,7 +204,7 @@ export default function TodayScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
       <View style={styles.topRow}>
         <Text style={styles.greeting}>Good morning.</Text>
         <TouchableOpacity
@@ -688,9 +688,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border.default,
     backgroundColor: colors.background.surface, alignItems: 'center', justifyContent: 'center',
   },
-  ratingChipSelected: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  ratingChipSelected: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   ratingNum: { fontSize: 16, fontWeight: '700', color: colors.text.secondary },
-  ratingNumSelected: { color: colors.text.inverse },
+  ratingNumSelected: { color: colors.brand.primary },
   ratingLabel: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
   yesNoRow: { flexDirection: 'row', gap: 10 },

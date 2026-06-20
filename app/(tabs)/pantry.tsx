@@ -258,7 +258,7 @@ export default function PantryScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 40 }]}>
           <Text style={styles.swipeHint}>Swipe right to replenish · Swipe left to remove</Text>
           {grouped.map(({ key, label, emoji, items }) => (
             <View key={key} style={styles.section}>
@@ -843,15 +843,15 @@ const styles = StyleSheet.create({
   filterBar: { backgroundColor: colors.background.app },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
   filterPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, flexShrink: 0 },
-  filterPillActive: { backgroundColor: colors.brand.primary },
+  filterPillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   filterPillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
-  filterPillTextActive: { color: colors.text.inverse },
+  filterPillTextActive: { color: colors.brand.primary },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 8, textAlign: 'center' },
   emptyBody: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22 },
 
-  list: { paddingBottom: 40 },
+  list: {},
   swipeHint: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', paddingVertical: 8 },
   section: { marginTop: 16, paddingHorizontal: 16 },
   sectionHeader: { ...shared.sectionLabel, fontWeight: '700', marginBottom: 8 },

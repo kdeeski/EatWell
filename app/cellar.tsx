@@ -284,7 +284,7 @@ export default function CellarScreen() {
           <View style={[styles.modalContainer, { paddingTop: insets.top || 16 }]}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setModal({ visible: false, item: null })}>
-                <Text style={styles.modalCancel}>Cancel</Text>
+                <Text style={styles.modalClose}>×</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>{modal.item?.id ? 'Edit Bottle' : 'Add Bottle'}</Text>
               <TouchableOpacity onPress={handleSave} disabled={saving || !name.trim()}>
@@ -529,13 +529,13 @@ const styles = StyleSheet.create({
   rowQtyLabel:  { fontSize: 11, color: colors.text.placeholder },
 
   // Modal
-  modalContainer: { flex: 1, backgroundColor: colors.background.surface },
+  modalContainer: { flex: 1, backgroundColor: colors.background.app },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  modalCancel: { fontSize: 16, color: colors.text.muted, fontWeight: '500' },
+  modalClose: { fontSize: 28, fontWeight: '300', color: colors.text.muted, lineHeight: 28 },
   modalTitle:  { fontSize: 17, fontWeight: '700', color: colors.text.primary },
   modalSave:   { fontSize: 16, color: colors.brand.plum, fontWeight: '700' },
   modalSaveDisabled: { color: colors.text.placeholder },
@@ -549,11 +549,11 @@ const styles = StyleSheet.create({
   fieldFixed:    {},
 
   sizeRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  sizePill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.background.elevated },
-  sizePillActive: { backgroundColor: colors.brand.plum },
+  sizePill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default },
+  sizePillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   sizePillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
-  sizePillTextActive: { color: colors.text.inverse },
+  sizePillTextActive: { color: colors.brand.primary },
 
-  deleteBtn: { marginTop: 24, backgroundColor: colors.state.dangerLighter, borderRadius: 12, padding: 14, alignItems: 'center' },
-  deleteBtnText: { fontSize: 15, color: colors.state.dangerBright, fontWeight: '600' },
+  deleteBtn: { marginTop: 24, alignItems: 'center' },
+  deleteBtnText: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
 });

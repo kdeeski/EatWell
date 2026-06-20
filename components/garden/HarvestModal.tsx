@@ -110,7 +110,7 @@ export default function HarvestModal({ plant, onConfirm, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.elevated },
+  container: { flex: 1, backgroundColor: colors.background.app },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingBottom: 12,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4,
   },
   input: {
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
     fontSize: 15, color: colors.text.primary,
   },
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
     backgroundColor: colors.background.elevated,
   },
-  pillSelected: { backgroundColor: colors.brand.primary },
+  pillSelected: { backgroundColor: colors.brand.primary + '22', borderWidth: 1, borderColor: colors.brand.primary },
   pillText: { fontSize: 14, fontWeight: '600', color: colors.text.secondary },
-  pillTextSelected: { color: colors.text.inverse },
+  pillTextSelected: { color: colors.brand.primary },
 
   harvestNote: { fontSize: 13, color: colors.text.muted, lineHeight: 20, marginTop: 12, fontStyle: 'italic' },
   confirmButton: { backgroundColor: colors.brand.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },

@@ -373,9 +373,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
   },
-  pillActive: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  pillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   pillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
-  pillTextActive: { color: colors.text.inverse },
+  pillTextActive: { color: colors.brand.primary },
 
   listContent: { paddingHorizontal: 20, paddingTop: 4 },
 
@@ -417,9 +417,9 @@ const styles = StyleSheet.create({
   ratingLabel: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500' },
   ratingChips: { flexDirection: 'row', gap: 6 },
   ratingChip: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.background.surface, alignItems: 'center', justifyContent: 'center' },
-  ratingChipSelected: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  ratingChipSelected: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   ratingChipText: { fontSize: 15, fontWeight: '600', color: colors.text.secondary },
-  ratingChipTextSelected: { color: colors.text.inverse },
+  ratingChipTextSelected: { color: colors.brand.primary },
 
   emptyState: {
     flex: 1,

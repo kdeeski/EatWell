@@ -808,9 +808,9 @@ const editStyles = StyleSheet.create({
   input: { backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.text.primary },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default },
-  pillActive: { backgroundColor: colors.brand.primaryLighter, borderColor: colors.brand.primary },
+  pillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   pillText: { fontSize: 13, color: colors.text.secondary },
-  pillTextActive: { color: colors.text.link, fontWeight: '600' },
+  pillTextActive: { color: colors.brand.primary, fontWeight: '600' },
 });
 
 // ── Shopping bulk add modal ───────────────────────────────────────────────────

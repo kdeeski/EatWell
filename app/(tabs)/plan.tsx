@@ -304,7 +304,7 @@ export default function PlanScreen() {
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
       <Animated.View style={{ flex: 1, transform: [{ translateX: swipeX }] }}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]}>
         <View style={styles.weekHeader}>
           <Text style={styles.heading}>{formatWeekRange(viewedWeekStart)}</Text>
           <View style={styles.weekHeaderRight}>
@@ -671,7 +671,7 @@ export default function PlanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
-  content:   { padding: 20, paddingBottom: 20 },
+  content:   { padding: 20 },
   heading:   { fontSize: 28, fontWeight: '700', color: colors.text.primary },
   hint:      { fontSize: 12, color: colors.text.placeholder, marginBottom: 20 },
   weekHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },

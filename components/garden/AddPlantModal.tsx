@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addGardenPlant, updateGardenPlant } from '../../lib/data';
 import type { GardenPlant } from '../../types';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 interface Props {
   visible: boolean;
@@ -229,8 +230,7 @@ const styles = StyleSheet.create({
   bodyContent: { padding: 20, gap: 4, paddingBottom: 40 },
 
   fieldLabel: {
-    fontSize: 12, fontWeight: '600', color: colors.text.muted,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14, marginBottom: 4,
+    ...shared.sectionLabel, marginTop: 14, marginBottom: 4,
   },
   input: {
     backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,

@@ -307,7 +307,7 @@ export default function GardenScreen() {
   const activeSuggestions = gardenSuggestions.filter((s) => !s.dismissed);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]}>
       <Text style={[shared.headerTitle, { marginBottom: 24 }]}>Garden</Text>
 
       {/* ── What to Plant Now ─────────────────────────────────────────────── */}
@@ -484,7 +484,7 @@ export default function GardenScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20 },
 
   section: { marginBottom: 28 },
   sectionHeader: {
