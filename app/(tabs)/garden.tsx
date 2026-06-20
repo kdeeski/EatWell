@@ -307,8 +307,25 @@ export default function GardenScreen() {
   const activeSuggestions = gardenSuggestions.filter((s) => !s.dismissed);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]}>
-      <Text style={[shared.headerTitle, { marginBottom: 24 }]}>Garden</Text>
+    <View style={styles.container}>
+      {/* Fixed header */}
+      <View style={[shared.headerBar, { paddingTop: insets.top + 16 }]}>
+        <Text style={shared.headerTitle}>Garden</Text>
+        <View style={shared.headerButtons}>
+          <TouchableOpacity
+            style={shared.btnFilled}
+            onPress={() => {
+              setAddPlantInitialName(undefined);
+              setSourceSuggestionId(undefined);
+              setAddPlantVisible(true);
+            }}
+          >
+            <Text style={shared.btnFilledText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
 
       {/* ── What to Plant Now ─────────────────────────────────────────────── */}
       <View style={styles.section}>
@@ -349,16 +366,6 @@ export default function GardenScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>In the Ground</Text>
-          <TouchableOpacity
-            style={shared.btnFilled}
-            onPress={() => {
-              setAddPlantInitialName(undefined);
-              setSourceSuggestionId(undefined);
-              setAddPlantVisible(true);
-            }}
-          >
-            <Text style={shared.btnFilledText}>+ Add</Text>
-          </TouchableOpacity>
         </View>
 
         {activePlants.length === 0 ? (
@@ -479,6 +486,7 @@ export default function GardenScreen() {
         onAddToGarden={handlePlantAgain}
       />
     </ScrollView>
+    </View>
   );
 }
 
