@@ -14,6 +14,7 @@ import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModa
 import { getWineMatch, generateBitePairing } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 type FilterKey = 'all' | RecipeCategory;
 
@@ -143,20 +144,20 @@ export default function RecipesScreen() {
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.app }}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.heading}>Recipes</Text>
-          <View style={styles.headerButtons}>
+        <View style={shared.headerBar}>
+          <Text style={shared.headerTitle}>Recipes</Text>
+          <View style={shared.headerButtons}>
             <TouchableOpacity
-              style={styles.importBtn}
+              style={shared.btnOutline}
               onPress={() => setShowImport(true)}
             >
-              <Text style={styles.importBtnText}>Import</Text>
+              <Text style={shared.btnOutlineText}>Import</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.addBtn}
+              style={shared.btnFilled}
               onPress={() => { setEditRecipe(null); setShowSave(true); }}
             >
-              <Text style={styles.addBtnText}>+ Add</Text>
+              <Text style={shared.btnFilledText}>+ Add</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -453,33 +454,6 @@ export default function RecipesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: colors.background.app,
-  },
-  heading: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
-  headerButtons: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  importBtn: {
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  importBtnText: { color: colors.text.muted, fontSize: 14, fontWeight: '600' },
-  addBtn: {
-    backgroundColor: colors.brand.primary,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  addBtnText: { color: colors.text.inverse, fontSize: 14, fontWeight: '700' },
 
   searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },

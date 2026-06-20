@@ -1,0 +1,62 @@
+import { StyleSheet } from 'react-native';
+import { colors } from './theme';
+
+export const shared = StyleSheet.create({
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: colors.background.app,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+
+  btnOutline: {
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  btnOutlineText: {
+    color: colors.text.muted,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  btnFilled: {
+    backgroundColor: colors.brand.primary,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  btnFilledText: {
+    color: colors.text.inverse,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  ctaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  ctaArrow: {
+    fontSize: 15,
+    color: colors.text.placeholder,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+});

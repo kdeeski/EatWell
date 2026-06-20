@@ -17,6 +17,7 @@ import { upsertInventoryItem, updateInventoryItem, saveStocktakeItems, removeInv
 import { normaliseIngredientName } from '../../lib/recipes';
 import type { ItemCategory, ItemLocation, InventoryItem } from '../../types';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -181,14 +182,14 @@ export default function PantryScreen() {
       {/* Header + filter bar wrapped in SafeAreaView for top safe area */}
       <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.app }}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Pantry</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.addButton} onPress={() => { setEditItem(null); setAddVisible(true); }}>
-            <Text style={styles.addButtonText}>+ Add</Text>
+      <View style={shared.headerBar}>
+        <Text style={shared.headerTitle}>Pantry</Text>
+        <View style={shared.headerButtons}>
+          <TouchableOpacity style={shared.btnOutline} onPress={() => { setEditItem(null); setAddVisible(true); }}>
+            <Text style={shared.btnOutlineText}>+ Add</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bulkAddButton} onPress={() => setBulkVisible(true)}>
-            <Text style={styles.bulkAddButtonText}>Bulk Add</Text>
+          <TouchableOpacity style={shared.btnFilled} onPress={() => setBulkVisible(true)}>
+            <Text style={shared.btnFilledText}>Bulk Add</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -826,18 +827,6 @@ function toItemLocation(raw: string): ItemLocation {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
-
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
-    backgroundColor: colors.background.app,
-  },
-  title: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
-  headerButtons: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  addButton: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.border.default },
-  addButtonText: { color: colors.text.muted, fontWeight: '600', fontSize: 14 },
-  bulkAddButton: { backgroundColor: colors.brand.primary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
-  bulkAddButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 14 },
 
   searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },

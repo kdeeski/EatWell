@@ -21,6 +21,7 @@ function formatIngredients(ingredients: PlannedIngredient[]): string {
 }
 import { useAppStore } from '../../store/useAppStore';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 import CookingGuideModal from '../../components/recipes/CookingGuideModal';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
@@ -327,36 +328,36 @@ export default function TodayScreen() {
               return match ? (
                 match.source_url ? (
                   <TouchableOpacity
-                    style={styles.ctaRow}
+                    style={shared.ctaRow}
                     onPress={() => Linking.openURL(match.source_url!)}
                   >
                     <Text style={styles.stashNudgeText}>View recipe</Text>
-                    <Text style={styles.ctaArrow}>→</Text>
+                    <Text style={shared.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    style={styles.ctaRow}
+                    style={shared.ctaRow}
                     onPress={() => setStashRecipe(match)}
                   >
                     <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
-                    <Text style={styles.ctaArrow}>→</Text>
+                    <Text style={shared.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 )
               ) : (
                 <>
                   <TouchableOpacity
-                    style={styles.ctaRow}
+                    style={shared.ctaRow}
                     onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
                   >
                     <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
-                    <Text style={styles.ctaArrow}>→</Text>
+                    <Text style={shared.ctaArrow}>→</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.ctaRow}
+                    style={shared.ctaRow}
                     onPress={() => setGuideTarget(tonightsMeal)}
                   >
                     <Text style={styles.howToButtonText}>How to cook this</Text>
-                    <Text style={styles.ctaArrow}>→</Text>
+                    <Text style={shared.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 </>
               );
@@ -399,7 +400,7 @@ export default function TodayScreen() {
             ) : (
               <View style={styles.wineSection}>
                 <TouchableOpacity
-                  style={styles.ctaRow}
+                  style={shared.ctaRow}
                   onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}
                   disabled={wineLoading}
                 >
@@ -407,7 +408,7 @@ export default function TodayScreen() {
                     ? <ActivityIndicator size="small" color={colors.brand.primary} />
                     : <>
                         <Text style={styles.drinkPairingLink}>Drink pairing</Text>
-                        <Text style={styles.ctaArrow}>→</Text>
+                        <Text style={shared.ctaArrow}>→</Text>
                       </>}
                 </TouchableOpacity>
                 {wineError ? (
@@ -495,9 +496,9 @@ export default function TodayScreen() {
                 </View>
               </View>
             ) : (
-              <TouchableOpacity style={[styles.logButton, styles.ctaRow]} onPress={() => setLogOpen(true)}>
+              <TouchableOpacity style={[styles.logButton, shared.ctaRow]} onPress={() => setLogOpen(true)}>
                 <Text style={styles.logButtonText}>Cooked it? Log a review</Text>
-                <Text style={styles.ctaArrow}>→</Text>
+                <Text style={shared.ctaArrow}>→</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -576,9 +577,9 @@ export default function TodayScreen() {
                 </View>
               </View>
             ) : (
-              <TouchableOpacity style={[styles.logButton, styles.ctaRow]} onPress={() => setElseLogOpen(true)}>
+              <TouchableOpacity style={[styles.logButton, shared.ctaRow]} onPress={() => setElseLogOpen(true)}>
                 <Text style={styles.logButtonText}>Cooked it? Log a review</Text>
-                <Text style={styles.ctaArrow}>→</Text>
+                <Text style={shared.ctaArrow}>→</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -738,8 +739,6 @@ const styles = StyleSheet.create({
   mealName: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 4 },
   mealMeta: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500', marginBottom: 8 },
   mealDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20, marginBottom: 8 },
-  ctaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
-  ctaArrow: { fontSize: 15, color: colors.text.placeholder, fontWeight: '500', marginLeft: 8 },
 
   emptyCard: {
     backgroundColor: colors.background.elevated,

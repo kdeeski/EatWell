@@ -17,6 +17,7 @@ import type { ShoppingListItem, ItemCategory, Store } from '../../types';
 import { toTitleCase } from '../../lib/titleCase';
 import { normaliseIngredientName, findStashMatch, parseRecipeIngredients } from '../../lib/recipes';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -403,25 +404,25 @@ export default function ShoppingScreen() {
   return (
     <View style={styles.screenWrapper}>
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 100 }]}>
-      <View style={styles.headingRow}>
-        <Text style={styles.heading}>Shopping</Text>
-        <View style={styles.headingButtons}>
+      <View style={[shared.headerBar, { marginBottom: 24, paddingHorizontal: 0, paddingTop: 0 }]}>
+        <Text style={shared.headerTitle}>Shopping</Text>
+        <View style={shared.headerButtons}>
           <TouchableOpacity style={[styles.shopModePill, shopMode && styles.shopModePillActive]} onPress={toggleShopMode}>
             <Text style={styles.shopModePillText}>{shopMode ? 'Shop Mode On' : 'Shop Mode'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={() => {
+          <TouchableOpacity style={shared.btnFilled} onPress={() => {
             if (!useAppStore.getState().shoppingList) {
               Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
               return;
             }
             setBulkVisible(true);
           }}>
-            <Text style={styles.addButtonText}>+ Add</Text>
+            <Text style={shared.btnFilledText}>+ Add</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
+          <TouchableOpacity style={shared.btnOutline} onPress={handleRefresh} disabled={refreshing}>
             {refreshing
               ? <ActivityIndicator size="small" color={colors.brand.primary} />
-              : <Text style={styles.refreshText}>Refresh</Text>
+              : <Text style={shared.btnOutlineText}>Refresh</Text>
             }
           </TouchableOpacity>
         </View>
@@ -1005,19 +1006,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
   centered: { justifyContent: 'center', alignItems: 'center', padding: 32 },
   content: { padding: 20 },
-  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
-  heading: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
-  headingButtons: { flexDirection: 'row', gap: 8 },
-  addButton: { backgroundColor: colors.brand.primary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
-  addButtonText: { fontSize: 14, fontWeight: '700', color: colors.text.inverse },
   bottomActions: { paddingTop: 24, paddingBottom: 8, gap: 12 },
   shopModePill: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
   shopModePillActive: { backgroundColor: colors.brand.primary },
   shopModePillText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
   clearDoneLink: { alignItems: 'center', paddingVertical: 4 },
   clearDoneLinkText: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
-  refreshButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, minWidth: 70, alignItems: 'center' },
-  refreshText: { fontSize: 14, fontWeight: '600', color: colors.text.secondary },
 
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 10, textAlign: 'center' },
   emptyBody: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22 },
