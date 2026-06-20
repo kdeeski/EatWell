@@ -358,13 +358,13 @@ export default function RecipesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
   searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
   pillScroll: { flexGrow: 0, backgroundColor: colors.background.app },
-  pillContent: { paddingHorizontal: 20, paddingBottom: 12, gap: 8 },
+  pillContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   pill: {
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -374,8 +374,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   pillActive: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
-  pillText: { fontSize: 14, color: colors.text.muted, fontWeight: '500' },
-  pillTextActive: { color: colors.text.inverse, fontWeight: '600' },
+  pillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  pillTextActive: { color: colors.text.inverse },
 
   listContent: { paddingHorizontal: 20, paddingTop: 4 },
 

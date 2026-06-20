@@ -185,11 +185,11 @@ export default function PantryScreen() {
       <View style={shared.headerBar}>
         <Text style={shared.headerTitle}>Pantry</Text>
         <View style={shared.headerButtons}>
-          <TouchableOpacity style={shared.btnOutline} onPress={() => { setEditItem(null); setAddVisible(true); }}>
-            <Text style={shared.btnOutlineText}>+ Add</Text>
+          <TouchableOpacity style={shared.btnOutline} onPress={() => setBulkVisible(true)}>
+            <Text style={shared.btnOutlineText}>Bulk Add</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={shared.btnFilled} onPress={() => setBulkVisible(true)}>
-            <Text style={shared.btnFilledText}>Bulk Add</Text>
+          <TouchableOpacity style={shared.btnFilled} onPress={() => { setEditItem(null); setAddVisible(true); }}>
+            <Text style={shared.btnFilledText}>+ Add</Text>
           </TouchableOpacity>
         </View>
       </View>
