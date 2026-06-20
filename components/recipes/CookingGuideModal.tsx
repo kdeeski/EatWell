@@ -151,10 +151,11 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       } catch { /* ok */ }
     }
     for (const term of guide.glossary) {
-      if (existing.has(`glossary::${term.term.toLowerCase()}`)) continue;
+      if (existing.has(term.term.toLowerCase())) continue;
       try {
         const saved = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
         addRecipe(saved);
+        existing.add(term.term.toLowerCase());
       } catch { /* ok */ }
     }
   };
@@ -176,10 +177,11 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       addRecipe(saved);
     }
     for (const term of guide.glossary) {
-      if (!existing.has(`glossary::${term.term.toLowerCase()}`)) {
+      if (!existing.has(term.term.toLowerCase())) {
         try {
           const g = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
           addRecipe(g);
+          existing.add(term.term.toLowerCase());
         } catch { /* ok if glossary term conflicts */ }
       }
     }

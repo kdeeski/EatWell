@@ -418,7 +418,14 @@ export async function pushMealToNextWeek(
     .single();
   if (planError) throw planError;
 
-  // Replace that day's slot (delete existing if any, then insert the pushed meal)
+  // Remove duplicate meal name if it already exists in the target week
+  await supabase
+    .from('planned_meals')
+    .delete()
+    .eq('meal_plan_id', plan.id)
+    .eq('meal_name', meal.meal_name);
+
+  // Clear the target day slot so we can insert cleanly
   await supabase
     .from('planned_meals')
     .delete()
