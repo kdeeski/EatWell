@@ -137,25 +137,34 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       .finally(() => setLoading(false));
   }, [visible, mealName, description, prefillGuide]);
 
+  // Auto-save glossary terms as soon as the guide loads
+  useEffect(() => {
+    if (!guide || !userId || guide.glossary.length === 0) return;
+    const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
+    const existing = new Set(useAppStore.getState().recipes.map((r) => r.name.toLowerCase()));
+    (async () => {
+      for (const term of guide.glossary) {
+        if (existing.has(term.term.toLowerCase())) continue;
+        try {
+          const saved = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
+          addRecipe(saved);
+          existing.add(term.term.toLowerCase());
+        } catch { /* ok — may already exist */ }
+      }
+    })();
+  }, [guide, userId]);
+
   const silentlySaveExtras = async (guide: CookingGuide) => {
     if (!userId) return;
     const base = { rating: null, would_cook_again: null, cooked_meal_id: null, ingredients: null, source_url: null, guide_json: null };
     const existing = new Set(useAppStore.getState().recipes.map((r) => r.name.toLowerCase()));
     for (const comp of guide.components) {
-      if (comp.steps.length === 0) continue; // already in stash
+      if (comp.steps.length === 0) continue;
       if (existing.has(comp.name.toLowerCase())) continue;
       const compCategory = resolveComponentCategory(comp);
       try {
         const saved = await saveRecipe(userId, { ...base, name: comp.name, category: compCategory, description: comp.description, method: numberedMethod(comp.steps) });
         addRecipe(saved);
-      } catch { /* ok */ }
-    }
-    for (const term of guide.glossary) {
-      if (existing.has(term.term.toLowerCase())) continue;
-      try {
-        const saved = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
-        addRecipe(saved);
-        existing.add(term.term.toLowerCase());
       } catch { /* ok */ }
     }
   };
@@ -175,15 +184,6 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     if (!existing.has(comp.name.toLowerCase())) {
       const saved = await saveRecipe(userId, { ...base, name: comp.name, category: compCategory, description: comp.description, method: numberedMethod(comp.steps) });
       addRecipe(saved);
-    }
-    for (const term of guide.glossary) {
-      if (!existing.has(term.term.toLowerCase())) {
-        try {
-          const g = await saveRecipe(userId, { ...base, name: term.term, category: 'glossary', description: term.definition, method: null });
-          addRecipe(g);
-          existing.add(term.term.toLowerCase());
-        } catch { /* ok if glossary term conflicts */ }
-      }
     }
   };
 
