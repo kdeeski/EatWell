@@ -141,7 +141,7 @@ export default function RecipesScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.elevated }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.app }}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.heading}>Recipes</Text>
@@ -452,7 +452,7 @@ export default function RecipesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.elevated },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.app,
   },
   heading: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
   headerButtons: { flexDirection: 'row', gap: 8, alignItems: 'center' },
@@ -481,12 +481,12 @@ const styles = StyleSheet.create({
   },
   addBtnText: { color: colors.text.inverse, fontSize: 14, fontWeight: '700' },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
   searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
-  pillScroll: { flexGrow: 0, backgroundColor: colors.background.elevated },
+  pillScroll: { flexGrow: 0, backgroundColor: colors.background.app },
   pillContent: { paddingHorizontal: 20, paddingBottom: 12, gap: 8 },
   pill: {
     paddingHorizontal: 14,

@@ -179,7 +179,7 @@ export default function PantryScreen() {
   return (
     <View style={styles.container}>
       {/* Header + filter bar wrapped in SafeAreaView for top safe area */}
-      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.surface }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.app }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Pantry</Text>
@@ -825,28 +825,28 @@ function toItemLocation(raw: string): ItemLocation {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.elevated },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
+    backgroundColor: colors.background.app,
   },
-  title: { fontSize: 24, fontWeight: '700', color: colors.text.primary },
-  headerButtons: { flexDirection: 'row', gap: 8 },
-  addButton: { backgroundColor: colors.background.elevated, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  addButtonText: { color: colors.text.secondary, fontWeight: '600', fontSize: 14 },
-  bulkAddButton: { backgroundColor: colors.brand.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  bulkAddButtonText: { color: colors.text.inverse, fontWeight: '600', fontSize: 14 },
+  title: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
+  headerButtons: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  addButton: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.border.default },
+  addButtonText: { color: colors.text.muted, fontWeight: '600', fontSize: 14 },
+  bulkAddButton: { backgroundColor: colors.brand.primary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  bulkAddButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 14 },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
   searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
-  filterBar: { backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
+  filterBar: { backgroundColor: colors.background.app },
   filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.background.elevated, flexShrink: 0 },
+  filterPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, flexShrink: 0 },
   filterPillActive: { backgroundColor: colors.brand.primary },
   filterPillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
   filterPillTextActive: { color: colors.text.inverse },
