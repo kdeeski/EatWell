@@ -363,7 +363,7 @@ export default function GardenScreen() {
           activePlants.map((plant) => (
             <TouchableOpacity
               key={plant.id}
-              style={styles.plantRow}
+              style={styles.plantCard}
               onPress={() => setDetailTarget(plant)}
               activeOpacity={0.7}
             >
@@ -424,7 +424,7 @@ export default function GardenScreen() {
           {showPastHarvests && pastPlants.map((plant) => (
             <TouchableOpacity
               key={plant.id}
-              style={[styles.plantRow, styles.plantRowMuted]}
+              style={[styles.plantCard, styles.plantCardMuted]}
               onPress={() => setDetailTarget(plant)}
               activeOpacity={0.7}
             >
@@ -501,11 +501,12 @@ const styles = StyleSheet.create({
   errorTitle: { fontSize: 14, fontWeight: '600', color: colors.state.danger },
   errorDetail: { fontSize: 12, color: colors.state.dangerText, lineHeight: 18 },
 
-  plantRow: {
+  plantCard: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border.hairline, gap: 8,
+    backgroundColor: colors.background.surface, borderRadius: 12,
+    padding: 14, marginBottom: 8, gap: 8,
   },
-  plantRowMuted: { opacity: 0.6 },
+  plantCardMuted: { opacity: 0.6 },
   plantInfo: { flex: 1 },
   plantName: { fontSize: 16, fontWeight: '600', color: colors.text.primary },
   plantVariety: { fontSize: 12, color: colors.text.placeholder, marginTop: 1 },

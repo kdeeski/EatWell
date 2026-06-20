@@ -69,7 +69,7 @@ export default function SuggestionCard({ suggestion, onAddToGarden, onDismiss }:
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.brand.primaryLight,
+    backgroundColor: colors.background.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
@@ -82,15 +82,15 @@ const styles = StyleSheet.create({
   plantName: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.brand.primaryDark,
+    color: colors.text.primary,
   },
   chevron: {
     fontSize: 11,
-    color: colors.brand.olive,
+    color: colors.text.placeholder,
   },
   hint: {
     fontSize: 12,
-    color: colors.brand.olive,
+    color: colors.text.placeholder,
     marginTop: 3,
   },
 
@@ -100,14 +100,14 @@ const styles = StyleSheet.create({
   whyLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.brand.primaryDark,
+    color: colors.text.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 2,
   },
   whyText: {
     fontSize: 13,
-    color: colors.brand.primaryDark,
+    color: colors.text.secondary,
     lineHeight: 19,
   },
 
@@ -118,12 +118,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.brand.oliveLight,
+    borderTopColor: colors.border.hairline,
   },
   growingNote: {
     fontSize: 12,
-    color: colors.brand.primaryDark,
-    backgroundColor: colors.brand.oliveLight,
+    color: colors.text.secondary,
+    backgroundColor: colors.background.elevated,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -150,11 +150,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: colors.brand.oliveLight,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated,
     alignItems: 'center',
   },
   dismissButtonText: {
-    color: colors.brand.primaryDark,
+    color: colors.text.muted,
     fontSize: 14,
     fontWeight: '600',
   },
