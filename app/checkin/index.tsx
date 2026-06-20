@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   yesNoTextSelected: { color: colors.text.primary },
 
   notesInput: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.background.elevated,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   changeLinkText: { fontSize: 13, color: colors.text.placeholder },
 
   stashSearchInput: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.background.elevated,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border.default,

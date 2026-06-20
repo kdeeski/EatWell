@@ -27,6 +27,7 @@ import HarvestModal from '../../components/garden/HarvestModal';
 import PlantDetailModal from '../../components/garden/PlantDetailModal';
 import SuggestionCard from '../../components/garden/SuggestionCard';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 const STATUS_LABELS: Record<string, string> = {
   planted:   'Planted',
@@ -301,7 +302,7 @@ export default function GardenScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
-      <Text style={styles.heading}>Garden</Text>
+      <Text style={[shared.headerTitle, { marginBottom: 24 }]}>Garden</Text>
 
       {/* ── What to Plant Now ─────────────────────────────────────────────── */}
       <View style={styles.section}>
@@ -343,14 +344,14 @@ export default function GardenScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>In the Ground</Text>
           <TouchableOpacity
-            style={styles.addButton}
+            style={shared.btnFilled}
             onPress={() => {
               setAddPlantInitialName(undefined);
               setSourceSuggestionId(undefined);
               setAddPlantVisible(true);
             }}
           >
-            <Text style={styles.addButtonText}>+ Add</Text>
+            <Text style={shared.btnFilledText}>+ Add</Text>
           </TouchableOpacity>
         </View>
 
@@ -477,7 +478,6 @@ export default function GardenScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
   content: { padding: 20, paddingBottom: 40 },
-  heading: { fontSize: 28, fontWeight: '700', color: colors.text.primary, marginBottom: 24 },
 
   section: { marginBottom: 28 },
   sectionHeader: {
@@ -490,12 +490,6 @@ const styles = StyleSheet.create({
   },
   refreshLink: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
   collapseToggle: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
-
-  addButton: {
-    paddingHorizontal: 12, paddingVertical: 5,
-    backgroundColor: colors.brand.primary, borderRadius: 8,
-  },
-  addButtonText: { fontSize: 13, fontWeight: '600', color: colors.text.inverse },
 
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
   loadingText: { fontSize: 14, color: colors.text.muted },

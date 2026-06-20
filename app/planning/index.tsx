@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
   fridgeStapleNote: { fontSize: 12, color: colors.text.placeholder, fontStyle: 'italic', marginTop: 8, lineHeight: 16 },
 
   input: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.background.elevated,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border.default,

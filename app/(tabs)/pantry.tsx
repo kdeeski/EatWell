@@ -470,15 +470,17 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={styles.modalContainer} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
+            <View style={styles.modalTopRow}>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.modalClose}>×</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSave} disabled={!name.trim() || saving}>
+                <Text style={[styles.modalSave, (!name.trim() || saving) && { opacity: 0.4 }]}>
+                  {saving ? '…' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.modalTitle}>{existingItem ? 'Edit Item' : 'Add Item'}</Text>
-            <TouchableOpacity onPress={handleSave} disabled={!name.trim() || saving}>
-              <Text style={[styles.modalSave, (!name.trim() || saving) && { opacity: 0.4 }]}>
-                {saving ? '…' : 'Save'}
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.formBody}>
@@ -664,17 +666,21 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={handleClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
+          <View style={styles.modalTopRow}>
+            <TouchableOpacity onPress={handleClose}>
+              <Text style={styles.modalClose}>×</Text>
+            </TouchableOpacity>
+            {step === 'input' ? (
+              <TouchableOpacity onPress={categorise} disabled={!text.trim()}>
+                <Text style={[styles.modalSave, !text.trim() && { opacity: 0.4 }]}>Go</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 60 }} />
+            )}
+          </View>
           <Text style={styles.modalTitle}>
             {step === 'input' ? 'Bulk Add' : step === 'categorising' ? 'Categorising…' : 'Review Items'}
           </Text>
-          {step === 'input' ? (
-            <TouchableOpacity onPress={categorise} disabled={!text.trim()}>
-              <Text style={[styles.modalSave, !text.trim() && { opacity: 0.4 }]}>Go</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 60 }} />
-          )}
         </View>
 
         {step === 'input' && (
@@ -869,27 +875,30 @@ const styles = StyleSheet.create({
   locationBadgeText: { fontSize: 12, color: colors.text.secondary, fontWeight: '500' },
 
   // Modal shared
-  modalContainer: { flex: 1, backgroundColor: colors.background.elevated },
+  modalContainer: { flex: 1, backgroundColor: colors.background.app },
   modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 12 : 16,
-    paddingBottom: 12,
-    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 14,
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
-  modalCancel: { fontSize: 16, color: colors.text.muted, width: 60 },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
+  modalTopRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  modalClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  modalTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
   modalSave: { fontSize: 16, color: colors.text.link, fontWeight: '700', width: 60, textAlign: 'right' },
 
   // Add/Edit form
   formBody: { padding: 20, gap: 6 },
   fieldLabel: { fontSize: 12, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 4 },
   textInput: {
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.text.primary,
   },
   picker: {
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
   },
   pickerText: { fontSize: 15, color: colors.text.primary },
@@ -916,7 +925,7 @@ const styles = StyleSheet.create({
   bulkInputStep: { padding: 20, paddingBottom: 40 },
   bulkInputHint: { fontSize: 15, color: colors.text.muted, lineHeight: 22, marginBottom: 16 },
   bulkTextArea: {
-    height: 260, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    height: 260, backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 12, padding: 14, fontSize: 15, color: colors.text.primary,
   },
   errorText: { fontSize: 14, color: colors.state.danger, textAlign: 'center', marginTop: 12 },

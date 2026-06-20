@@ -722,14 +722,16 @@ function ShoppingEditModal({ visible, item, onClose, onSaved }: {
     <Modal visible={visible} animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={modalStyles.container}>
-          <View style={[modalStyles.header, { paddingTop: insets.top + 12 }]}>
-            <TouchableOpacity onPress={onClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
+          <View style={[modalStyles.header, { paddingTop: insets.top + 8 }]}>
+            <View style={modalStyles.headerTopRow}>
+              <TouchableOpacity onPress={onClose}><Text style={modalStyles.headerClose}>×</Text></TouchableOpacity>
+              <TouchableOpacity onPress={handleSave} disabled={saving}>
+                <Text style={[modalStyles.headerActionText, saving && { opacity: 0.5 }]}>
+                  {saving ? 'Saving…' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <Text style={modalStyles.title}>Edit Item</Text>
-            <TouchableOpacity onPress={handleSave} disabled={saving}>
-              <Text style={[modalStyles.cancel, { color: colors.text.link, fontWeight: '700' }]}>
-                {saving ? 'Saving…' : 'Save'}
-              </Text>
-            </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
             <View>
@@ -866,18 +868,20 @@ function ShoppingBulkAddModal({ visible, shoppingListId, onClose, onSaved }: {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <View style={modalStyles.container}>
-        <View style={[modalStyles.header, { paddingTop: insets.top + 12 }]}>
-          <TouchableOpacity onPress={handleClose}><Text style={modalStyles.cancel}>Cancel</Text></TouchableOpacity>
+        <View style={[modalStyles.header, { paddingTop: insets.top + 8 }]}>
+          <View style={modalStyles.headerTopRow}>
+            <TouchableOpacity onPress={handleClose}><Text style={modalStyles.headerClose}>×</Text></TouchableOpacity>
+            {step === 'input' ? (
+              <TouchableOpacity onPress={categorise} disabled={!text.trim()}>
+                <Text style={[modalStyles.headerActionText, !text.trim() && { opacity: 0.4 }]}>Go</Text>
+              </TouchableOpacity>
+            ) : (
+              <View />
+            )}
+          </View>
           <Text style={modalStyles.title}>
             {step === 'input' ? 'Add Items' : step === 'categorising' ? 'Categorising…' : 'Review Items'}
           </Text>
-          {step === 'input' ? (
-            <TouchableOpacity onPress={categorise} disabled={!text.trim()}>
-              <Text style={[modalStyles.goBtn, !text.trim() && { opacity: 0.4 }]}>Go</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 60 }} />
-          )}
         </View>
 
         {step === 'input' && (
@@ -976,11 +980,12 @@ function ShoppingPendingRow({ item, onChange, onRemove }: {
 }
 
 const modalStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.elevated },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
-  cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
-  goBtn: { fontSize: 16, color: colors.text.link, fontWeight: '700', width: 60, textAlign: 'right' },
+  container: { flex: 1, backgroundColor: colors.background.app },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  headerActionText: { fontSize: 16, color: colors.text.link, fontWeight: '700' },
+  title: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
   inputStep: { padding: 20, paddingBottom: 40 },
   hint: { fontSize: 15, color: colors.text.muted, lineHeight: 22, marginBottom: 16 },
   textArea: { height: 260, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, borderRadius: 12, padding: 14, fontSize: 15, color: colors.text.primary },
