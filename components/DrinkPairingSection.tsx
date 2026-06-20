@@ -57,13 +57,23 @@ export default function DrinkPairingSection({
     doFetch();
   };
 
+  const handleClear = () => {
+    setResult(null);
+    setExpanded(false);
+  };
+
   const s = compact ? cs : fs;
 
   if (!expanded) {
     return (
       <TouchableOpacity style={shared.ctaRow} onPress={handleToggle} hitSlop={{ top: 8, bottom: 8 }}>
-        <Text style={s.ctaText}>Drink pairing</Text>
-        <Text style={shared.ctaArrow}>→</Text>
+        {loading
+          ? <ActivityIndicator size="small" color={colors.brand.primary} />
+          : <>
+              <Text style={s.ctaText}>{result ? 'Suggested drinks' : 'Drink pairing'}</Text>
+              <Text style={shared.ctaArrow}>→</Text>
+            </>
+        }
       </TouchableOpacity>
     );
   }
@@ -71,7 +81,7 @@ export default function DrinkPairingSection({
   return (
     <View style={s.section}>
       <TouchableOpacity onPress={handleToggle} hitSlop={{ top: 4, bottom: 4 }}>
-        <Text style={s.sectionLabel}>Drink pairing</Text>
+        <Text style={s.sectionLabel}>Suggested drinks</Text>
       </TouchableOpacity>
 
       {loading && (
@@ -121,6 +131,14 @@ export default function DrinkPairingSection({
               <Text style={s.reason}>{result.cocktail.reason}</Text>
             </View>
           )}
+          <View style={base.actionRow}>
+            <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={base.actionText}>×</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={doFetch} disabled={loading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={base.actionText}>Regenerate</Text>
+            </TouchableOpacity>
+          </View>
         </>
       )}
     </View>
@@ -132,6 +150,8 @@ const base = StyleSheet.create({
   glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
   cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
   cocktailName: { color: colors.brand.plum },
+  actionRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  actionText: { fontSize: 12, color: colors.text.placeholder },
 });
 
 const fs = StyleSheet.create({
