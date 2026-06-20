@@ -313,6 +313,12 @@ export default function TodayScreen() {
         {tonightsMeal && !elseLogDone ? (
           <View style={styles.mealCard}>
             <Text style={styles.mealName}>{toTitleCase(tonightsMeal.meal_name)}</Text>
+            {tonightsMeal.estimated_prep_minutes ? (
+              <Text style={styles.mealMeta}>
+                ~{tonightsMeal.estimated_prep_minutes} min
+                {tonightsMeal.is_fish ? '  ·  Buy fresh today' : ''}
+              </Text>
+            ) : null}
             {tonightsMeal.description ? (
               <Text style={styles.mealDesc}>{tonightsMeal.description}</Text>
             ) : null}
@@ -321,42 +327,40 @@ export default function TodayScreen() {
               return match ? (
                 match.source_url ? (
                   <TouchableOpacity
-                    style={styles.stashNudge}
+                    style={styles.ctaRow}
                     onPress={() => Linking.openURL(match.source_url!)}
                   >
-                    <Text style={styles.stashNudgeText}>View recipe →</Text>
+                    <Text style={styles.stashNudgeText}>View recipe</Text>
+                    <Text style={styles.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    style={styles.stashNudge}
+                    style={styles.ctaRow}
                     onPress={() => setStashRecipe(match)}
                   >
-                    <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
+                    <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
+                    <Text style={styles.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 )
               ) : (
                 <>
                   <TouchableOpacity
-                    style={styles.stashNudge}
+                    style={styles.ctaRow}
                     onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
                   >
                     <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                    <Text style={styles.ctaArrow}>→</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.howToButton}
+                    style={styles.ctaRow}
                     onPress={() => setGuideTarget(tonightsMeal)}
                   >
-                    <Text style={styles.howToButtonText}>How to cook this →</Text>
+                    <Text style={styles.howToButtonText}>How to cook this</Text>
+                    <Text style={styles.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 </>
               );
             })()}
-            {tonightsMeal.estimated_prep_minutes ? (
-              <Text style={styles.mealMeta}>
-                ~{tonightsMeal.estimated_prep_minutes} min
-                {tonightsMeal.is_fish ? '  ·  Buy fresh today' : ''}
-              </Text>
-            ) : null}
 
             {/* Drink pairing */}
             {wineResult ? (
@@ -395,12 +399,16 @@ export default function TodayScreen() {
             ) : (
               <View style={styles.wineSection}>
                 <TouchableOpacity
+                  style={styles.ctaRow}
                   onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}
                   disabled={wineLoading}
                 >
                   {wineLoading
                     ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                    : <Text style={styles.drinkPairingLink}>Drink pairing →</Text>}
+                    : <>
+                        <Text style={styles.drinkPairingLink}>Drink pairing</Text>
+                        <Text style={styles.ctaArrow}>→</Text>
+                      </>}
                 </TouchableOpacity>
                 {wineError ? (
                   <TouchableOpacity onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}>
@@ -487,8 +495,9 @@ export default function TodayScreen() {
                 </View>
               </View>
             ) : (
-              <TouchableOpacity style={styles.logButton} onPress={() => setLogOpen(true)}>
-                <Text style={styles.logButtonText}>Cooked it? Log a review →</Text>
+              <TouchableOpacity style={[styles.logButton, styles.ctaRow]} onPress={() => setLogOpen(true)}>
+                <Text style={styles.logButtonText}>Cooked it? Log a review</Text>
+                <Text style={styles.ctaArrow}>→</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -567,8 +576,9 @@ export default function TodayScreen() {
                 </View>
               </View>
             ) : (
-              <TouchableOpacity style={styles.logButton} onPress={() => setElseLogOpen(true)}>
-                <Text style={styles.logButtonText}>Cooked it? Log a review →</Text>
+              <TouchableOpacity style={[styles.logButton, styles.ctaRow]} onPress={() => setElseLogOpen(true)}>
+                <Text style={styles.logButtonText}>Cooked it? Log a review</Text>
+                <Text style={styles.ctaArrow}>→</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -725,9 +735,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  mealName: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 6 },
+  mealName: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 4 },
+  mealMeta: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500', marginBottom: 8 },
   mealDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20, marginBottom: 8 },
-  mealMeta: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500' },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
+  ctaArrow: { fontSize: 15, color: colors.text.placeholder, fontWeight: '500', marginLeft: 8 },
 
   emptyCard: {
     backgroundColor: colors.background.elevated,
@@ -742,10 +754,7 @@ const styles = StyleSheet.create({
   linkRow: { paddingVertical: 4 },
   linkText: { fontSize: 15, color: colors.brand.primary, fontWeight: '600' },
 
-  howToButton: { marginTop: 8, marginBottom: 4 },
   howToButtonText: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
-
-  stashNudge: { marginTop: 4 },
   stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
