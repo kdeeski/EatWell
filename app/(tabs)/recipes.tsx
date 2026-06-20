@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   rowDomain: { fontSize: 12, color: colors.text.placeholder },
   rowHint: { fontSize: 12, color: colors.text.placeholder },
 
-  expandedBody: { marginTop: 10, gap: 2 },
+  expandedBody: { marginTop: 10 },
   expandedDomain: { fontSize: 13, color: colors.text.link, fontWeight: '500' },
   expandedDesc: { fontSize: 14, color: colors.text.secondary, lineHeight: 21 },
   expandedViewFull: { fontSize: 13, fontWeight: '600', color: colors.text.link },
