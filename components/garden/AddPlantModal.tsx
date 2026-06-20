@@ -109,15 +109,17 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
       onShow={handleOpen}
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={styles.cancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>{isEditing ? 'Edit Plant' : 'Add Plant'}</Text>
-            <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={[styles.save, saving && styles.saveDim]}>Save</Text>
-            </TouchableOpacity>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <Text style={styles.headerClose}>×</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSave} disabled={saving} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <Text style={[styles.headerSaveBtn, saving && styles.saveDim]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.headerTitle}>{isEditing ? 'Edit Plant' : 'Add Plant'}</Text>
           </View>
 
           <ScrollView style={styles.body} contentContainerStyle={[styles.bodyContent, { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
@@ -215,15 +217,12 @@ function FieldLabel({ children }: { children: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.elevated },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
-  },
-  cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
-  save: { fontSize: 16, color: colors.text.link, fontWeight: '600', width: 60, textAlign: 'right' },
+  container: { flex: 1, backgroundColor: colors.background.app },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
+  headerSaveBtn: { fontSize: 15, color: colors.brand.primary, fontWeight: '700' },
   saveDim: { opacity: 0.4 },
 
   body: { flex: 1 },
@@ -234,7 +233,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14, marginBottom: 4,
   },
   input: {
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
     fontSize: 15, color: colors.text.primary,
   },
@@ -242,7 +241,7 @@ const styles = StyleSheet.create({
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, padding: 14, marginTop: 14, gap: 12,
   },
   toggleInfo: { flex: 1 },
