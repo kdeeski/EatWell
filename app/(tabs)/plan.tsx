@@ -553,7 +553,7 @@ export default function PlanScreen() {
                             )}
                             {isSelected && isCurrentWeek && !cooked && (
                               <TouchableOpacity
-                                style={shared.ctaRow}
+                                style={styles.secondaryAction}
                                 onPress={() => {
                                   setPinnedMealIds((prev) => {
                                     const next = new Set(prev);
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
   replanButtonText: { fontSize: 15, color: colors.text.muted, fontWeight: '500' },
 
   pushNextWeekText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
-
+  secondaryAction: { paddingVertical: 4 },
   pinBtnText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
   pinBtnTextActive: { color: colors.brand.primary, fontWeight: '600' },
   pinnedBadge: {

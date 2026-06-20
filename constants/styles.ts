@@ -50,13 +50,13 @@ export const shared = StyleSheet.create({
   ctaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    alignSelf: 'flex-end',
     paddingVertical: 4,
   },
   ctaArrow: {
-    fontSize: 15,
-    color: colors.text.placeholder,
-    fontWeight: '500',
-    marginLeft: 8,
+    fontSize: 13,
+    color: colors.brand.primary,
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });

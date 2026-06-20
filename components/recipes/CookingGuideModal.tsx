@@ -12,6 +12,7 @@ import { useAppStore } from '../../store/useAppStore';
 import type { RecipeGuideJson, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 interface Props {
   mealName: string;
@@ -78,7 +79,7 @@ function ComponentCard({
           ))}
           {!fromStash && (
             <TouchableOpacity
-              style={styles.saveItemBtn}
+              style={shared.ctaRow}
               disabled={saving || saved}
               onPress={async () => {
                 setSaving(true);
@@ -87,8 +88,9 @@ function ComponentCard({
               }}
             >
               <Text style={styles.saveItemBtnText}>
-                {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save to Stash →'}
+                {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save to Stash'}
               </Text>
+              {!saving && !saved && <Text style={shared.ctaArrow}>→</Text>}
             </TouchableOpacity>
           )}
         </>
