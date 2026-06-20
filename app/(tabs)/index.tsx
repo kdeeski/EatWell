@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   },
   mealName: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 4 },
   mealMeta: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500', marginBottom: 8 },
-  mealDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20, marginBottom: 8 },
+  mealDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20, marginBottom: 4 },
 
   emptyCard: {
     backgroundColor: colors.background.elevated,
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
-  wineSection: { marginTop: 10, gap: 8 },
+  wineSection: { gap: 8 },
   wineSectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
   drinkPairingLink: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
   wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, gap: 4 },
@@ -771,12 +771,12 @@ const styles = StyleSheet.create({
   glossaryAdd: { fontSize: 12, color: colors.brand.primary, fontWeight: '600', marginTop: 6 },
   glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
 
-  logButton: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.hairline },
+  logButton: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border.hairline },
   logButtonText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
-  logDoneRow: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.hairline },
+  logDoneRow: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border.hairline },
   logDoneText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
 
-  logPanel: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.hairline, gap: 10 },
+  logPanel: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border.hairline, gap: 10 },
   logPanelLabel: { fontSize: 15, fontWeight: '600', color: colors.text.secondary },
 
   ratingRow: { flexDirection: 'row', gap: 8 },

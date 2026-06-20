@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
 
   mealName:    { fontSize: 16, fontWeight: '600', color: colors.text.primary, marginBottom: 2 },
   mealMeta:    { fontSize: 12, color: colors.text.placeholder },
-  description: { fontSize: 14, color: colors.text.secondary, lineHeight: 21, marginTop: 8 },
+  description: { fontSize: 14, color: colors.text.secondary, lineHeight: 21, marginTop: 6, marginBottom: 4 },
   mealRating: { fontSize: 12, fontWeight: '600', color: colors.rating.star, marginTop: 4 },
   nightOff:    { fontSize: 14, color: colors.border.default, fontStyle: 'italic' },
 
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
   stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
-  wineSection: { marginTop: 8, gap: 6 },
+  wineSection: { gap: 6 },
   wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 10, gap: 3 },
   wineVarietal: { fontSize: 13, fontWeight: '700', color: colors.text.primary },
   wineReason: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
