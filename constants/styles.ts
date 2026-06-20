@@ -47,6 +47,14 @@ export const shared = StyleSheet.create({
     fontSize: 14,
   },
 
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: colors.text.muted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+
   ctaRow: {
     flexDirection: 'row',
     alignItems: 'center',

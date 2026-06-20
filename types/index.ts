@@ -120,6 +120,15 @@ export interface GardenSuggestion {
   created_at: string;
 }
 
+export interface ReplantAdvice {
+  timing: string;
+  is_good_time: boolean;
+  tips_from_history: string;
+  soil_notes: string | null;
+  sun_notes: string | null;
+  companion_note: string | null;
+}
+
 // ─── Meal Planning ────────────────────────────────────────────────────────────
 
 export type Store = 'grocer' | 'butcher' | 'supermarket' | 'liquor_store';

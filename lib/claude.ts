@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from './supabase';
-import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, GardenSuggestion, PlannedMeal, UserPreferences } from '../types';
+import type { InventoryItem, ItemCategory, GardenPlant, GardenHarvest, GardenSuggestion, PlannedMeal, UserPreferences, ReplantAdvice } from '../types';
 
 // ─── Generate Weekly Meal Plan ────────────────────────────────────────────────
 
@@ -204,6 +204,48 @@ export async function generateGardenSuggestions(
     return (data as { suggestions: GardenSuggestion[] }).suggestions;
   } catch (e: any) {
     if (e?.name === 'AbortError') throw new Error('Garden suggestions timed out — please try again.');
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ─── Replant Advice ──────────────────────────────────────────────────────────
+
+export interface ReplantAdviceInput {
+  plant_name: string;
+  variety: string | null;
+  current_month: number;
+  current_year: number;
+  previous_planted_date: string;
+  previous_notes: string | null;
+  previous_location: string | null;
+  harvest_summary: string | null;
+  plants_in_ground: Array<{ plant_name: string; status: string }>;
+}
+
+export async function getReplantAdvice(input: ReplantAdviceInput): Promise<ReplantAdvice> {
+  const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/replant-advice';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error ?? `Edge function error (${response.status})`);
+    return data as ReplantAdvice;
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new Error('Replant advice timed out — please try again.');
     throw e;
   } finally {
     clearTimeout(timeout);

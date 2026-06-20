@@ -355,12 +355,12 @@ const styles = StyleSheet.create({
 
   section: { gap: 12 },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: shared.sectionLabel,
   bodyText: { fontSize: 15, color: colors.text.secondary, lineHeight: 22 },
   preText: { fontSize: 14, color: colors.text.secondary, lineHeight: 22 },
   linkText: { fontSize: 14, color: colors.text.link, textDecorationLine: 'underline' },
 
-  sectionLabelText: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabelText: shared.sectionLabel,
 
   stepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   stepNum: { fontSize: 15, fontWeight: '700', color: colors.brand.primary, minWidth: 22 },

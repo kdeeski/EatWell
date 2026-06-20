@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   checkinRowValue: { fontSize: 13, color: colors.brand.primaryDark, flex: 1 },
 
   section: { marginBottom: 24 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionLabel: { ...shared.sectionLabel, marginBottom: 10 },
 
   mealCard: {
     backgroundColor: colors.background.surface,

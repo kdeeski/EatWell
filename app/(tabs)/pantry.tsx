@@ -378,6 +378,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
   onClose: () => void;
   onSaved: (item: InventoryItem) => void;
 }) {
+  const insets = useSafeAreaInsets();
   const defaultLocation = (cat: ItemCategory): ItemLocation => {
     if (cat === 'meat_fish' || cat === 'dairy_eggs' || cat === 'produce') return 'fridge';
     return 'pantry';
@@ -469,7 +470,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={styles.modalContainer} contentContainerStyle={{ paddingBottom: 40 }}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: (insets.top || 16) + 8 }]}>
             <View style={styles.modalTopRow}>
               <TouchableOpacity onPress={onClose}>
                 <Text style={styles.modalClose}>×</Text>
@@ -665,7 +666,7 @@ function BulkAddModal({ visible, userId, onClose, onSaved }: {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
+        <View style={[styles.modalHeader, { paddingTop: (insets.top || 16) + 8 }]}>
           <View style={styles.modalTopRow}>
             <TouchableOpacity onPress={handleClose}>
               <Text style={styles.modalClose}>×</Text>
@@ -853,7 +854,7 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 40 },
   swipeHint: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', paddingVertical: 8 },
   section: { marginTop: 16, paddingHorizontal: 16 },
-  sectionHeader: { fontSize: 13, fontWeight: '700', color: colors.text.muted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
+  sectionHeader: { ...shared.sectionLabel, fontWeight: '700', marginBottom: 8 },
 
   swipeBg: { position: 'absolute', top: 0, bottom: 0, width: 120, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
   swipeBgRight: { left: 0, backgroundColor: colors.brand.primary },

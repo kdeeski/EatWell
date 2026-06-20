@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
 
   section: { gap: 12 },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: shared.sectionLabel,
 
 
   stepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },

@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadGardenHarvestsForPlant } from '../../lib/data';
 import type { GardenPlant, GardenHarvest, PlantStatus } from '../../types';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
+import PlantAgainSection from './PlantAgainSection';
 
 interface Props {
   plant: GardenPlant | null;
@@ -15,6 +17,7 @@ interface Props {
   onHarvest: (plant: GardenPlant) => void;
   onEdit: (plant: GardenPlant) => void;
   onDelete: (id: string) => void;
+  onAddToGarden: (plantName: string) => void;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -39,7 +42,7 @@ const STORAGE_LABELS: Record<string, string> = {
   preserved: 'Preserved',
 };
 
-export default function PlantDetailModal({ plant, onClose, onStatusChange, onHarvest, onEdit, onDelete }: Props) {
+export default function PlantDetailModal({ plant, onClose, onStatusChange, onHarvest, onEdit, onDelete, onAddToGarden }: Props) {
   const insets = useSafeAreaInsets();
   const [harvests, setHarvests] = useState<GardenHarvest[]>([]);
   const [loadingHarvests, setLoadingHarvests] = useState(false);
@@ -175,6 +178,15 @@ export default function PlantDetailModal({ plant, onClose, onStatusChange, onHar
                 ))
               )}
             </View>
+
+            {/* Plant again CTA for finished/harvested plants */}
+            {(plant.status === 'finished' || plant.status === 'harvested') && (
+              <PlantAgainSection
+                plant={plant}
+                harvests={harvests}
+                onAddToGarden={onAddToGarden}
+              />
+            )}
           </View>
 
           {/* Edit / Delete */}
@@ -239,10 +251,7 @@ const styles = StyleSheet.create({
   harvestButtonText: { color: colors.text.inverse },
 
   section: { gap: 12 },
-  sectionLabel: {
-    fontSize: 13, fontWeight: '600', color: colors.text.muted,
-    textTransform: 'uppercase', letterSpacing: 0.5,
-  },
+  sectionLabel: shared.sectionLabel,
   emptyText: { fontSize: 14, color: colors.text.placeholder },
 
   harvestRow: {

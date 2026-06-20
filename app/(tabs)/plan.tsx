@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   planButtonText: { color: colors.text.inverse, fontWeight: '700', fontSize: 16 },
 
   dayRow:   { marginBottom: 12 },
-  dayLabel: { fontSize: 13, fontWeight: '600', color: colors.text.placeholder, marginBottom: 4 },
+  dayLabel: { ...shared.sectionLabel, marginBottom: 4 },
   dayLabelSelected: { color: colors.brand.primary },
 
   mealCard: {

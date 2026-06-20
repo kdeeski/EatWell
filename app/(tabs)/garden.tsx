@@ -273,6 +273,12 @@ export default function GardenScreen() {
     }
   };
 
+  const handlePlantAgain = (plantName: string) => {
+    setDetailTarget(null);
+    setAddPlantInitialName(plantName);
+    setAddPlantVisible(true);
+  };
+
   const handleEditPlant = (plant: GardenPlant) => {
     setDetailTarget(null);
     setEditTarget(plant);
@@ -470,6 +476,7 @@ export default function GardenScreen() {
         }}
         onEdit={handleEditPlant}
         onDelete={handleDeletePlant}
+        onAddToGarden={handlePlantAgain}
       />
     </ScrollView>
   );
@@ -484,10 +491,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 12,
   },
-  sectionLabel: {
-    fontSize: 13, fontWeight: '600', color: colors.text.muted,
-    textTransform: 'uppercase', letterSpacing: 0.5,
-  },
+  sectionLabel: shared.sectionLabel,
   refreshLink: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
   collapseToggle: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
 
