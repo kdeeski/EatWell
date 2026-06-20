@@ -13,6 +13,7 @@ import { saveUserPreferences } from '../lib/data';
 import type { SpiceLevel, WeekendCooking, UserPreferences } from '../types';
 type WineDetailLevel = NonNullable<UserPreferences['wine_detail_level']>;
 import { colors } from '../constants/theme';
+import { shared } from '../constants/styles';
 
 const CUISINES = [
   'Asian', 'Mediterranean', 'Middle Eastern', 'French', 'Italian',
@@ -142,10 +143,10 @@ export default function SettingsScreen() {
           {(['mild', 'medium', 'bold'] as SpiceLevel[]).map((level) => (
             <TouchableOpacity
               key={level}
-              style={[styles.pill, spiceLevel === level && styles.pillSelectedGreen]}
+              style={[styles.pill, spiceLevel === level && styles.pillSelected]}
               onPress={() => setSpiceLevel(level)}
             >
-              <Text style={[styles.pillText, spiceLevel === level && styles.pillTextSelected]}>
+              <Text style={[styles.pillText, spiceLevel === level && styles.pillTextActive]}>
                 {level.charAt(0).toUpperCase() + level.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -157,10 +158,10 @@ export default function SettingsScreen() {
           {[{ val: 30, label: '30 min' }, { val: 45, label: '45 min' }, { val: 60, label: '1 hr+' }].map((opt) => (
             <TouchableOpacity
               key={opt.val}
-              style={[styles.pill, weeknightMins === opt.val && styles.pillSelectedGreen]}
+              style={[styles.pill, weeknightMins === opt.val && styles.pillSelected]}
               onPress={() => setWeeknightMins(opt.val)}
             >
-              <Text style={[styles.pillText, weeknightMins === opt.val && styles.pillTextSelected]}>
+              <Text style={[styles.pillText, weeknightMins === opt.val && styles.pillTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -172,10 +173,10 @@ export default function SettingsScreen() {
           {([{ val: 'quick', label: 'Keep it simple' }, { val: 'project', label: 'Love a project' }] as { val: WeekendCooking; label: string }[]).map((opt) => (
             <TouchableOpacity
               key={opt.val}
-              style={[styles.pill, weekendCooking === opt.val && styles.pillSelectedGreen]}
+              style={[styles.pill, weekendCooking === opt.val && styles.pillSelected]}
               onPress={() => setWeekendCooking(opt.val)}
             >
-              <Text style={[styles.pillText, weekendCooking === opt.val && styles.pillTextSelected]}>
+              <Text style={[styles.pillText, weekendCooking === opt.val && styles.pillTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -218,10 +219,10 @@ export default function SettingsScreen() {
           ] as { val: number; label: string }[]).map((opt) => (
             <TouchableOpacity
               key={opt.val}
-              style={[styles.pill, rotationRatio === opt.val && styles.pillSelectedGreen]}
+              style={[styles.pill, rotationRatio === opt.val && styles.pillSelected]}
               onPress={() => setRotationRatio(opt.val)}
             >
-              <Text style={[styles.pillText, rotationRatio === opt.val && styles.pillTextSelected]}>
+              <Text style={[styles.pillText, rotationRatio === opt.val && styles.pillTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -236,10 +237,10 @@ export default function SettingsScreen() {
               {([5, 10, 20] as number[]).map((n) => (
                 <TouchableOpacity
                   key={n}
-                  style={[styles.pill, rotationMinRated === n && styles.pillSelectedGreen]}
+                  style={[styles.pill, rotationMinRated === n && styles.pillSelected]}
                   onPress={() => setRotationMinRated(n)}
                 >
-                  <Text style={[styles.pillText, rotationMinRated === n && styles.pillTextSelected]}>
+                  <Text style={[styles.pillText, rotationMinRated === n && styles.pillTextActive]}>
                     {n} rated
                   </Text>
                 </TouchableOpacity>
@@ -271,10 +272,10 @@ export default function SettingsScreen() {
           {([{ val: 'simple', label: 'Simple' }, { val: 'detailed', label: 'Detailed' }] as { val: WineDetailLevel; label: string }[]).map((opt) => (
             <TouchableOpacity
               key={opt.val}
-              style={[styles.pill, wineDetailLevel === opt.val && styles.pillSelectedGreen]}
+              style={[styles.pill, wineDetailLevel === opt.val && styles.pillSelected]}
               onPress={() => setWineDetailLevel(opt.val)}
             >
-              <Text style={[styles.pillText, wineDetailLevel === opt.val && styles.pillTextSelected]}>
+              <Text style={[styles.pillText, wineDetailLevel === opt.val && styles.pillTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -359,10 +360,10 @@ function PillGroup({ items, selected, color, onToggle }: {
         return (
           <TouchableOpacity
             key={item}
-            style={[styles.pill, active && { backgroundColor: color, borderColor: color }]}
+            style={[styles.pill, active && { backgroundColor: color + '22', borderColor: color }]}
             onPress={() => onToggle(item)}
           >
-            <Text style={[styles.pillText, active && styles.pillTextSelected]}>{item}</Text>
+            <Text style={[styles.pillText, active && { color }]}>{item}</Text>
           </TouchableOpacity>
         );
       })}
@@ -373,11 +374,11 @@ function PillGroup({ items, selected, color, onToggle }: {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.elevated },
+  container: { flex: 1, backgroundColor: colors.background.app },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: colors.background.surface, borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
+    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
   },
   cancel: { fontSize: 16, color: colors.text.muted, width: 60 },
   title: { fontSize: 17, fontWeight: '700', color: colors.text.primary },
@@ -387,8 +388,7 @@ const styles = StyleSheet.create({
   bodyContent: { padding: 20, gap: 4 },
 
   sectionHeader: {
-    fontSize: 13, fontWeight: '700', color: colors.text.muted,
-    textTransform: 'uppercase', letterSpacing: 0.5,
+    ...shared.sectionLabel,
     marginTop: 28, marginBottom: 12,
     borderBottomWidth: 1, borderBottomColor: colors.border.hairline, paddingBottom: 6,
   },
@@ -400,8 +400,8 @@ const styles = StyleSheet.create({
 
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
-    borderRadius: 10, padding: 14, gap: 12,
+    backgroundColor: colors.background.surface, borderRadius: 12,
+    padding: 14, gap: 12,
   },
   rowText: { flex: 1 },
   rowLabel: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
@@ -411,12 +411,12 @@ const styles = StyleSheet.create({
   pillWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
     flexShrink: 0,
   },
-  pillSelectedGreen: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
+  pillSelected: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   pillText: { fontSize: 14, fontWeight: '500', color: colors.text.secondary },
-  pillTextSelected: { color: colors.text.inverse },
+  pillTextActive: { color: colors.brand.primary },
 
   toggle: {
     width: 44, height: 26, borderRadius: 13,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   toggleThumbOn: { alignSelf: 'flex-end' },
 
   input: {
-    backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
     fontSize: 15, color: colors.text.primary,
   },
