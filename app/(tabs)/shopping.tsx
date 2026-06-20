@@ -480,6 +480,7 @@ export default function ShoppingScreen() {
               </Text>
             )}
 
+            <View style={styles.sectionCard}>
             {items.map((item) => {
               const isGardenConfirmed = gardenConfirmed.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id) || item.checked;
@@ -630,6 +631,7 @@ export default function ShoppingScreen() {
                 </View>
               );
             })}
+            </View>
           </View>
         );
       })}
@@ -1021,6 +1023,13 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22 },
 
   section: { marginBottom: 28 },
+  sectionCard: {
+    backgroundColor: colors.background.surface,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border.hairline,
+  },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text.primary, marginBottom: 4 },
   sectionNote: { fontSize: 12, color: colors.text.placeholder, marginBottom: 10, lineHeight: 17 },
 
@@ -1028,10 +1037,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 11,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.hairline,
     gap: 12,
-    backgroundColor: colors.background.app,
+    backgroundColor: colors.background.surface,
   },
   itemRowConfirmed: { backgroundColor: colors.brand.primaryLighter },
 
