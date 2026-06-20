@@ -16,8 +16,7 @@ import {
   reorderPlannedMeals, loadCurrentMealPlan, fetchWeekCookedMeals,
   loadMealPlanForWeek, getThisWeekMonday, pushMealToNextWeek,
 } from '../../lib/data';
-import { getWineMatch } from '../../lib/claude';
-import type { WineMatchResult } from '../../lib/claude';
+import DrinkPairingSection from '../../components/DrinkPairingSection';
 import type { MealPlan, PlannedMeal, PlannedIngredient, Recipe, CookedMeal } from '../../types';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
@@ -54,7 +53,7 @@ function formatWeekRange(weekStart: string): string {
 export default function PlanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, currentMealPlan, setMealPlan, userId, recipes, userPreferences } = useAppStore();
+  const { plannedMeals, currentMealPlan, setMealPlan, userId, recipes } = useAppStore();
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -62,9 +61,6 @@ export default function PlanScreen() {
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
-  const [wineResult, setWineResult]   = useState<WineMatchResult | null>(null);
-  const [wineLoading, setWineLoading] = useState(false);
-  const [wineError, setWineError]     = useState<string | null>(null);
   const [cookedMap, setCookedMap]     = useState<Record<string, CookedMeal>>({});
 
   // Week navigation
@@ -184,11 +180,6 @@ export default function PlanScreen() {
   }, [currentWeekIsInStore, viewedWeekStart, userId]);
 
   // Reset wine result when selected slot changes
-  useEffect(() => {
-    setWineResult(null);
-    setWineError(null);
-  }, [selectedSlot]);
-
   // Load cooked meals for the current week
   useEffect(() => {
     if (!userId || !currentMealPlan) return;
@@ -244,23 +235,6 @@ export default function PlanScreen() {
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []); // intentionally empty — all mutable state accessed via refs
-
-  async function handleWineMatch(meal: PlannedMeal) {
-    setWineLoading(true);
-    setWineError(null);
-    try {
-      const result = await getWineMatch({
-        meal_name: meal.meal_name,
-        description: meal.description ?? undefined,
-        detail_level: userPreferences?.wine_detail_level ?? 'simple',
-      });
-      setWineResult(result);
-    } catch (e: any) {
-      setWineError(e.message ?? 'Could not fetch wine pairing.');
-    } finally {
-      setWineLoading(false);
-    }
-  }
 
   const moveSelected = (direction: -1 | 1) => {
     if (selectedSlot === null) return;
@@ -517,39 +491,11 @@ export default function PlanScreen() {
                               );
                             })()}
                             {isSelected && !cooked && (
-                              <View style={styles.wineSection}>
-                                {wineResult ? (
-                                  <>
-                                    {wineResult.pairings.map((p, i) => (
-                                      <View key={i} style={styles.wineCard}>
-                                        <Text style={styles.wineVarietal}>{p.varietal}</Text>
-                                        <Text style={styles.wineReason}>{p.reason}</Text>
-                                        {p.pairing_note ? (
-                                          <Text style={styles.wineNote}>{p.pairing_note}</Text>
-                                        ) : null}
-                                      </View>
-                                    ))}
-                                    <TouchableOpacity onPress={() => setWineResult(null)}>
-                                      <Text style={styles.wineDismiss}>×</Text>
-                                    </TouchableOpacity>
-                                  </>
-                                ) : (
-                                  <TouchableOpacity style={shared.ctaRow} onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
-                                    {wineLoading
-                                      ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                                      : <>
-                                          <Text style={styles.howToButtonText}>Drink pairing</Text>
-                                          <Text style={shared.ctaArrow}>→</Text>
-                                        </>
-                                    }
-                                  </TouchableOpacity>
-                                )}
-                                {wineError ? (
-                                  <TouchableOpacity onPress={() => handleWineMatch(meal)}>
-                                    <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
-                                  </TouchableOpacity>
-                                ) : null}
-                              </View>
+                              <DrinkPairingSection
+                                mealName={meal.meal_name}
+                                description={meal.description}
+                                compact
+                              />
                             )}
                             {isSelected && isCurrentWeek && !cooked && (
                               <TouchableOpacity
@@ -833,11 +779,4 @@ const styles = StyleSheet.create({
   stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
-  wineSection: { gap: 6 },
-  wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 10, gap: 3 },
-  wineVarietal: { fontSize: 13, fontWeight: '700', color: colors.text.primary },
-  wineReason: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
-  wineNote: { fontSize: 12, color: colors.text.muted, lineHeight: 17, marginTop: 3 },
-  wineDismiss: { fontSize: 12, color: colors.text.placeholder },
-  wineError: { fontSize: 12, color: colors.state.dangerBright },
 });

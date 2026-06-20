@@ -7,11 +7,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import type { Recipe, RecipeCategory } from '../../types';
-import { getWineMatch } from '../../lib/claude';
-import type { WineMatchResult } from '../../lib/claude';
 import { useAppStore } from '../../store/useAppStore';
 import { findStashMatch } from '../../lib/recipes';
-import { saveRecipe } from '../../lib/data';
+import DrinkPairingSection from '../DrinkPairingSection';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
 import FloatingModePill from '../FloatingModePill';
@@ -108,11 +106,8 @@ function GuideComponentCard({ component }: { component: NonNullable<Recipe['guid
 
 export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
-  const { userPreferences, userId, inventoryItems, recipes, addRecipe } = useAppStore();
+  const { userId } = useAppStore();
   const [screenOn, setScreenOn] = useState(false);
-  const [wineResult, setWineResult] = useState<WineMatchResult | null>(null);
-  const [wineLoading, setWineLoading] = useState(false);
-  const [wineError, setWineError] = useState<string | null>(null);
   const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string | null; rating: number | null; drink_name: string | null; drink_notes: string | null }>>([]);
 
   useEffect(() => {
@@ -134,27 +129,6 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
     } else {
       if (Platform.OS !== 'web') await activateKeepAwakeAsync();
       setScreenOn(true);
-    }
-  }
-
-  async function handleWineMatch() {
-    setWineLoading(true);
-    setWineError(null);
-    try {
-      const barItems = inventoryItems
-        .filter((i) => (i.location === 'bar' || i.location === 'cellar') && !i.depleted)
-        .map((i) => i.name);
-      const result = await getWineMatch({
-        meal_name: recipe.name,
-        description: recipe.description ?? undefined,
-        detail_level: userPreferences?.wine_detail_level ?? 'simple',
-        bar_inventory: barItems.length > 0 ? barItems : undefined,
-      });
-      setWineResult(result);
-    } catch (e: any) {
-      setWineError(e.message ?? 'Could not fetch wine pairing.');
-    } finally {
-      setWineLoading(false);
     }
   }
 
@@ -283,59 +257,14 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
             ) : null}
 
             {/* Drink pairing — only for mains/sides/desserts/baking */}
-            {!['glossary', 'sauces_dressings', 'marinades_rubs', 'cocktails'].includes(recipe.category) && <View style={styles.section}>
-              {wineResult ? (
-                <>
-                  <Text style={styles.sectionLabel}>Drink pairing</Text>
-                  {wineResult.pairings.map((p, i) => {
-                    const inGlossary = recipes.some((r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase());
-                    return (
-                      <View key={i} style={styles.wineCard}>
-                        <Text style={styles.wineVarietal}>{p.varietal}</Text>
-                        <Text style={styles.wineReason}>{p.reason}</Text>
-                        {p.pairing_note ? (
-                          <Text style={styles.wineNote}>{p.pairing_note}</Text>
-                        ) : null}
-                        {userId && (
-                          inGlossary
-                            ? <Text style={styles.glossarySaved}>In glossary ✓</Text>
-                            : <TouchableOpacity onPress={async () => {
-                                const saved = await saveRecipe(userId, { name: p.varietal, category: 'glossary', description: p.reason + (p.pairing_note ? '\n' + p.pairing_note : ''), ingredients: null, method: null, source_url: null, source_book: null, page_number: null, rating: null, would_cook_again: null, cooked_meal_id: null, guide_json: null, bite_pairing: null });
-                                addRecipe(saved);
-                              }}>
-                                <Text style={styles.glossaryAdd}>+ Save to glossary</Text>
-                              </TouchableOpacity>
-                        )}
-                      </View>
-                    );
-                  })}
-                  {wineResult.cocktail && (
-                    <View style={[styles.wineCard, styles.cocktailCard]}>
-                      <Text style={[styles.wineVarietal, styles.cocktailName]}>🍸 {wineResult.cocktail.name}</Text>
-                      <Text style={styles.wineReason}>{wineResult.cocktail.reason}</Text>
-                    </View>
-                  )}
-                  <TouchableOpacity onPress={() => setWineResult(null)}>
-                    <Text style={styles.wineDismiss}>×</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity style={shared.ctaRow} onPress={handleWineMatch} disabled={wineLoading}>
-                  {wineLoading
-                    ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                    : <>
-                        <Text style={styles.sourceLinkLabel}>Drink pairing</Text>
-                        <Text style={shared.ctaArrow}>→</Text>
-                      </>
-                  }
-                </TouchableOpacity>
-              )}
-              {wineError ? (
-                <TouchableOpacity onPress={handleWineMatch}>
-                  <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>}
+            {!['glossary', 'sauces_dressings', 'marinades_rubs', 'cocktails'].includes(recipe.category) && (
+              <DrinkPairingSection
+                mealName={recipe.name}
+                description={recipe.description}
+                showGlossary
+                showCocktail
+              />
+            )}
 
             {/* Cook log */}
             {cookLog.some((e) => e.notes || e.drink_name) && (
@@ -467,14 +396,4 @@ const styles = StyleSheet.create({
   sourceLinkLabel: { fontSize: 15, fontWeight: '600', color: colors.text.link },
   sourceLinkDomain: { fontSize: 12, color: colors.text.placeholder },
 
-  wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, gap: 4 },
-  cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
-  wineVarietal: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
-  cocktailName: { color: colors.brand.plum },
-  wineReason: { fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
-  wineNote: { fontSize: 13, color: colors.text.muted, lineHeight: 19, marginTop: 4 },
-  wineDismiss: { fontSize: 12, color: colors.text.placeholder, marginTop: 4 },
-  wineError: { fontSize: 13, color: colors.state.dangerBright, marginTop: 4 },
-  glossaryAdd: { fontSize: 12, color: colors.text.link, fontWeight: '600', marginTop: 6 },
-  glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
 });

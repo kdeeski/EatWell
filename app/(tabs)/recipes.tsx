@@ -8,24 +8,13 @@ import { useAppStore } from '../../store/useAppStore';
 import type { Recipe, RecipeCategory } from '../../types';
 import RecipeDetailModal from '../../components/recipes/RecipeDetailModal';
 import SaveRecipeModal from '../../components/recipes/SaveRecipeModal';
-import { deleteRecipe, updateRecipe, saveRecipeBitePairing } from '../../lib/data';
+import { deleteRecipe, updateRecipe } from '../../lib/data';
 import { toTitleCase } from '../../lib/titleCase';
 import ImportFromClaudeModal from '../../components/recipes/ImportFromClaudeModal';
-import { getWineMatch, generateBitePairing } from '../../lib/claude';
-import type { WineMatchResult } from '../../lib/claude';
+import DrinkPairingSection from '../../components/DrinkPairingSection';
+import BitePairingSection from '../../components/BitePairingSection';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
-
-function parseBitePairing(text: string): { name: string; reason: string }[] {
-  const parts = text.split(/\*\*/).filter(Boolean);
-  const items: { name: string; reason: string }[] = [];
-  for (let i = 0; i < parts.length; i += 2) {
-    const name = parts[i].trim();
-    const reason = (parts[i + 1] ?? '').replace(/^[\s—–-]+/, '').replace(/\.\s*$/, '.').trim();
-    if (name) items.push({ name, reason });
-  }
-  return items.length > 0 ? items : [{ name: 'Suggested bites', reason: text }];
-}
 
 type FilterKey = 'all' | RecipeCategory;
 
@@ -65,7 +54,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
 
 export default function RecipesScreen() {
   const insets = useSafeAreaInsets();
-  const { recipes, removeRecipe, userPreferences, updateRecipeInStore, userId } = useAppStore();
+  const { recipes, removeRecipe, updateRecipeInStore, userId } = useAppStore();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,47 +65,7 @@ export default function RecipesScreen() {
   const [editRecipe, setEditRecipe] = useState<Recipe | null>(null);
   const [showImport, setShowImport] = useState(false);
 
-  // Drink pairing state — keyed by recipe id so results persist when re-expanding
-  const [wineResults, setWineResults] = useState<Record<string, WineMatchResult>>({});
-  const [wineLoading, setWineLoading] = useState<string | null>(null);
-  const [wineErrors, setWineErrors] = useState<Record<string, string>>({});
-
-  // Bite pairing state for cocktail recipes
-  const [biteLoading, setBiteLoading] = useState<string | null>(null);
-  const [biteErrors, setBiteErrors] = useState<Record<string, string>>({});
-
   const DRINK_PAIRING_CATEGORIES: RecipeCategory[] = ['mains', 'sides', 'desserts', 'baking'];
-
-  async function handleWineMatch(recipe: Recipe) {
-    setWineLoading(recipe.id);
-    setWineErrors((prev) => { const n = { ...prev }; delete n[recipe.id]; return n; });
-    try {
-      const result = await getWineMatch({
-        meal_name: recipe.name,
-        description: recipe.description ?? undefined,
-        detail_level: userPreferences?.wine_detail_level ?? 'simple',
-      });
-      setWineResults((prev) => ({ ...prev, [recipe.id]: result }));
-    } catch (e: any) {
-      setWineErrors((prev) => ({ ...prev, [recipe.id]: e.message ?? 'Could not fetch pairing.' }));
-    } finally {
-      setWineLoading(null);
-    }
-  }
-
-  async function handleBitePairing(recipe: Recipe) {
-    setBiteLoading(recipe.id);
-    setBiteErrors((prev) => { const n = { ...prev }; delete n[recipe.id]; return n; });
-    try {
-      const result = await generateBitePairing(recipe.name, recipe.description);
-      await saveRecipeBitePairing(recipe.id, result);
-      updateRecipeInStore(recipe.id, { bite_pairing: result });
-    } catch (e: any) {
-      setBiteErrors((prev) => ({ ...prev, [recipe.id]: e.message ?? 'Could not generate bite pairing.' }));
-    } finally {
-      setBiteLoading(null);
-    }
-  }
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -234,12 +183,7 @@ export default function RecipesScreen() {
             const colour = CATEGORY_COLOURS[item.category];
             const isExpanded = expandedId === item.id;
             const showDrinkPairing = DRINK_PAIRING_CATEGORIES.includes(item.category);
-            const wineResult = wineResults[item.id] ?? null;
-            const wineError = wineErrors[item.id] ?? null;
-            const isWineLoading = wineLoading === item.id;
             const isCocktail = item.category === 'cocktails';
-            const isBiteLoading = biteLoading === item.id;
-            const biteError = biteErrors[item.id] ?? null;
             let sourceDomain: string | null = null;
             if (item.source_url) {
               try { sourceDomain = new URL(item.source_url).hostname.replace(/^www\./, ''); } catch {}
@@ -308,91 +252,21 @@ export default function RecipesScreen() {
                     )}
 
                     {showDrinkPairing && (
-                      wineResult ? (
-                        <View style={styles.wineSection}>
-                          {wineResult.pairings.map((p, i) => (
-                            <View key={i} style={styles.wineCard}>
-                              <Text style={styles.wineVarietal}>{p.varietal}</Text>
-                              <Text style={styles.wineReason}>{p.reason}</Text>
-                              {p.pairing_note ? (
-                                <Text style={styles.wineNote}>{p.pairing_note}</Text>
-                              ) : null}
-                            </View>
-                          ))}
-                          <TouchableOpacity onPress={() => setWineResults((prev) => { const n = { ...prev }; delete n[item.id]; return n; })}>
-                            <Text style={styles.wineDismiss}>×</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={shared.ctaRow}
-                          onPress={() => handleWineMatch(item)}
-                          disabled={isWineLoading}
-                          hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
-                        >
-                          {isWineLoading
-                            ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
-                            : <>
-                                <Text style={styles.expandedDrinkPairing}>Drink pairing</Text>
-                                <Text style={shared.ctaArrow}>→</Text>
-                              </>
-                          }
-                        </TouchableOpacity>
-                      )
+                      <DrinkPairingSection
+                        mealName={item.name}
+                        description={item.description}
+                        compact
+                      />
                     )}
-                    {wineError ? (
-                      <TouchableOpacity onPress={() => handleWineMatch(item)}>
-                        <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
-                      </TouchableOpacity>
-                    ) : null}
 
                     {isCocktail && (
-                      item.bite_pairing ? (
-                        <View style={styles.wineSection}>
-                          {parseBitePairing(item.bite_pairing).map((b, i) => (
-                            <View key={i} style={styles.wineCard}>
-                              <Text style={styles.wineVarietal}>{b.name}</Text>
-                              <Text style={styles.wineReason}>{b.reason}</Text>
-                            </View>
-                          ))}
-                          <View style={styles.biteDismissRow}>
-                            <TouchableOpacity onPress={() => { updateRecipeInStore(item.id, { bite_pairing: null }); updateRecipe(item.id, { bite_pairing: null }); }}>
-                              <Text style={styles.wineDismiss}>×</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => handleBitePairing(item)}
-                              disabled={isBiteLoading}
-                              hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
-                            >
-                              {isBiteLoading
-                                ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start' }} />
-                                : <Text style={styles.wineDismiss}>Regenerate</Text>
-                              }
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={shared.ctaRow}
-                          onPress={() => handleBitePairing(item)}
-                          disabled={isBiteLoading}
-                          hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
-                        >
-                          {isBiteLoading
-                            ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
-                            : <>
-                                <Text style={styles.expandedBitePairing}>Bite pairing</Text>
-                                <Text style={shared.ctaArrow}>→</Text>
-                              </>
-                          }
-                        </TouchableOpacity>
-                      )
+                      <BitePairingSection
+                        recipeId={item.id}
+                        recipeName={item.name}
+                        recipeDescription={item.description}
+                        bitePairing={item.bite_pairing}
+                      />
                     )}
-                    {biteError ? (
-                      <TouchableOpacity onPress={() => handleBitePairing(item)}>
-                        <Text style={styles.wineError}>{biteError} Tap to retry.</Text>
-                      </TouchableOpacity>
-                    ) : null}
 
                     {item.category !== 'glossary' && (
                       <View style={styles.ratingRow}>
@@ -534,22 +408,10 @@ const styles = StyleSheet.create({
   expandedDomain: { fontSize: 13, color: colors.text.link, fontWeight: '500' },
   expandedDesc: { fontSize: 14, color: colors.text.secondary, lineHeight: 21 },
   expandedViewFull: { fontSize: 13, fontWeight: '600', color: colors.text.link },
-  expandedDrinkPairing: { fontSize: 13, fontWeight: '600', color: colors.text.link, marginTop: 2 },
-
-  wineSection: { gap: 6, marginTop: 2 },
-  wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 10, gap: 3 },
-  wineVarietal: { fontSize: 13, fontWeight: '700', color: colors.text.primary },
-  wineReason: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
-  wineNote: { fontSize: 12, color: colors.text.muted, lineHeight: 17, marginTop: 3 },
-  wineDismiss: { fontSize: 12, color: colors.text.placeholder },
-  wineError: { fontSize: 12, color: colors.state.dangerBright },
-
-  expandedBitePairing: { fontSize: 13, fontWeight: '600', color: colors.text.link, marginTop: 2 },
   expandedActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border.hairline },
   expandedEdit: { fontSize: 13, color: colors.text.muted, fontWeight: '500' },
   expandedActionDivider: { fontSize: 13, color: colors.border.default },
   expandedDelete: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
-  biteDismissRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
 
   ratingRow: { marginTop: 12, gap: 6 },
   ratingLabel: { fontSize: 12, color: colors.text.placeholder, fontWeight: '500' },

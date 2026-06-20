@@ -10,9 +10,7 @@ import { toTitleCase } from '../../lib/titleCase';
 import { findStashMatch } from '../../lib/recipes';
 import type { PlannedIngredient, Recipe } from '../../types';
 import { logCookedMeal, localDateString, updateRecipe, fetchCookedMealForPlannedMeal, deleteRecipe, loadTodaysSomethingElseCook, loadCookedMealForDate } from '../../lib/data';
-import { getWineMatch } from '../../lib/claude';
-import type { WineMatchResult } from '../../lib/claude';
-import { saveRecipe } from '../../lib/data';
+import DrinkPairingSection from '../../components/DrinkPairingSection';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -33,7 +31,7 @@ const RATING_EMOJI  = ['', '😐', '🙂', '👍', '😄', '🤩'];
 export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName, inventoryItems, userPreferences, addRecipe } = useAppStore();
+  const { plannedMeals, todayCheckin, recipes, userId, updateRecipeInStore, removeRecipe, setTonightSomethingElseName, tonightSomethingElseName } = useAppStore();
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
@@ -65,42 +63,8 @@ export default function TodayScreen() {
   const [elseLogSaving, setElseLogSaving]   = useState(false);
   const [elseLogDone, setElseLogDone]       = useState(false);
 
-  // Drink pairing for tonight's meal
-  const [wineResult, setWineResult]   = useState<WineMatchResult | null>(null);
-  const [wineLoading, setWineLoading] = useState(false);
-  const [wineError, setWineError]     = useState<string | null>(null);
-
-  const handleDrinkPairing = async (mealName: string, description: string | null) => {
-    if (wineLoading) return;
-    setWineLoading(true);
-    setWineError(null);
-    setWineResult(null);
-    try {
-      const barNames = inventoryItems
-        .filter((i) => (i.location === 'bar' || i.location === 'cellar') && !i.depleted)
-        .map((i) => i.name);
-      const result = await getWineMatch({
-        meal_name: mealName,
-        description: description ?? undefined,
-        detail_level: userPreferences?.wine_detail_level ?? 'simple',
-        bar_inventory: barNames.length > 0 ? barNames : undefined,
-      });
-      setWineResult(result);
-    } catch (e: any) {
-      setWineError('Could not load pairing — tap to retry');
-    } finally {
-      setWineLoading(false);
-    }
-  };
-
   const todayIndex = (new Date().getDay() + 6) % 7;
   const tonightsMeal = plannedMeals.find((m) => m.day_of_week === todayIndex);
-
-  // Reset wine result when tonight's meal changes
-  useEffect(() => {
-    setWineResult(null);
-    setWineError(null);
-  }, [tonightsMeal?.id]);
 
   const [lastNightAlreadyLogged, setLastNightAlreadyLogged] = useState(false);
   useEffect(() => {
@@ -364,60 +328,12 @@ export default function TodayScreen() {
             })()}
 
             {/* Drink pairing */}
-            {wineResult ? (
-              <View style={styles.wineSection}>
-                <Text style={styles.wineSectionLabel}>Drink pairing</Text>
-                {wineResult.pairings.map((p, i) => {
-                  const inGlossary = recipes.some((r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase());
-                  return (
-                    <View key={i} style={styles.wineCard}>
-                      <Text style={styles.wineVarietal}>{p.varietal}</Text>
-                      <Text style={styles.wineReason}>{p.reason}</Text>
-                      {p.pairing_note ? <Text style={styles.wineNote}>{p.pairing_note}</Text> : null}
-                      {userId && (
-                        inGlossary
-                          ? <Text style={styles.glossarySaved}>In glossary ✓</Text>
-                          : <TouchableOpacity onPress={async () => {
-                              const saved = await saveRecipe(userId, { name: p.varietal, category: 'glossary', description: p.reason + (p.pairing_note ? '\n' + p.pairing_note : ''), ingredients: null, method: null, source_url: null, source_book: null, page_number: null, rating: null, would_cook_again: null, cooked_meal_id: null, guide_json: null, bite_pairing: null });
-                              addRecipe(saved);
-                            }}>
-                              <Text style={styles.glossaryAdd}>+ Save to glossary</Text>
-                            </TouchableOpacity>
-                      )}
-                    </View>
-                  );
-                })}
-                {wineResult.cocktail && (
-                  <View style={[styles.wineCard, styles.cocktailCard]}>
-                    <Text style={[styles.wineVarietal, styles.cocktailName]}>🍸 {wineResult.cocktail.name}</Text>
-                    <Text style={styles.wineReason}>{wineResult.cocktail.reason}</Text>
-                  </View>
-                )}
-                <TouchableOpacity onPress={() => { setWineResult(null); setWineError(null); }}>
-                  <Text style={styles.wineDismiss}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.wineSection}>
-                <TouchableOpacity
-                  style={shared.ctaRow}
-                  onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}
-                  disabled={wineLoading}
-                >
-                  {wineLoading
-                    ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                    : <>
-                        <Text style={styles.drinkPairingLink}>Drink pairing</Text>
-                        <Text style={shared.ctaArrow}>→</Text>
-                      </>}
-                </TouchableOpacity>
-                {wineError ? (
-                  <TouchableOpacity onPress={() => handleDrinkPairing(tonightsMeal.meal_name, tonightsMeal.description)}>
-                    <Text style={styles.wineError}>{wineError} Tap to retry.</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            )}
+            <DrinkPairingSection
+              mealName={tonightsMeal.meal_name}
+              description={tonightsMeal.description}
+              showGlossary
+              showCocktail
+            />
 
             {/* Inline "log as cooked" */}
             {logDone ? (
@@ -757,19 +673,6 @@ const styles = StyleSheet.create({
   stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
-  wineSection: { gap: 8 },
-  wineSectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  drinkPairingLink: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
-  wineCard: { backgroundColor: colors.background.elevated, borderRadius: 10, borderWidth: 1, borderColor: colors.border.default, padding: 12, gap: 4 },
-  cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
-  wineVarietal: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
-  wineReason: { fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
-  wineNote: { fontSize: 13, color: colors.text.muted, lineHeight: 19, marginTop: 4 },
-  cocktailName: { color: colors.brand.plum },
-  wineDismiss: { fontSize: 12, color: colors.text.placeholder, marginTop: 4 },
-  wineError: { fontSize: 13, color: colors.state.dangerBright, marginTop: 4 },
-  glossaryAdd: { fontSize: 12, color: colors.brand.primary, fontWeight: '600', marginTop: 6 },
-  glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
 
   logButton: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border.hairline },
   logButtonText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
