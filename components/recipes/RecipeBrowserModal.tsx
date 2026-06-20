@@ -49,7 +49,7 @@ export default function RecipeBrowserModal({ recipeName, visible, searchSite, on
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Text style={styles.cancelBtn}>Cancel</Text>
+            <Text style={styles.closeBtn}>×</Text>
           </TouchableOpacity>
 
           <View style={styles.urlBar}>
@@ -92,7 +92,7 @@ export default function RecipeBrowserModal({ recipeName, visible, searchSite, on
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.surface },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
   header: {
     flexDirection: 'row',
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.hairline,
     gap: 10,
   },
-  cancelBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 52 },
+  closeBtn: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28, minWidth: 28 },
   backBtn: { fontSize: 16, color: colors.brand.primary, fontWeight: '600', minWidth: 52, textAlign: 'right' },
   backBtnDisabled: { color: colors.border.default },
 
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border.hairline,
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.background.app,
   },
   useUrlBtn: {
     backgroundColor: colors.brand.primary,

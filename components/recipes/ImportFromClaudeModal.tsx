@@ -141,11 +141,12 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
           <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
             {/* Header */}
             <View style={styles.header}>
-              <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text style={styles.headerBtn}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.headerTopRow}>
+                <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Text style={styles.headerClose}>×</Text>
+                </TouchableOpacity>
+              </View>
               <Text style={styles.headerTitle}>Import from Claude</Text>
-              <View style={{ minWidth: 56 }} />
             </View>
 
             {/* Mode toggle */}
@@ -279,15 +280,12 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.surface },
+  container: { flex: 1, backgroundColor: colors.background.app },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
-  },
-  headerBtn: { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 56 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
 
   toggleRow: {
     flexDirection: 'row',
@@ -354,10 +352,10 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border.hairline,
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.background.app,
   },
   loadBtn: {
-    backgroundColor: colors.brand.ink, borderRadius: 14,
+    backgroundColor: colors.brand.primary, borderRadius: 14,
     paddingVertical: 16, alignItems: 'center',
   },
   loadBtnDisabled: { opacity: 0.5 },
