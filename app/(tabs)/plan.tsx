@@ -20,6 +20,7 @@ import { getWineMatch } from '../../lib/claude';
 import type { WineMatchResult } from '../../lib/claude';
 import type { MealPlan, PlannedMeal, PlannedIngredient, Recipe, CookedMeal } from '../../types';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 function formatIngredients(ingredients: PlannedIngredient[]): string {
   return ingredients
@@ -481,32 +482,36 @@ export default function PlanScreen() {
                               return match ? (
                                 match.source_url ? (
                                   <TouchableOpacity
-                                    style={styles.stashNudge}
+                                    style={shared.ctaRow}
                                     onPress={() => Linking.openURL(match.source_url!)}
                                   >
-                                    <Text style={styles.stashNudgeText}>View recipe →</Text>
+                                    <Text style={styles.stashNudgeText}>View recipe</Text>
+                                    <Text style={shared.ctaArrow}>→</Text>
                                   </TouchableOpacity>
                                 ) : (
                                   <TouchableOpacity
-                                    style={styles.stashNudge}
+                                    style={shared.ctaRow}
                                     onPress={() => setStashRecipe(match)}
                                   >
-                                    <Text style={styles.stashNudgeText}>📖 You have a recipe for this →</Text>
+                                    <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
+                                    <Text style={shared.ctaArrow}>→</Text>
                                   </TouchableOpacity>
                                 )
                               ) : (
                                 <>
                                   <TouchableOpacity
-                                    style={styles.stashNudge}
+                                    style={shared.ctaRow}
                                     onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
                                   >
                                     <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                                    <Text style={shared.ctaArrow}>→</Text>
                                   </TouchableOpacity>
                                   <TouchableOpacity
-                                    style={styles.howToButton}
+                                    style={shared.ctaRow}
                                     onPress={() => setGuideTarget(meal)}
                                   >
-                                    <Text style={styles.howToButtonText}>How to cook this →</Text>
+                                    <Text style={styles.howToButtonText}>How to cook this</Text>
+                                    <Text style={shared.ctaArrow}>→</Text>
                                   </TouchableOpacity>
                                 </>
                               );
@@ -529,10 +534,13 @@ export default function PlanScreen() {
                                     </TouchableOpacity>
                                   </>
                                 ) : (
-                                  <TouchableOpacity onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
+                                  <TouchableOpacity style={shared.ctaRow} onPress={() => handleWineMatch(meal)} disabled={wineLoading}>
                                     {wineLoading
                                       ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                                      : <Text style={styles.howToButtonText}>Drink pairing →</Text>
+                                      : <>
+                                          <Text style={styles.howToButtonText}>Drink pairing</Text>
+                                          <Text style={shared.ctaArrow}>→</Text>
+                                        </>
                                     }
                                   </TouchableOpacity>
                                 )}
@@ -545,7 +553,7 @@ export default function PlanScreen() {
                             )}
                             {isSelected && isCurrentWeek && !cooked && (
                               <TouchableOpacity
-                                style={styles.pinBtn}
+                                style={shared.ctaRow}
                                 onPress={() => {
                                   setPinnedMealIds((prev) => {
                                     const next = new Set(prev);
@@ -562,7 +570,7 @@ export default function PlanScreen() {
                             )}
                             {isSelected && isCurrentWeek && !cooked && (
                               <TouchableOpacity
-                                style={styles.pushNextWeekBtn}
+                                style={shared.ctaRow}
                                 disabled={!!pushing}
                                 onPress={async () => {
                                   if (!userId) return;
@@ -588,7 +596,10 @@ export default function PlanScreen() {
                               >
                                 {pushing === meal.id
                                   ? <ActivityIndicator size="small" color={colors.text.placeholder} />
-                                  : <Text style={styles.pushNextWeekText}>→ Add to next week</Text>
+                                  : <>
+                                      <Text style={styles.pushNextWeekText}>Add to next week</Text>
+                                      <Text style={shared.ctaArrow}>→</Text>
+                                    </>
                                 }
                               </TouchableOpacity>
                             )}
@@ -808,10 +819,8 @@ const styles = StyleSheet.create({
   replanButton:     { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border.default, alignItems: 'center' },
   replanButtonText: { fontSize: 15, color: colors.text.muted, fontWeight: '500' },
 
-  pushNextWeekBtn:  { marginTop: 8 },
   pushNextWeekText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
-  pinBtn: { marginTop: 8 },
   pinBtnText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
   pinBtnTextActive: { color: colors.brand.primary, fontWeight: '600' },
   pinnedBadge: {
@@ -819,10 +828,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start',
   },
 
-  howToButton: { marginTop: 8 },
   howToButtonText: { fontSize: 13, color: colors.brand.primary, fontWeight: '600' },
 
-  stashNudge: { marginTop: 8 },
   stashNudgeText: { fontSize: 13, color: colors.state.info, fontWeight: '600' },
   saveRecipeText: { fontSize: 13, color: colors.text.placeholder, fontWeight: '500' },
 
