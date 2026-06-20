@@ -229,18 +229,28 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
               {/* Source */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Source</Text>
-                <View style={styles.sourceToggle}>
+                <View style={styles.pillRow}>
                   <TouchableOpacity
-                    style={[styles.sourceToggleBtn, sourceType === 'web' && styles.sourceToggleBtnActive]}
+                    style={[
+                      styles.pill,
+                      sourceType === 'web'
+                        ? { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary }
+                        : styles.pillUnselected,
+                    ]}
                     onPress={() => setSourceType('web')}
                   >
-                    <Text style={[styles.sourceToggleBtnText, sourceType === 'web' && styles.sourceToggleBtnTextActive]}>Web</Text>
+                    <Text style={[styles.pillText, sourceType === 'web' && { color: colors.brand.primary, fontWeight: '600' }]}>Web</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.sourceToggleBtn, sourceType === 'book' && styles.sourceToggleBtnActive]}
+                    style={[
+                      styles.pill,
+                      sourceType === 'book'
+                        ? { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary }
+                        : styles.pillUnselected,
+                    ]}
                     onPress={() => setSourceType('book')}
                   >
-                    <Text style={[styles.sourceToggleBtnText, sourceType === 'book' && styles.sourceToggleBtnTextActive]}>Book</Text>
+                    <Text style={[styles.pillText, sourceType === 'book' && { color: colors.brand.primary, fontWeight: '600' }]}>Book</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -380,14 +390,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
 
-  sourceToggle: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  sourceToggleBtn: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.background.elevated,
-  },
-  sourceToggleBtnActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
-  sourceToggleBtnText: { fontSize: 14, color: colors.text.muted, fontWeight: '500' },
-  sourceToggleBtnTextActive: { color: colors.brand.primary, fontWeight: '600' },
   bookRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   pageInput: { width: 72 },
 

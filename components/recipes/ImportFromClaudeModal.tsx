@@ -193,43 +193,39 @@ export default function ImportFromClaudeModal({ visible, onClose, onPrefill }: P
                 /* ── Manual JSON mode ── */
                 <>
                   <View style={styles.step}>
-                    <Text style={styles.stepNumber}>1</Text>
-                    <View style={styles.stepBody}>
-                      <Text style={styles.stepTitle}>Copy the prompt</Text>
-                      <Text style={styles.stepDesc}>
-                        Tap below to share the prompt, then paste it into Claude with your recipe. Claude will return a JSON block.
+                    <Text style={styles.stepLabel}>Step 1</Text>
+                    <Text style={styles.stepTitle}>Copy the prompt</Text>
+                    <Text style={styles.stepDesc}>
+                      Tap below to share the prompt, then paste it into Claude with your recipe. Claude will return a JSON block.
+                    </Text>
+                    <TouchableOpacity style={styles.promptBox} onPress={handleCopy} activeOpacity={0.8}>
+                      <Text style={styles.promptText} numberOfLines={6}>{PROMPT_TEXT}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.copyBtn, copied && styles.copyBtnDone]}
+                      onPress={handleCopy}
+                    >
+                      <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
+                        {copied ? 'Shared ✓' : 'Share Prompt'}
                       </Text>
-                      <TouchableOpacity style={styles.promptBox} onPress={handleCopy} activeOpacity={0.8}>
-                        <Text style={styles.promptText} numberOfLines={6}>{PROMPT_TEXT}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.copyBtn, copied && styles.copyBtnDone]}
-                        onPress={handleCopy}
-                      >
-                        <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
-                          {copied ? 'Shared ✓' : 'Share Prompt'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.step}>
-                    <Text style={styles.stepNumber}>2</Text>
-                    <View style={styles.stepBody}>
-                      <Text style={styles.stepTitle}>Paste Claude's JSON here</Text>
-                      {jsonError ? <Text style={styles.errorText}>{jsonError}</Text> : null}
-                      <TextInput
-                        style={styles.jsonInput}
-                        value={json}
-                        onChangeText={(v) => { setJson(v); setJsonError(null); }}
-                        placeholder={'{\n  "name": "...",\n  ...\n}'}
-                        placeholderTextColor={colors.text.placeholder}
-                        multiline
-                        textAlignVertical="top"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    </View>
+                    <Text style={styles.stepLabel}>Step 2</Text>
+                    <Text style={styles.stepTitle}>Paste Claude's JSON here</Text>
+                    {jsonError ? <Text style={styles.errorText}>{jsonError}</Text> : null}
+                    <TextInput
+                      style={styles.jsonInput}
+                      value={json}
+                      onChangeText={(v) => { setJson(v); setJsonError(null); }}
+                      placeholder={'{\n  "name": "...",\n  ...\n}'}
+                      placeholderTextColor={colors.text.placeholder}
+                      multiline
+                      textAlignVertical="top"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
                   </View>
                 </>
               )}
@@ -314,13 +310,8 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
 
-  step: { flexDirection: 'row', gap: 14 },
-  stepNumber: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors.brand.primary, color: colors.text.inverse,
-    fontSize: 14, fontWeight: '700', textAlign: 'center', lineHeight: 28,
-  },
-  stepBody: { flex: 1, gap: 10 },
+  step: { gap: 10 },
+  stepLabel: { fontSize: 13, fontWeight: '600', color: colors.text.placeholder, textTransform: 'uppercase', letterSpacing: 0.5 },
   stepTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary },
   stepDesc: { fontSize: 14, color: colors.text.muted, lineHeight: 20 },
 
