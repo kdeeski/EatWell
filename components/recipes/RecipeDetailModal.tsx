@@ -13,6 +13,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { findStashMatch } from '../../lib/recipes';
 import { saveRecipe } from '../../lib/data';
 import { colors } from '../../constants/theme';
+import { shared } from '../../constants/styles';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -254,7 +255,12 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
 
                 {recipe.method ? (
                   <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Method</Text>
+                    <View style={styles.sectionLabelRow}>
+                      <Text style={styles.sectionLabel}>Method</Text>
+                      <TouchableOpacity style={[styles.cookModePill, screenOn && styles.cookModePillActive]} onPress={toggleScreenOn}>
+                        <Text style={styles.cookModePillText}>{screenOn ? 'Cook Mode On' : 'Cook Mode'}</Text>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.preText}>{recipe.method}</Text>
                   </View>
                 ) : null}
@@ -268,9 +274,12 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               try { domain = new URL(recipe.source_url).hostname.replace(/^www\./, ''); } catch {}
               return (
                 <View style={styles.section}>
-                  <TouchableOpacity style={styles.sourceLink} onPress={() => Linking.openURL(recipe.source_url!)}>
-                    <Text style={styles.sourceLinkLabel}>View Original Recipe →</Text>
-                    <Text style={styles.sourceLinkDomain}>{domain}</Text>
+                  <TouchableOpacity style={[styles.sourceLink, shared.ctaRow]} onPress={() => Linking.openURL(recipe.source_url!)}>
+                    <View>
+                      <Text style={styles.sourceLinkLabel}>View Original Recipe</Text>
+                      <Text style={styles.sourceLinkDomain}>{domain}</Text>
+                    </View>
+                    <Text style={shared.ctaArrow}>→</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -318,10 +327,13 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                   </TouchableOpacity>
                 </>
               ) : (
-                <TouchableOpacity onPress={handleWineMatch} disabled={wineLoading}>
+                <TouchableOpacity style={shared.ctaRow} onPress={handleWineMatch} disabled={wineLoading}>
                   {wineLoading
                     ? <ActivityIndicator size="small" color={colors.brand.primary} />
-                    : <Text style={styles.sourceLinkLabel}>Drink pairing →</Text>
+                    : <>
+                        <Text style={styles.sourceLinkLabel}>Drink pairing</Text>
+                        <Text style={shared.ctaArrow}>→</Text>
+                      </>
                   }
                 </TouchableOpacity>
               )}

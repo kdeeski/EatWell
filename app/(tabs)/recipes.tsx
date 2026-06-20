@@ -282,6 +282,7 @@ export default function RecipesScreen() {
 
                     {item.category !== 'glossary' && (
                       <TouchableOpacity
+                        style={shared.ctaRow}
                         onPress={() => item.source_url
                           ? Linking.openURL(item.source_url)
                           : (() => { setSelectedRecipe(item); setShowDetail(true); })()
@@ -289,9 +290,9 @@ export default function RecipesScreen() {
                         hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                       >
                         <Text style={styles.expandedViewFull}>
-                          {item.source_url ? 'View original recipe →' : 'View full recipe →'}
+                          {item.source_url ? 'View original recipe' : 'View full recipe'}
                         </Text>
-
+                        <Text style={shared.ctaArrow}>→</Text>
                       </TouchableOpacity>
                     )}
 
@@ -313,13 +314,17 @@ export default function RecipesScreen() {
                         </View>
                       ) : (
                         <TouchableOpacity
+                          style={shared.ctaRow}
                           onPress={() => handleWineMatch(item)}
                           disabled={isWineLoading}
                           hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                         >
                           {isWineLoading
                             ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
-                            : <Text style={styles.expandedDrinkPairing}>Drink pairing →</Text>
+                            : <>
+                                <Text style={styles.expandedDrinkPairing}>Drink pairing</Text>
+                                <Text style={shared.ctaArrow}>→</Text>
+                              </>
                           }
                         </TouchableOpacity>
                       )
@@ -348,13 +353,17 @@ export default function RecipesScreen() {
                         </View>
                       ) : (
                         <TouchableOpacity
+                          style={shared.ctaRow}
                           onPress={() => handleBitePairing(item)}
                           disabled={isBiteLoading}
                           hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                         >
                           {isBiteLoading
                             ? <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
-                            : <Text style={styles.expandedBitePairing}>Bite pairing →</Text>
+                            : <>
+                                <Text style={styles.expandedBitePairing}>Bite pairing</Text>
+                                <Text style={shared.ctaArrow}>→</Text>
+                              </>
                           }
                         </TouchableOpacity>
                       )
