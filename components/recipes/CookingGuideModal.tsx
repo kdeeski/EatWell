@@ -13,6 +13,7 @@ import type { RecipeGuideJson, RecipeCategory } from '../../types';
 import SaveRecipeModal from './SaveRecipeModal';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
+import FloatingModePill from '../FloatingModePill';
 
 interface Props {
   mealName: string;
@@ -246,12 +247,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
             <View style={styles.contentCard}>
               {/* How to cook it */}
               <View style={styles.section}>
-                <View style={styles.sectionLabelRow}>
-                  <Text style={styles.sectionLabel}>How to cook it</Text>
-                  <TouchableOpacity style={[styles.cookModeBtn, cookMode && styles.cookModeBtnActive]} onPress={toggleCookMode}>
-                    <Text style={styles.cookModeBtnText}>{cookMode ? 'Cook Mode On' : 'Cook Mode'}</Text>
-                  </TouchableOpacity>
-                </View>
+                <Text style={styles.sectionLabel}>How to cook it</Text>
                 {guide.steps.map((step, i) => (
                   <View key={i} style={styles.stepRow}>
                     <Text style={styles.stepNum}>{i + 1}.</Text>
@@ -288,6 +284,15 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
             </View>
             </ScrollView>
           ) : null}
+          {guide && (
+            <FloatingModePill
+              label="Cook Mode"
+              activeLabel="Cook Mode On"
+              active={cookMode}
+              onPress={toggleCookMode}
+              bottom={insets.bottom + 20}
+            />
+          )}
         </View>
       </Modal>
 
@@ -348,9 +353,6 @@ const styles = StyleSheet.create({
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  cookModeBtn: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  cookModeBtnActive: { backgroundColor: colors.brand.primary },
-  cookModeBtnText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
 
   stepRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   stepNum: { fontSize: 15, fontWeight: '700', color: colors.brand.primary, minWidth: 22 },

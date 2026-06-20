@@ -14,6 +14,7 @@ import { findStashMatch } from '../../lib/recipes';
 import { saveRecipe } from '../../lib/data';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
+import FloatingModePill from '../FloatingModePill';
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   mains: 'Mains',
@@ -211,12 +212,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                 ) : null}
 
                 <View style={styles.section}>
-                  <View style={styles.sectionLabelRow}>
-                    <Text style={styles.sectionLabel}>How to cook it</Text>
-                    <TouchableOpacity style={[styles.cookModePill, screenOn && styles.cookModePillActive]} onPress={toggleScreenOn}>
-                      <Text style={styles.cookModePillText}>{screenOn ? 'Cook Mode On' : 'Cook Mode'}</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Text style={styles.sectionLabel}>How to cook it</Text>
                   {guide.steps.map((step, i) => (
                     <View key={i} style={styles.stepRow}>
                       <Text style={styles.stepNum}>{i + 1}.</Text>
@@ -256,12 +252,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
 
                 {recipe.method ? (
                   <View style={styles.section}>
-                    <View style={styles.sectionLabelRow}>
-                      <Text style={styles.sectionLabel}>Method</Text>
-                      <TouchableOpacity style={[styles.cookModePill, screenOn && styles.cookModePillActive]} onPress={toggleScreenOn}>
-                        <Text style={styles.cookModePillText}>{screenOn ? 'Cook Mode On' : 'Cook Mode'}</Text>
-                      </TouchableOpacity>
-                    </View>
+                    <Text style={styles.sectionLabel}>Method</Text>
                     <Text style={styles.preText}>{recipe.method}</Text>
                   </View>
                 ) : null}
@@ -385,6 +376,15 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
               </TouchableOpacity>
             </View>
           </ScrollView>
+          {(guide || recipe.method) && (
+            <FloatingModePill
+              label="Cook Mode"
+              activeLabel="Cook Mode On"
+              active={screenOn}
+              onPress={toggleScreenOn}
+              bottom={insets.bottom + 20}
+            />
+          )}
         </View>
       </Modal>
 
@@ -450,9 +450,6 @@ const styles = StyleSheet.create({
   glossaryTerm: { fontSize: 15, fontWeight: '700', color: colors.text.primary },
   glossaryDef: { fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
 
-  cookModePill: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  cookModePillActive: { backgroundColor: colors.brand.primary },
-  cookModePillText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
 
 
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 8 },

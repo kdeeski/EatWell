@@ -18,6 +18,7 @@ import { toTitleCase } from '../../lib/titleCase';
 import { normaliseIngredientName, findStashMatch, parseRecipeIngredients } from '../../lib/recipes';
 import { colors } from '../../constants/theme';
 import { shared } from '../../constants/styles';
+import FloatingModePill from '../../components/FloatingModePill';
 
 type IngredientCategory = ShoppingListItem['ingredient_category'];
 
@@ -407,9 +408,6 @@ export default function ShoppingScreen() {
       <View style={[shared.headerBar, { marginBottom: 24, paddingHorizontal: 0, paddingTop: 0 }]}>
         <Text style={shared.headerTitle}>Shopping</Text>
         <View style={shared.headerButtons}>
-          <TouchableOpacity style={[styles.shopModePill, shopMode && styles.shopModePillActive]} onPress={toggleShopMode}>
-            <Text style={styles.shopModePillText}>{shopMode ? 'Shop Mode On' : 'Shop Mode'}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={shared.btnFilled} onPress={() => {
             if (!useAppStore.getState().shoppingList) {
               Alert.alert('No Shopping List', 'Plan the week first to create a shopping list.');
@@ -646,6 +644,13 @@ export default function ShoppingScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    <FloatingModePill
+      label="Shop Mode"
+      activeLabel="Shop Mode On"
+      active={shopMode}
+      onPress={toggleShopMode}
+      bottom={insets.bottom + 70}
+    />
     </View>
   );
 }
@@ -1007,9 +1012,6 @@ const styles = StyleSheet.create({
   centered: { justifyContent: 'center', alignItems: 'center', padding: 32 },
   content: { padding: 20 },
   bottomActions: { paddingTop: 24, paddingBottom: 8, gap: 12 },
-  shopModePill: { backgroundColor: colors.brand.ink, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  shopModePillActive: { backgroundColor: colors.brand.primary },
-  shopModePillText: { fontSize: 12, fontWeight: '700', color: colors.text.inverse, letterSpacing: 0.3 },
   clearDoneLink: { alignItems: 'center', paddingVertical: 4 },
   clearDoneLinkText: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
 
