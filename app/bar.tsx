@@ -15,6 +15,7 @@ import { normaliseIngredientName } from '../lib/recipes';
 import type { BarItem, SpiritType } from '../types';
 import ImportBarItemModal from '../components/bar/ImportBarItemModal';
 import { colors } from '../constants/theme';
+import { shared } from '../constants/styles';
 
 const SPIRIT_TYPES: { key: SpiritType; label: string; emoji: string }[] = [
   { key: 'whiskey',            label: 'Whiskey',           emoji: '🥃' },
@@ -221,18 +222,20 @@ export default function BarScreen() {
       {/* Pinned top section — header + filter bar never move */}
       <View style={{ paddingTop: insets.top || 16 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Text style={styles.headerBtn}>Close</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Bar</Text>
-          <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => setImportOpen(true)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={styles.headerImport}>Claude</Text>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Text style={styles.headerClose}>×</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={openAdd} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={styles.headerAdd}>+ Add</Text>
-            </TouchableOpacity>
+            <View style={shared.headerButtons}>
+              <TouchableOpacity style={shared.btnOutline} onPress={() => setImportOpen(true)}>
+                <Text style={shared.btnOutlineText}>Import</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={shared.btnFilled} onPress={openAdd}>
+                <Text style={shared.btnFilledText}>+ Add</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+          <Text style={styles.headerTitle}>Bar</Text>
         </View>
 
         {/* Search */}
@@ -307,15 +310,17 @@ export default function BarScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={[styles.modalContainer, { paddingTop: insets.top || 16 }]}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setModal({ visible: false, item: null })}>
-                <Text style={styles.modalCancel}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.headerTopRow}>
+                <TouchableOpacity onPress={() => setModal({ visible: false, item: null })} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Text style={styles.headerClose}>×</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSave} disabled={saving || !name.trim()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Text style={[styles.modalSave, (!name.trim() || saving) && styles.modalSaveDisabled]}>
+                    {saving ? 'Saving…' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <Text style={styles.modalTitle}>{modal.item?.id ? 'Edit Bottle' : 'Add Bottle'}</Text>
-              <TouchableOpacity onPress={handleSave} disabled={saving || !name.trim()}>
-                <Text style={[styles.modalSave, (!name.trim() || saving) && styles.modalSaveDisabled]}>
-                  {saving ? 'Saving…' : 'Save'}
-                </Text>
-              </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={[styles.modalContent, { paddingBottom: insets.bottom + 40 }]}>
@@ -413,9 +418,11 @@ export default function BarScreen() {
 
               {/* Delete */}
               {modal.item?.id && (
-                <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                  <Text style={styles.deleteBtnText}>Remove from Bar</Text>
-                </TouchableOpacity>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity onPress={handleDelete}>
+                    <Text style={styles.actionLinkDestructive}>Remove from bar</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </ScrollView>
           </View>
@@ -486,26 +493,20 @@ function BarRow({ item, onRestock, onRemove, onEdit }: {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
-  },
-  headerBtn:    { fontSize: 16, color: colors.text.muted, fontWeight: '500', minWidth: 48 },
-  headerTitle:  { fontSize: 20, fontWeight: '700', color: colors.text.primary },
-  headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  headerImport: { fontSize: 14, color: colors.brand.plum, fontWeight: '600' },
-  headerAdd:    { fontSize: 16, color: colors.text.link, fontWeight: '700' },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerClose: { fontSize: 28, color: colors.text.muted, fontWeight: '300', lineHeight: 28 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text.primary },
 
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
   searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
-  filterBar: { height: 52, backgroundColor: colors.background.app, borderBottomWidth: 1, borderBottomColor: colors.border.hairline },
-  filterBarContent: { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.background.elevated, flexShrink: 0, marginRight: 8 },
-  filterPillActive: { backgroundColor: colors.brand.primary },
+  filterBar: { backgroundColor: colors.background.app },
+  filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
+  filterPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, flexShrink: 0 },
+  filterPillActive: { backgroundColor: colors.brand.primary, borderColor: colors.brand.primary },
   filterPillText: { fontSize: 13, fontWeight: '500', color: colors.text.secondary },
   filterPillTextActive: { color: colors.text.inverse },
 
@@ -537,16 +538,11 @@ const styles = StyleSheet.create({
   rowQtyLabel:{ fontSize: 11, color: colors.text.placeholder },
 
   // Modal
-  modalContainer: { flex: 1, backgroundColor: colors.background.surface },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.border.hairline,
-  },
-  modalCancel: { fontSize: 16, color: colors.text.muted, fontWeight: '500' },
-  modalTitle:  { fontSize: 17, fontWeight: '700', color: colors.text.primary },
-  modalSave:   { fontSize: 16, color: colors.text.link, fontWeight: '700' },
-  modalSaveDisabled: { color: colors.text.placeholder },
+  modalContainer: { flex: 1, backgroundColor: colors.background.app },
+  modalHeader: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  modalTitle:  { fontSize: 22, fontWeight: '700', color: colors.text.primary },
+  modalSave:   { fontSize: 15, color: colors.brand.primary, fontWeight: '700' },
+  modalSaveDisabled: { opacity: 0.4 },
   modalContent: { padding: 20, gap: 4 },
 
   fieldLabel:    { fontSize: 12, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 12, marginBottom: 6 },
@@ -557,17 +553,17 @@ const styles = StyleSheet.create({
 
   typeBar: { flexGrow: 0, marginBottom: 4 },
   typeBarContent: { gap: 8, flexDirection: 'row', paddingVertical: 4 },
-  typePill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.background.elevated, flexShrink: 0 },
-  typePillActive: { backgroundColor: colors.brand.ink },
+  typePill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default, flexShrink: 0 },
+  typePillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   typePillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
-  typePillTextActive: { color: colors.text.inverse },
+  typePillTextActive: { color: colors.brand.primary, fontWeight: '600' },
 
   sizeRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  sizePill: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: colors.background.elevated },
-  sizePillActive: { backgroundColor: colors.brand.primary },
+  sizePill: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.background.surface, borderWidth: 1, borderColor: colors.border.default },
+  sizePillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   sizePillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
-  sizePillTextActive: { color: colors.text.inverse },
+  sizePillTextActive: { color: colors.brand.primary, fontWeight: '600' },
 
-  deleteBtn: { marginTop: 24, backgroundColor: colors.state.dangerLighter, borderRadius: 12, padding: 14, alignItems: 'center' },
-  deleteBtnText: { fontSize: 15, color: colors.state.dangerBright, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 20 },
+  actionLinkDestructive: { fontSize: 13, color: colors.state.dangerBright, fontWeight: '500' },
 });

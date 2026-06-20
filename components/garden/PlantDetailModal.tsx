@@ -140,6 +140,14 @@ export default function PlantDetailModal({ plant, onClose, onStatusChange, onHar
                   <Text style={[styles.actionButtonText, styles.harvestButtonText]}>Harvest</Text>
                 </TouchableOpacity>
               )}
+              {plant.status !== 'finished' && plant.status !== 'harvested' && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => onStatusChange(plant.id, 'finished')}
+                >
+                  <Text style={styles.actionButtonText}>Mark as Finished</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Harvest history */}
