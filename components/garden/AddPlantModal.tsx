@@ -158,10 +158,11 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
       visible={visible}
       animationType="slide"
       presentationStyle="formSheet"
+      statusBarTranslucent
       onRequestClose={onClose}
       onShow={handleOpen}
     >
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={[styles.container, { paddingTop: insets.top || 16 }]}>
           <View style={styles.header}>
             <View style={styles.headerTopRow}>
