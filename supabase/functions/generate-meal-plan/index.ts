@@ -355,7 +355,7 @@ Deno.serve(async (req) => {
 
     const sonnetResponse = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 8000,
       system: `You are EatWell's creative meal selector for Christchurch, New Zealand.
 
 Choose dinners for the available planning days. Your job is ONLY to pick interesting, varied meals — another model will handle ingredients.
@@ -376,12 +376,17 @@ RULES:
 
 Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, or seasoning. Aim for one dish the user might not have thought of.
 
-Return ONLY JSON: {"meals":[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}],"planning_notes":"string"}`,
+CRITICAL: Output ONLY compact JSON, no markdown fences, no explanation. Keep descriptions under 20 words each.
+{"meals":[{"day_of_week":0,"meal_name":"string","description":"One short sentence about the dish","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}],"planning_notes":"Brief 1-sentence note"}`,
       messages: [{ role: 'user', content: creativityPrompt }],
     });
 
     const sonnetUsage = sonnetResponse.usage;
-    log(`pass 1 done — input: ${sonnetUsage.input_tokens}, output: ${sonnetUsage.output_tokens} tokens`);
+    log(`pass 1 done — input: ${sonnetUsage.input_tokens}, output: ${sonnetUsage.output_tokens} tokens, stop: ${sonnetResponse.stop_reason}`);
+
+    if (sonnetResponse.stop_reason === 'max_tokens') {
+      log('pass 1 TRUNCATED — output hit max_tokens limit');
+    }
 
     const sonnetText = (sonnetResponse.content[0] as { type: string; text: string }).text;
     const { parsed: mealChoices, error: sonnetError } = jsonOrError(sonnetText);
