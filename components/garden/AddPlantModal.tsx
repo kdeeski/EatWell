@@ -46,7 +46,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
   const [varietySuggestions, setVarietySuggestions] = useState<string[]>([]);
   const [varietyNote, setVarietyNote] = useState<string | null>(null);
   const [varietyLoading, setVarietyLoading] = useState(false);
-  const [selectedVarieties, setSelectedVarieties] = useState<Set<string>>(new Set());
+  const [selectedVarieties, setSelectedVarieties] = useState<string[]>([]);
 
   const isEditing = !!editPlant;
 
@@ -54,7 +54,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
     setVarietySuggestions([]);
     setVarietyNote(null);
     setVarietyLoading(false);
-    setSelectedVarieties(new Set());
+    setSelectedVarieties([]);
     if (editPlant) {
       setAddMode(editPlant.status === 'wishlist' ? 'wishlist' : 'planting');
       setPlantName(editPlant.plant_name);
@@ -124,8 +124,8 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
         });
         onSave(updated);
       } else {
-        const varieties = selectedVarieties.size > 1
-          ? [...selectedVarieties]
+        const varieties = selectedVarieties.length > 1
+          ? selectedVarieties
           : [variety.trim() || null];
 
         let lastPlant: GardenPlant | null = null;
@@ -226,17 +226,18 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
                 {varietyNote && <Text style={styles.varietyNote}>{varietyNote}</Text>}
                 <View style={styles.varietyChips}>
                   {varietySuggestions.map((v) => {
-                    const selected = selectedVarieties.has(v);
+                    const selected = selectedVarieties.includes(v);
                     return (
                       <TouchableOpacity
                         key={v}
                         style={[styles.varietyChip, selected && styles.varietyChipActive]}
                         onPress={() => {
                           setSelectedVarieties((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(v)) next.delete(v); else next.add(v);
-                            if (next.size === 1) setVariety([...next][0]);
-                            else if (next.size === 0) setVariety('');
+                            const next = prev.includes(v)
+                              ? prev.filter((x) => x !== v)
+                              : [...prev, v];
+                            if (next.length === 1) setVariety(next[0]);
+                            else if (next.length === 0) setVariety('');
                             return next;
                           });
                         }}
@@ -246,9 +247,9 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
                     );
                   })}
                 </View>
-                {selectedVarieties.size > 1 && (
+                {selectedVarieties.length > 1 && (
                   <Text style={styles.varietyMultiHint}>
-                    {selectedVarieties.size} varieties selected — one entry per variety
+                    {selectedVarieties.length} varieties selected — one entry per variety
                   </Text>
                 )}
               </View>
