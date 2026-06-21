@@ -70,9 +70,10 @@ export interface GeneratedMealPlan {
       name: string;
       quantity: number;
       unit: string;
-      store: 'grocer' | 'butcher' | 'supermarket';
+      store: 'grocer' | 'butcher' | 'supermarket' | 'liquor_store';
       buy_timing: 'weekend' | 'day_of' | 'sunday_default';
       from_fridge: boolean;
+      from_freezer: boolean;
       from_garden: boolean;
       is_pantry_staple: boolean;
       ingredient_category: ItemCategory;

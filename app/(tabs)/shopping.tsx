@@ -226,7 +226,7 @@ export default function ShoppingScreen() {
 
   const handleDoneShopping = () => {
     const doneIds = shoppingItems
-      .filter((i) => i.checked || pantryConfirmed.has(i.id) || gardenConfirmed.has(i.id) || i.from_fridge)
+      .filter((i) => i.checked || pantryConfirmed.has(i.id) || gardenConfirmed.has(i.id) || i.from_fridge || i.from_freezer)
       .map((i) => i.id);
     if (doneIds.length === 0) {
       Alert.alert('Nothing to clear', 'Tick off items as you shop, then come back here to clear them.');
@@ -274,6 +274,7 @@ export default function ShoppingScreen() {
         conditionalResult.updatedIds.forEach((id) =>
           updateShoppingItemInStore(id, {
             from_fridge: false,
+            from_freezer: false,
             is_pantry_staple: false,
             checked: false,
             conditional_note: null,
@@ -475,7 +476,7 @@ export default function ShoppingScreen() {
                 Swipe right if you already have it · Swipe left to buy
               </Text>
             )}
-            {cat === 'herbs_spices' && items.some((i) => !gardenConfirmed.has(i.id) && !i.from_fridge) && (
+            {cat === 'herbs_spices' && items.some((i) => !gardenConfirmed.has(i.id) && !i.from_fridge && !i.from_freezer) && (
               <Text style={styles.sectionNote}>
                 Swipe right if you already have it · Swipe left to buy
               </Text>
@@ -486,7 +487,7 @@ export default function ShoppingScreen() {
               const isGardenConfirmed = gardenConfirmed.has(item.id);
               const isPantryConfirmed = pantryConfirmed.has(item.id) || item.checked;
               const isPantrySwipeable = hasPantrySwipe || (cat === 'herbs_spices' && !isGardenConfirmed) || item.is_pantry_staple;
-              const isChecked = item.checked || isPantryConfirmed || isGardenConfirmed || item.from_fridge;
+              const isChecked = item.checked || isPantryConfirmed || isGardenConfirmed || item.from_fridge || item.from_freezer;
               const recipeMatch = !isChecked
                 ? findStashMatch(item.name, recipes.filter((r) => !!r.ingredients), { strict: true })
                 : null;
@@ -534,8 +535,8 @@ export default function ShoppingScreen() {
                 );
               }
 
-              // Fridge item — static badge, no interaction
-              if (item.from_fridge) {
+              // Fridge/freezer item — static badge, no interaction
+              if (item.from_fridge || item.from_freezer) {
                 return (
                   <View key={item.id}>
                     <TouchableOpacity onLongPress={() => setEditTarget(item)} delayLongPress={400} activeOpacity={1} style={[styles.itemRow, styles.itemRowFridge]}>
@@ -550,7 +551,7 @@ export default function ShoppingScreen() {
                           <Text style={styles.conditionalNote}>{item.conditional_note}</Text>
                         )}
                       </View>
-                      <Text style={styles.fridgeBadge}>In Fridge</Text>
+                      <Text style={styles.fridgeBadge}>{item.from_freezer ? 'In Freezer' : 'In Fridge'}</Text>
                     </TouchableOpacity>
                     {recipeNudge}
                   </View>

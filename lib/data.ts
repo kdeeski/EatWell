@@ -623,12 +623,13 @@ export async function saveShoppingList(
       // Key by singular form so "Carrot" and "Carrots" merge into one line item
       const key = dedupeKey(normName);
 
+      const alreadyHave = (ing.from_fridge ?? false) || (ing.from_freezer ?? false);
+
       if (itemMap.has(key)) {
         const existing = itemMap.get(key)!;
         existing.quantity += ing.quantity;
         (existing.meal_names as string[]).push(meal.meal_name);
-        // If any entry is not from fridge, the merged item needs buying
-        if (!ing.from_fridge) existing.checked = false;
+        if (!alreadyHave) existing.checked = false;
       } else {
         itemMap.set(key, {
           id: '',
@@ -638,9 +639,10 @@ export async function saveShoppingList(
           unit: ing.unit,
           store: normalizeStore(ing.store),
           buy_timing: normalizeBuyTiming(ing.buy_timing),
-          checked: ing.from_fridge ?? false,
+          checked: alreadyHave,
           is_pantry_staple: ing.is_pantry_staple ?? false,
           from_fridge: ing.from_fridge ?? false,
+          from_freezer: ing.from_freezer ?? false,
           from_garden: ing.from_garden ?? false,
           ingredient_category: cat,
           herb_backup: ing.herb_backup ?? null,
@@ -664,7 +666,7 @@ export async function saveShoppingList(
       inventory.some((inv) => inv.length >= 3 && (inv.includes(itemName) || itemName.includes(inv)));
 
     for (const item of itemMap.values()) {
-      if (item.from_fridge) continue; // Claude already got it right
+      if (item.from_fridge || item.from_freezer) continue;
       if (fuzzyMatch(normFridge, item.name)) {
         item.from_fridge = true;
         item.checked     = true;
@@ -687,7 +689,7 @@ export async function saveShoppingList(
     }));
 
     for (const item of itemMap.values()) {
-      if (!item.from_fridge && !item.is_pantry_staple) continue;
+      if (!item.from_fridge && !item.from_freezer && !item.is_pantry_staple) continue;
       const matches = normEarmarked.filter((e) => {
         if (e.norm === item.name) return true;
         if (e.norm.length < 3 || item.name.length < 3) return false;
@@ -764,6 +766,7 @@ export async function refreshConditionalItems(
       .from('shopping_list_items')
       .update({
         from_fridge: false,
+        from_freezer: false,
         is_pantry_staple: false,
         checked: false,
         conditional_note: null,
@@ -847,6 +850,7 @@ export async function addAdHocShoppingItem(
       checked: false,
       is_pantry_staple: false,
       from_fridge: false,
+      from_freezer: false,
       from_garden: false,
       ingredient_category: category,
       herb_backup: null,
@@ -875,6 +879,7 @@ export async function addAdHocShoppingItems(
       checked: false,
       is_pantry_staple: false,
       from_fridge: false,
+      from_freezer: false,
       from_garden: false,
       ingredient_category: i.category,
       herb_backup: null,

@@ -155,7 +155,7 @@ export interface ReplantAdvice {
 // ─── Meal Planning ────────────────────────────────────────────────────────────
 
 export type Store = 'grocer' | 'butcher' | 'supermarket' | 'liquor_store';
-export type BuyTiming = 'weekend' | 'day_of';
+export type BuyTiming = 'weekend' | 'day_of' | 'sunday_default';
 
 // Unified category set — matches ItemCategory and inventory_items.category.
 // dairy_eggs intentionally excluded from shopping list generation (handled via inventory).
@@ -193,6 +193,7 @@ export interface PlannedIngredient {
   store: Store;
   buy_timing: BuyTiming;
   from_fridge: boolean;
+  from_freezer: boolean;
   from_garden: boolean;
   is_pantry_staple: boolean;
   ingredient_category: IngredientCategory;
@@ -220,6 +221,7 @@ export interface ShoppingListItem {
   checked: boolean;
   is_pantry_staple: boolean;
   from_fridge: boolean;
+  from_freezer: boolean;
   from_garden: boolean;
   ingredient_category: IngredientCategory;
   herb_backup: string | null;

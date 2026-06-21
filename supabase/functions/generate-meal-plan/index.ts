@@ -14,6 +14,115 @@ function jsonOrError(raw: string, label: string): { parsed: any; error: string |
   }
 }
 
+// ── Allowed enum values ─────────────────────────────────────────────────────
+
+const INGREDIENT_CATEGORIES = [
+  'meat_fish', 'dairy_eggs', 'produce', 'herbs_spices', 'pantry_dry_goods',
+  'bread_bakery', 'cans_preserves', 'oils_vinegars', 'condiments_sauces',
+  'beverages', 'alcohol', 'household',
+] as const;
+
+const STORES = ['grocer', 'butcher', 'supermarket', 'liquor_store'] as const;
+const BUY_TIMINGS = ['weekend', 'day_of', 'sunday_default'] as const;
+
+// ── System prompt (three layers: hard rules → guidelines → output contract) ──
+
+const SYSTEM_PROMPT = `You are EatWell's meal planning engine for Christchurch, New Zealand. Create practical, interesting weekly dinner plans using the user's available food, preferences, household schedule, and seasonal context.
+
+Return only valid JSON matching the requested schema. Do not include prose, markdown, comments, or extra keys.
+
+DECISION HIERARCHY (highest priority first):
+1. Safety and dietary exclusions always win.
+2. Nights away and pinned meals are fixed.
+3. Carry-forward and repeat meals must be honoured where there is an available night.
+4. Fresh fridge items should be used before they spoil.
+5. Freezer items may be used where they fit naturally but are not urgent.
+6. User preferences personalise the plan.
+7. Variety, seasonality, and waste reduction guide final choices.
+
+─── HARD RULES ───
+
+SCHEDULING
+- Generate a meal for every day 0–6 that is not a night away and not a pinned meal. Never leave a slot empty.
+- Do not replace pinned meals, but factor them into variety, pasta, fish, and protein rotation checks.
+- Include all carry-forward meals on available days using their exact names.
+- Include all repeat meals where possible.
+- Respect all dietary restrictions and excluded proteins.
+
+WEEKLY BALANCE
+- Exactly 1 fish/seafood meal per week. Place it only on a night where no fish-restricted household member is joining. Prefer Sunday. Set buy_timing to sunday_default for fish ingredients.
+- At least 1 fully vegetarian dinner (no meat, no fish — eggs/dairy fine). It must be substantial and interesting.
+- Every meal must be a complete dinner. Never suggest a dip, spread, condiment, or side dish as a standalone meal.
+
+FRIDGE AND FREEZER
+- Use fridge items before they spoil. Mark fridge-sourced ingredients as from_fridge: true.
+- Freezer items are not urgent. Use only where they genuinely fit. Do not cluster similar freezer proteins on consecutive nights. Mark freezer-sourced ingredients as from_freezer: true.
+- Both from_fridge and from_freezer items should not be added as purchases.
+
+VARIETY ACROSS WEEKS
+- Do not repeat last week's meals, close variants, same base format, or same protein cut — unless a fridge item, carry-forward, or repeat meal requires it.
+
+PASTA
+- Maximum 1 pasta dish per week unless 2+ carry-forward meals are pasta.
+- Never repeat a pasta shape in the same week, including pinned meals.
+- Always name the exact shape (Rigatoni, Spaghetti, Orecchiette, etc.) — never generic "Pasta" or "Dried Pasta".
+- Fresh pasta (pappardelle, tagliatelle, fettuccine, etc.): mark as is_pantry_staple: true and from_fridge: false — the user makes their own.
+
+PORTIONS
+- Default: cook for 1 small appetite. Fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium.
+- Scale up when household members are joining that night.
+
+INGREDIENTS
+- Garden items: only mark from_garden: true when the item is listed as available and genuinely used.
+- Long-life fridge staples (eggs, milk, cream, crème fraîche, parmesan, Greek yoghurt, butter, standard cheeses): do not list for small amounts. Only list for large amounts (300ml+ cream, 4+ eggs, 200g+ cheese). If listed, always name eggs as "Eggs".
+- Pantry staples: mark is_pantry_staple: true for items a well-equipped kitchen keeps (oils, salt, pepper, dried spices, flour, sugar, soy sauce, vinegars, canned tomatoes, rice, dried pulses, onions, garlic, stock, etc.).
+- Fresh herbs: set herb_backup to a short fallback. Note if hard to find in Christchurch.
+- Every ingredient must be a single item — never combine (e.g. separate "Salt" and "Black Pepper").
+- Always include fresh weekly purchases: fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery.
+- If yeast is required, use active dried yeast only with a blooming step.
+
+FORMATTING
+- Metric measurements only. UK/NZ English.
+- Meal names: max 7 words, Title Case, use "with" and "and" as connectors.
+- Ingredient names: Title Case, single items.
+- ingredient_category: use exactly one of ${INGREDIENT_CATEGORIES.join(', ')}.
+- dairy_eggs for all dairy and egg items. herbs_spices for all herbs and spices. alcohol items: set store to liquor_store.
+- store: use exactly one of ${STORES.join(', ')}.
+- buy_timing: use exactly one of ${BUY_TIMINGS.join(', ')}. Use sunday_default for fish.
+- Set needs_recipe: true for dishes with non-obvious technique or more than 6 fresh components.
+
+─── GUIDELINES ───
+
+MEAL QUALITY
+- Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, seasoning, or texture contrast.
+- Avoid boring defaults (plain steamed protein with rice, generic stir-fry, basic salad as a main). Simple is fine if deliberate and well-executed.
+- Aim for one dish per week the user might not have thought of themselves.
+
+DIVERSITY
+- At least 3 broad culinary traditions across the week. No more than 2 meals from the same tradition.
+- At least 3 cooking approaches (braise, roast, sauté, stir-fry, grill, char, poach, steam, raw elements).
+- Avoid the same protein on consecutive nights where possible.
+
+WASTE AND SEASONALITY
+- Cluster fresh ingredients across meals to minimise waste, especially herbs.
+- A single garden herb should appear in at most 2 meals.
+- Use seasonal New Zealand produce appropriate to the date.
+
+PERSONALISATION
+- Match user preferences: lean toward liked cuisines, avoid disliked, respect spice level, keep Mon–Thu within weeknight_max_minutes, apply weekend cooking preference.
+- Follow standing orders and cooking notes.
+
+─── OUTPUT CONTRACT ───
+
+Before returning, verify:
+- Every required day has exactly one meal. No night-away has a meal. No pinned day is replaced.
+- Carry-forward and repeat meals are included.
+- Exactly 1 fish meal (unless impossible). At least 1 vegetarian meal.
+- Max 1 pasta meal (unless carry-forward forces more). No repeated pasta shapes.
+- All ingredient_category and store values are from the allowed sets.
+- Every ingredient is a single item. All quantities are metric.
+- Response is valid JSON only.`;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -37,6 +146,8 @@ Deno.serve(async (req) => {
     }
     const input = JSON.parse(rawBody);
 
+    // ── Build dynamic context blocks ────────────────────────────────────────
+
     const fridgeSummary = (input.fridgeItems ?? [])
       .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
       .join(', ');
@@ -47,7 +158,6 @@ Deno.serve(async (req) => {
 
     const prefs = input.preferences ?? null;
 
-    // Build preferences block for the prompt
     let prefsBlock = '';
     if (prefs) {
       const lines: string[] = [];
@@ -63,32 +173,28 @@ Deno.serve(async (req) => {
 
     let standingOrdersBlock = '';
     if (prefs?.standing_orders) {
-      standingOrdersBlock = `\nSTANDING ORDERS (always apply — these are the user's standing instructions for every meal plan):\n${prefs.standing_orders}\n`;
+      standingOrdersBlock = `\nSTANDING ORDERS (always apply):\n${prefs.standing_orders}\n`;
     }
 
     const carryForward: Array<{ name: string; description: string | null }> = input.carryForwardMeals ?? [];
     let carryForwardBlock = '';
     if (carryForward.length > 0) {
-      const lines = carryForward.map((m) =>
-        `- ${m.name}${m.description ? `: ${m.description}` : ''}`
-      );
-      carryForwardBlock = `\nCARRY FORWARD (must include ALL of these in the plan — user didn't get to cook them last week):\n${lines.join('\n')}\n`;
+      const lines = carryForward.map((m) => `- ${m.name}${m.description ? `: ${m.description}` : ''}`);
+      carryForwardBlock = `\nCARRY FORWARD (must include all):\n${lines.join('\n')}\n`;
     }
 
     const repeatMeals: Array<{ name: string; rating: number; description: string | null }> = input.repeatMeals ?? [];
     let repeatMealsBlock = '';
     if (repeatMeals.length > 0) {
       const stars = (r: number) => '★'.repeat(r) + '☆'.repeat(5 - r);
-      const lines = repeatMeals.map((m) =>
-        `- ${m.name} (${stars(m.rating)})${m.description ? `: ${m.description}` : ''}`
-      );
-      repeatMealsBlock = `\nREPEAT MEALS (you must include all of these, distributed through the week):\n${lines.join('\n')}\n`;
+      const lines = repeatMeals.map((m) => `- ${m.name} (${stars(m.rating)})${m.description ? `: ${m.description}` : ''}`);
+      repeatMealsBlock = `\nREPEAT MEALS (include all, distributed through the week):\n${lines.join('\n')}\n`;
     }
 
     const previousMeals: string[] = input.previousMeals ?? [];
     let previousMealsBlock = '';
     if (previousMeals.length > 0) {
-      previousMealsBlock = `\nLAST WEEK'S MEALS (do not repeat any of these — the user wants fresh variety):\n${previousMeals.map((n) => `- ${n}`).join('\n')}\n`;
+      previousMealsBlock = `\nLAST WEEK'S MEALS (do not repeat these or close variants):\n${previousMeals.map((n) => `- ${n}`).join('\n')}\n`;
     }
 
     const pinnedMeals: Array<{ name: string; day_of_week: number }> = input.pinnedMeals ?? [];
@@ -96,10 +202,9 @@ Deno.serve(async (req) => {
     if (pinnedMeals.length > 0) {
       const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       const lines = pinnedMeals.map((m) => `- ${DAY_NAMES[m.day_of_week]}: ${m.name}`);
-      pinnedMealsBlock = `\nPINNED MEALS (already set — do NOT generate a meal for these days, but you MUST factor them into pasta uniqueness, protein rotation, and variety rules when planning the remaining days):\n${lines.join('\n')}\n`;
+      pinnedMealsBlock = `\nPINNED MEALS (locked — do not replace, but factor into rotation):\n${lines.join('\n')}\n`;
     }
 
-    // Build household summary
     const DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const householdMembers = input.householdMembers ?? [];
     let householdBlock = '';
@@ -109,39 +214,37 @@ Deno.serve(async (req) => {
         const dietary = m.dietary_notes ? ` (${m.dietary_notes})` : '';
         return `- ${m.name}${dietary}: ${nights || 'not this week'}`;
       });
-      householdBlock = `\nHOUSEHOLD MEMBERS JOINING:\n${lines.join('\n')}\n`;
+      householdBlock = `\nHOUSEHOLD:\n${lines.join('\n')}\n`;
     }
 
-    // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
+    // ── Build user prompt ───────────────────────────────────────────────────
 
-    const structurePrompt = `
-Plan a week of 7 dinners for a single person in Christchurch, New Zealand.
+    const userPrompt = `Plan 7 dinners for this week.
 
-FRIDGE (use these up this week — fresh items that will spoil):
+FRIDGE (use before they spoil):
 ${fridgeSummary || 'Nothing noted'}
 
-FREEZER (use where it fits naturally — no urgency, won't spoil this week):
+FREEZER (use where it fits, not urgent):
 ${freezerSummary || 'Nothing noted'}
 
-GARDEN (available this week):
+GARDEN (available now):
 ${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
 
 SPONTANEOUS ADDITIONS:
 ${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
 ${previousMealsBlock}${pinnedMealsBlock}${carryForwardBlock}${repeatMealsBlock}
-NIGHTS AWAY (0=Monday, skip these days):
+NIGHTS AWAY (0=Monday, skip these):
 ${(input.nightsAway ?? []).join(', ') || 'None'}
-
 ${householdBlock}${standingOrdersBlock}${prefsBlock}
-TODAY'S DATE: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+TODAY: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
-Return ONLY a JSON object with this exact shape — no prose:
+Return ONLY this JSON shape:
 {
   "meals": [
     {
       "day_of_week": 0,
       "meal_name": "string",
-      "description": "2-3 sentence cooking description — key technique and what makes it good",
+      "description": "2-3 sentence cooking description",
       "is_fish": false,
       "needs_recipe": false,
       "estimated_prep_minutes": 25,
@@ -151,12 +254,13 @@ Return ONLY a JSON object with this exact shape — no prose:
           "name": "string",
           "quantity": 1,
           "unit": "string",
-          "store": "grocer|butcher|supermarket",
+          "store": "grocer|butcher|supermarket|liquor_store",
           "buy_timing": "weekend|day_of|sunday_default",
           "from_fridge": false,
+          "from_freezer": false,
           "from_garden": false,
           "is_pantry_staple": false,
-          "ingredient_category": "meat_fish|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces",
+          "ingredient_category": "meat_fish|dairy_eggs|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces|beverages|alcohol|household",
           "herb_backup": null
         }
       ]
@@ -165,97 +269,17 @@ Return ONLY a JSON object with this exact shape — no prose:
   "planning_notes": "string"
 }`;
 
-    const structureResponse = await client.messages.create({
+    const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 16000,
-      system: `You are EatWell's meal planning engine for Christchurch, New Zealand.
-
-RULES:
-1. FRIDGE items — use these up this week, they will spoil. Mark as from_fridge: true, do not add to shopping list. Prioritise them when choosing what protein or produce to build a meal around.
-
-1a. FREEZER items — incorporate these naturally across the week, but with far less urgency than fridge items. They won't spoil. Key freezer rules:
-- NEVER cluster the same protein on consecutive nights just because multiple portions exist in the freezer. If the freezer has pork sausages, pork mince and pork chops, spread them across different weeks or use at most one this week, unless fridge items force otherwise.
-- A freezer item should feel like a welcome choice, not an obligation. Only use it if it genuinely fits a meal you'd want to cook anyway.
-- Mark freezer-sourced ingredients as from_fridge: true (same flag — means "don't buy this").
-
-2. Fish/seafood placement — check household members' dietary notes for fish restrictions. Only plan fish on nights where no member with a fish restriction is joining. Default fish to Sunday (freshest after Saturday shop). Set buy_timing: "sunday_default" for fish. Days can be reordered by the user. MAX ONE fish or seafood meal per week — do not plan fish on multiple nights regardless of availability.
-
-3. Cluster fresh ingredients across meals to minimise waste — especially fresh herbs. Only include a herb if the dish genuinely calls for it.
-
-4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On nights when household members are joining, scale portions accordingly. Cook for 1 on solo nights. When members join, scale to serve the appropriate number.
-
-5. VARIED AND GENUINELY INTERESTING MEALS — every week should read like a thoughtful restaurant menu, not a default recipe book. Prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects. Every meal must be a complete, satisfying dinner — never suggest a dip, spread, condiment, or side dish (e.g. whipped feta, hummus, tzatziki, guacamole) as a standalone meal.
-
-ANTI-BOREDOM MANDATE: Do NOT default to the unimaginative or under-seasoned. Avoid dishes where the only choice made was "pick a protein and boil/steam it with no sauce or technique" — e.g. plain steamed chicken breast with rice, a basic green salad as a main, generic stir-fry with no distinguishing flavour. A well-executed simple dish is NOT boring: a perfectly seared bavette steak with chimichurri, a pan-roasted duck breast with a pan sauce, a classic steak frites — these are all excellent dinners. The anti-boredom rule is about avoiding lazy, under-thought meals, not about avoiding simplicity. Aim for one dish per week that the user might not have thought of themselves.
-
-5a. CUISINE DIVERSITY — across the week, meals must span at least 3 distinct culinary traditions. Broad traditions: European/Mediterranean (Italian, French, Spanish, Greek), Middle Eastern/North African, South-East Asian (Thai, Vietnamese, Malaysian, Indonesian), East Asian (Japanese, Chinese, Korean), South Asian (Indian, Sri Lankan), Latin American, Modern NZ/Antipodean. No more than 2 meals from the same broad tradition in one week — e.g. a pasta dish AND a risotto counts as 2 Italian, a third Italian-inspired dish is not allowed.
-
-5b. TECHNIQUE DIVERSITY — across the week, use at least 3 distinct cooking approaches from this list: braising or slow cooking, oven roasting, quick pan sauté or stir-fry, grilling or charring, poaching or steaming, fresh or raw elements as a main component. This prevents the week from defaulting to "pan-fry protein, serve with sides."
-
-6. Avoid the same protein on consecutive nights where possible (guideline, not hard rule).
-
-6a. WEEKLY BALANCE — every week must include: exactly 1 fish/seafood meal, at least 1 fully vegetarian meal (no meat, no fish — eggs/dairy fine). The remaining nights are meat-based. This is a hard rule.
-
-The vegetarian meal must be genuinely exciting and substantial — not "pasta with roasted vegetables" or a basic salad. Good examples of the ambition level: Shakshuka with Feta and Harissa, Spiced Red Lentil Dahl with Crispy Shallots, Turkish Eggs with Brown Butter and Yogurt, Corn and Halloumi Fritters with Chilli Sauce, Smashed Cucumber and Tofu in Chilli Oil, Saag Paneer, Miso Roasted Eggplant with Sesame Rice, Socca with Roasted Peppers and Labneh, Paneer Tikka Masala. Match the style to the user's cuisine preferences.
-
-7. Never use the same pasta shape twice in the same week (hard rule). This rule applies across ALL meals including PINNED MEALS.
-
-7c. PASTA FREQUENCY — maximum 1 pasta dish per week (any shape, fresh or dried). Only include a second pasta dish if pasta appears in 2 or more CARRY FORWARD meals that must be honoured.
-
-7b. PASTA SPECIFICITY — When adding pasta as a shopping ingredient, always name the exact shape (e.g. "Rigatoni", "Spaghetti", "Linguine", "Orecchiette", "Penne", "Fusilli", "Tagliatelle"). NEVER use generic names like "Pasta", "Dry Pasta", "Dried Pasta", or "Pasta Shapes". The ingredient name must be the actual shape the recipe uses. This rule applies to both dry pasta and fresh pasta. If a dish uses a specific pasta shape in its meal name (e.g. "Rigatoni with Sausage Ragù"), the ingredient must be that exact shape ("Rigatoni"), not a generic term.
-
-7a. FRESH PASTA — if a meal uses fresh pasta (pappardelle, tagliatelle, fettuccine, etc.), mark it as is_pantry_staple: true and from_fridge: false — the user makes their own fresh pasta and does not buy it. Do not add fresh pasta to the shopping list.
-
-8. Generate a meal for EVERY day 0–6 that is (a) not listed in NIGHTS AWAY and (b) not listed in PINNED MEALS. NIGHTS AWAY = user genuinely not home, no meal at all. PINNED MEALS = meal already locked in, do not replace it. For all remaining days you MUST produce a meal — never leave a slot empty.
-
-9. Set needs_recipe: true for any dish with a non-obvious technique or more than 6 fresh components.
-
-10. PANTRY STAPLES — use your judgment to mark is_pantry_staple: true for any ingredient a well-equipped home kitchen would typically keep stocked and not buy weekly (e.g. oils, salt, pepper, dried spices, dried herbs, flour, sugar, soy sauce, vinegars, canned tomatoes, pasta, rice, dried pulses, onions, garlic, butter, stock). These will still appear on the shopping list with a "have it" swipe so the user can confirm. NOTE: this will eventually be replaced by a live inventory system.
-
-11. LONGER-LIFE FRIDGE ITEMS — these are ALWAYS assumed to be in the fridge. NEVER add them to ingredients for small quantities. Only include them when the recipe needs an unusually large amount (e.g. 300ml+ cream, 4+ eggs, 200g+ cheese IS worth listing; a splash of cream, 1–2 eggs, a grating of parmesan is NOT). Items: eggs, milk, cream, crème fraîche, parmesan, Greek yogurt, butter, standard cheeses. When eggs ARE listed, ALWAYS use the name "Eggs" (plural, Title Case) — never "egg", "egg yolks", "egg whites", or any variation. Set ingredient_category to dairy_eggs for all dairy and egg items.
-
-12. ALWAYS include in ingredients (fresh, weekly purchases): fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery items.
-
-13. ingredient_category values — use exactly one of: meat_fish, dairy_eggs, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces, beverages, alcohol, household. Use dairy_eggs for eggs, milk, cream, butter, cheese, yogurt — ONLY when included per rule 11. Use herbs_spices for ALL herbs (fresh or dried) and spices. Use beverages for juice, soft drinks, sparkling water, mixers. Use alcohol for wine, beer, spirits — always set store to liquor_store for alcohol ingredients. Use household for cleaning products, laundry items, toiletries, batteries, etc. NEVER use cans_preserves for dairy or egg items.
-
-14. For fresh_herbs: always set herb_backup to a short fallback. Note in herb_backup if the herb is hard to find in Christchurch (e.g. tarragon, chervil).
-
-15. Always use metric measurements. If yeast is required use active dried yeast only — always include a blooming step, never instant yeast.
-
-16. Seasonal awareness: suggest produce appropriate to the current NZ season (Southern Hemisphere). Today's date is provided in the prompt.
-
-17. ONLY include a garden item (from_garden: true) if it is genuinely used in the recipe and the user has flagged it as available. Do not pad meals with garden items just because they are available.
-
-18. Meal names: use "with" and "and" as connectors instead of commas (e.g. "Lamb Meatballs with Harissa", "Salmon with Roasted Veg and Lemon Butter"). Max 7 words. Use UK English Title Case: capitalise nouns/verbs/adjectives but NOT joining words (with, and, or, in, on, the, a, of, by).
-
-19. Ingredient names: use UK English Title Case (e.g. "Chicken Thighs", "Cherry Tomatoes", "Olive Oil"). Always lowercase joining words.
-
-20. NEVER combine multiple ingredients into one entry (e.g. never "salt and pepper" — always list as two separate ingredients: "salt" and "black pepper"). Every ingredient must be a single item with its own name, quantity, and unit.
-
-20. GARDEN VARIETY RULE — garden produce is a weekly constraint (use what is ready before it spoils), not a theme to build the entire week around. Aim for variety across the week even when garden produce is abundant. A single garden herb should appear in at most 2 meals per week. Do not let garden availability dominate the menu or create repetitive flavour profiles.
-
-21. USER PREFERENCES — if USER PREFERENCES are provided in the prompt, treat them as personalisation constraints: lean toward cuisine_likes, avoid cuisine_dislikes, never use proteins_excluded, match spice_level (mild = subtle seasoning, medium = balanced, bold = heat welcome), respect weeknight_max_minutes for Mon–Thu prep times, apply weekend cooking style (project = longer/complex welcome on Sat–Sun, quick = keep it simple all week), and follow any personal cooking_notes. These preferences narrow and personalise choices — do not override safety rules above.
-
-22. CARRY FORWARD — if a "CARRY FORWARD" section appears in the prompt, you MUST include every meal listed in the final plan. Assign each carry-forward meal to any available day (not a night-away day). Use the exact meal name as given — do not rename or paraphrase. This is a hard rule that overrides variety/rotation preferences. If there are more carry-forward meals than available nights, include as many as will fit.
-
-23. VARIETY ACROSS WEEKS — if a "LAST WEEK'S MEALS" section appears in the prompt, avoid repeating not just the exact meal names but the same base dish format or protein cut. The test is: would a reasonable person say "that's basically the same dish"? If yes, choose something else. Examples:
-- Last week: "Beef Meatballs with Tomato Sauce" → this week: no meatball dish of any protein
-- Last week: "Pork Chops with Apple and Thyme" → this week: no pork chop dish regardless of sauce
-- Last week: "Gnocchi with Parsnip and Sage" → this week: no gnocchi dish
-- Last week: "Lamb Ragu with Tagliatelle" → this week: avoid another pasta ragù; choose a different sauce style
-
-IMPORTANT EXCEPTION — fridge items override this rule: if an ingredient listed in FRIDGE (e.g. leftover gnocchi, pork chops, mince) is a core component of a dish that appeared last week, you MUST still plan a meal that uses it up. Wasting food is worse than repeating a format. In that case, make the preparation as different as possible from last week's version.
-
-REPEAT MEALS and CARRY FORWARD entries also override this rule.
-
-Respond ONLY with valid JSON.`,
-      messages: [{ role: 'user', content: structurePrompt }],
+      max_tokens: 8000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
     });
 
-    const structureRaw = (structureResponse.content[0] as { type: string; text: string }).text;
-    const { parsed: plan, error: structureError } = jsonOrError(structureRaw, 'Meal structure');
-    if (structureError) {
-      return new Response(JSON.stringify({ error: structureError }), {
+    const raw = (response.content[0] as { type: string; text: string }).text;
+    const { parsed: plan, error: parseError } = jsonOrError(raw, 'Meal plan');
+    if (parseError) {
+      return new Response(JSON.stringify({ error: parseError }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
