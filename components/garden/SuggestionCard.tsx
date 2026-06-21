@@ -5,11 +5,12 @@ import { colors } from '../../constants/theme';
 
 interface Props {
   suggestion: GardenSuggestion;
+  isFromWishlist?: boolean;
   onAddToGarden: () => void;
   onDismiss: () => void;
 }
 
-export default function SuggestionCard({ suggestion, onAddToGarden, onDismiss }: Props) {
+export default function SuggestionCard({ suggestion, isFromWishlist, onAddToGarden, onDismiss }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -19,7 +20,14 @@ export default function SuggestionCard({ suggestion, onAddToGarden, onDismiss }:
       activeOpacity={0.8}
     >
       <View style={styles.headerRow}>
-        <Text style={styles.plantName}>{suggestion.plant_name}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.plantName}>{suggestion.plant_name}</Text>
+          {isFromWishlist && (
+            <View style={styles.wishlistPill}>
+              <Text style={styles.wishlistPillText}>From your list</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
       </View>
 
@@ -45,12 +53,16 @@ export default function SuggestionCard({ suggestion, onAddToGarden, onDismiss }:
           {(suggestion.soil_notes || suggestion.sun_notes) && (
             <View style={styles.growingNotes}>
               {suggestion.sun_notes ? (
-                <Text style={styles.growingNote}>☀ {suggestion.sun_notes}</Text>
+                <Text style={styles.growingNote}>{'☀'} {suggestion.sun_notes}</Text>
               ) : null}
               {suggestion.soil_notes ? (
-                <Text style={styles.growingNote}>⬡ {suggestion.soil_notes}</Text>
+                <Text style={styles.growingNote}>{'⬡'} {suggestion.soil_notes}</Text>
               ) : null}
             </View>
+          )}
+
+          {suggestion.companion_note != null && (
+            <Text style={styles.companionNote}>{'🌱'} {suggestion.companion_note}</Text>
           )}
 
           <View style={styles.actions}>
@@ -79,10 +91,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
   plantName: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text.primary,
+  },
+  wishlistPill: {
+    backgroundColor: colors.brand.primary + '22',
+    borderWidth: 1,
+    borderColor: colors.brand.primary,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  wishlistPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.brand.primary,
   },
   chevron: {
     fontSize: 11,
@@ -127,6 +158,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
+  },
+
+  companionNote: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 8,
+    lineHeight: 18,
   },
 
   actions: {

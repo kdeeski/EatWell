@@ -216,6 +216,7 @@ export async function saveGardenSuggestions(
     why_suits_cooking: string;
     soil_notes?: string | null;
     sun_notes?: string | null;
+    companion_note?: string | null;
     month_generated: number;
   }>
 ): Promise<GardenSuggestion[]> {

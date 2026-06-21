@@ -1,11 +1,11 @@
-// Garden screen — lifecycle tracker + AI planting suggestions.
+// Garden screen — inventory/filter layout with AI planting suggestions.
 // Harvesting a cut-and-come-again plant resets it to 'growing'.
 // Harvesting any plant creates a garden-location inventory item.
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator,
+  Alert, ActivityIndicator, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
@@ -35,6 +35,7 @@ const STATUS_LABELS: Record<string, string> = {
   ready:     'Ready to Harvest',
   harvested: 'Harvested',
   finished:  'Finished',
+  wishlist:  'My List',
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -43,7 +44,18 @@ const STATUS_COLORS: Record<string, string> = {
   ready:     colors.garden.ready,
   harvested: colors.garden.harvested,
   finished:  colors.garden.finished,
+  wishlist:  colors.text.placeholder,
 };
+
+type GardenFilter = 'all' | 'growing' | 'ready' | 'finished' | 'wishlist';
+
+const FILTERS: { key: GardenFilter; label: string }[] = [
+  { key: 'all',      label: 'All' },
+  { key: 'growing',  label: 'Growing' },
+  { key: 'ready',    label: 'Ready' },
+  { key: 'finished', label: 'Finished' },
+  { key: 'wishlist', label: 'My List' },
+];
 
 function extractIngredientFrequency(meals: ReturnType<typeof useAppStore.getState>['plannedMeals']) {
   const counts = new Map<string, number>();
@@ -85,6 +97,9 @@ export default function GardenScreen() {
   const [suggestionsError, setSuggestionsError]     = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex]       = useState(0);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeFilter, setActiveFilter]             = useState<GardenFilter>('all');
+  const [searchQuery, setSearchQuery]               = useState('');
+  const [suggestionsVisible, setSuggestionsVisible] = useState(false);
 
   const LOADING_MESSAGES = [
     'Looking at what you already grow…',
@@ -93,13 +108,40 @@ export default function GardenScreen() {
     'Finding what\'s worth growing at home…',
     'Almost there…',
   ];
-  const [showPastHarvests, setShowPastHarvests]     = useState(false);
 
-  const activePlants = gardenPlants.filter(
-    (p) => p.status !== 'finished' && p.status !== 'harvested'
-  );
-  const pastPlants = gardenPlants.filter(
-    (p) => p.status === 'harvested' || p.status === 'finished'
+  // ── Filtered plant list ───────────────────────────────────────────────────────
+
+  const filteredPlants = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return gardenPlants.filter((p) => {
+      // Search filter
+      if (q && !p.plant_name.toLowerCase().includes(q)) return false;
+
+      // Status filter
+      switch (activeFilter) {
+        case 'all':
+          return p.status !== 'wishlist';
+        case 'growing':
+          return p.status === 'planted' || p.status === 'growing';
+        case 'ready':
+          return p.status === 'ready';
+        case 'finished':
+          return p.status === 'harvested' || p.status === 'finished';
+        case 'wishlist':
+          return p.status === 'wishlist';
+        default:
+          return true;
+      }
+    });
+  }, [gardenPlants, activeFilter, searchQuery]);
+
+  const wishlistNames = useMemo(
+    () => new Set(
+      gardenPlants
+        .filter((p) => p.status === 'wishlist')
+        .map((p) => p.plant_name.toLowerCase().trim())
+    ),
+    [gardenPlants]
   );
 
   // ── Suggestions ─────────────────────────────────────────────────────────────
@@ -108,6 +150,7 @@ export default function GardenScreen() {
     if (!userId || suggestionsLoading) return;
     setSuggestionsLoading(true);
     setSuggestionsError(null);
+    setSuggestionsVisible(true);
     setLoadingMsgIndex(0);
     loadingIntervalRef.current = setInterval(() => {
       setLoadingMsgIndex((prev) => Math.min(prev + 1, LOADING_MESSAGES.length - 1));
@@ -123,6 +166,9 @@ export default function GardenScreen() {
           .map((p) => ({ plant_name: p.plant_name, status: p.status })),
         cooked_meal_ingredients: extractIngredientFrequency(plannedMeals),
         inventory: inventoryItems.map((i) => ({ name: i.name, location: i.location })),
+        wishlist_plants: gardenPlants
+          .filter((p) => p.status === 'wishlist')
+          .map((p) => p.plant_name),
       };
       console.log('[garden-suggestions] calling with:', JSON.stringify(input));
       const suggestions = await generateGardenSuggestions(input);
@@ -136,6 +182,7 @@ export default function GardenScreen() {
           why_suits_cooking: s.why_suits_cooking,
           soil_notes: s.soil_notes ?? null,
           sun_notes: s.sun_notes ?? null,
+          companion_note: s.companion_note ?? null,
           month_generated: now.getMonth() + 1,
         }))
       );
@@ -174,6 +221,19 @@ export default function GardenScreen() {
         .catch(() => refreshSuggestions());
     }
   }, [userId]);
+
+  const handleSuggestToggle = () => {
+    if (suggestionsVisible) {
+      setSuggestionsVisible(false);
+    } else {
+      const active = gardenSuggestions.filter((s) => !s.dismissed);
+      if (active.length > 0) {
+        setSuggestionsVisible(true);
+      } else {
+        refreshSuggestions();
+      }
+    }
+  };
 
   const handleAddToGarden = (suggestionId: string, plantName: string) => {
     setSourceSuggestionId(suggestionId);
@@ -306,17 +366,105 @@ export default function GardenScreen() {
 
   const activeSuggestions = gardenSuggestions.filter((s) => !s.dismissed);
 
+  // ── Render helpers ────────────────────────────────────────────────────────────
+
+  const renderPlantCard = (plant: GardenPlant) => {
+    // Wishlist card
+    if (plant.status === 'wishlist') {
+      return (
+        <TouchableOpacity
+          key={plant.id}
+          style={styles.wishlistCard}
+          onPress={() => setDetailTarget(plant)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.plantInfo}>
+            <Text style={styles.plantName}>{plant.plant_name}</Text>
+            {plant.variety && (
+              <Text style={styles.plantVariety}>{plant.variety}</Text>
+            )}
+          </View>
+          <TouchableOpacity
+            style={shared.ctaRow}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              setAddPlantInitialName(plant.plant_name);
+              setAddPlantVisible(true);
+            }}
+          >
+            <Text style={styles.ctaText}>Plant now</Text>
+            <Text style={shared.ctaArrow}>{'→'}</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      );
+    }
+
+    // Finished/harvested card (muted)
+    const isMuted = plant.status === 'harvested' || plant.status === 'finished';
+
+    return (
+      <TouchableOpacity
+        key={plant.id}
+        style={[styles.plantCard, isMuted && styles.plantCardMuted]}
+        onPress={() => setDetailTarget(plant)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.plantInfo}>
+          <Text style={styles.plantName}>{plant.plant_name}</Text>
+          {plant.variety && (
+            <Text style={styles.plantVariety}>{plant.variety}</Text>
+          )}
+          {plant.expected_ready_date && (
+            <Text style={styles.plantDate}>
+              Ready: {new Date(plant.expected_ready_date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.plantActions}>
+          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[plant.status] + '20' }]}>
+            <Text style={[styles.statusText, { color: STATUS_COLORS[plant.status] }]}>
+              {STATUS_LABELS[plant.status]}
+            </Text>
+          </View>
+
+          {plant.status === 'growing' && (
+            <TouchableOpacity
+              style={styles.quickButton}
+              onPress={(e) => { e.stopPropagation?.(); handleMarkReady(plant); }}
+            >
+              <Text style={styles.quickButtonText}>Mark Ready</Text>
+            </TouchableOpacity>
+          )}
+
+          {plant.status === 'ready' && (
+            <TouchableOpacity
+              style={[styles.quickButton, styles.harvestQuickButton]}
+              onPress={(e) => { e.stopPropagation?.(); setHarvestTarget(plant); }}
+            >
+              <Text style={[styles.quickButtonText, styles.harvestQuickButtonText]}>Harvest</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Fixed header */}
       <View style={[shared.headerBar, { paddingTop: insets.top + 16 }]}>
         <Text style={shared.headerTitle}>Garden</Text>
         <View style={shared.headerButtons}>
+          <TouchableOpacity style={shared.btnOutline} onPress={handleSuggestToggle}>
+            <Text style={shared.btnOutlineText}>Suggest</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={shared.btnFilled}
             onPress={() => {
               setAddPlantInitialName(undefined);
               setSourceSuggestionId(undefined);
+              setEditTarget(null);
               setAddPlantVisible(true);
             }}
           >
@@ -325,127 +473,103 @@ export default function GardenScreen() {
         </View>
       </View>
 
+      {/* Filter pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterBar}
+        contentContainerStyle={styles.filterBarContent}
+      >
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[styles.filterPill, activeFilter === f.key && styles.filterPillActive]}
+            onPress={() => setActiveFilter(f.key)}
+          >
+            <Text style={[styles.filterPillText, activeFilter === f.key && styles.filterPillTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Search bar */}
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search plants..."
+          placeholderTextColor={colors.text.placeholder}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+          clearButtonMode="never"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity style={styles.searchClear} onPress={() => setSearchQuery('')}>
+            <Text style={styles.searchClearText}>{'×'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
 
-      {/* ── What to Plant Now ─────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>What to Plant Now</Text>
-          <TouchableOpacity onPress={refreshSuggestions} disabled={suggestionsLoading}>
-            <Text style={styles.refreshLink}>{suggestionsLoading ? 'Loading…' : 'Refresh'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {suggestionsLoading ? (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator color={colors.brand.primary} />
-            <Text style={styles.loadingText}>{LOADING_MESSAGES[loadingMsgIndex]}</Text>
-          </View>
-        ) : suggestionsError ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>Could not load suggestions</Text>
-            <Text style={styles.errorDetail} selectable>{suggestionsError}</Text>
-          </View>
-        ) : activeSuggestions.length === 0 ? (
-          <Text style={styles.emptyText}>
-            No suggestions right now — tap Refresh to generate new ones.
-          </Text>
-        ) : (
-          activeSuggestions.map((s) => (
-            <SuggestionCard
-              key={s.id}
-              suggestion={s}
-              onAddToGarden={() => handleAddToGarden(s.id, s.plant_name)}
-              onDismiss={() => handleDismissSuggestion(s.id)}
-            />
-          ))
-        )}
-      </View>
-
-      {/* ── In the Ground ────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>In the Ground</Text>
-        </View>
-
-        {activePlants.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Nothing recorded yet — add plants when you put seedlings in.
-          </Text>
-        ) : (
-          activePlants.map((plant) => (
-            <TouchableOpacity
-              key={plant.id}
-              style={styles.plantCard}
-              onPress={() => setDetailTarget(plant)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.plantInfo}>
-                <Text style={styles.plantName}>{plant.plant_name}</Text>
-                {plant.variety && (
-                  <Text style={styles.plantVariety}>{plant.variety}</Text>
-                )}
-                {plant.expected_ready_date && (
-                  <Text style={styles.plantDate}>
-                    Ready: {new Date(plant.expected_ready_date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })}
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.plantActions}>
-                <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[plant.status] + '20' }]}>
-                  <Text style={[styles.statusText, { color: STATUS_COLORS[plant.status] }]}>
-                    {STATUS_LABELS[plant.status]}
-                  </Text>
-                </View>
-
-                {plant.status === 'growing' && (
-                  <TouchableOpacity
-                    style={styles.quickButton}
-                    onPress={(e) => { e.stopPropagation?.(); handleMarkReady(plant); }}
-                  >
-                    <Text style={styles.quickButtonText}>Mark Ready</Text>
-                  </TouchableOpacity>
-                )}
-
-                {plant.status === 'ready' && (
-                  <TouchableOpacity
-                    style={[styles.quickButton, styles.harvestQuickButton]}
-                    onPress={(e) => { e.stopPropagation?.(); setHarvestTarget(plant); }}
-                  >
-                    <Text style={[styles.quickButtonText, styles.harvestQuickButtonText]}>Harvest</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-
-      {/* ── Past Harvests ─────────────────────────────────────────────────── */}
-      {pastPlants.length > 0 && (
+      {/* ── Suggestions (inline expansion) ───────────────────────────────── */}
+      {suggestionsVisible && (
         <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => setShowPastHarvests((v) => !v)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sectionLabel}>Past Harvests</Text>
-            <Text style={styles.collapseToggle}>{showPastHarvests ? 'Hide' : `Show (${pastPlants.length})`}</Text>
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>What to Plant Now</Text>
+            <View style={styles.suggestHeaderActions}>
+              <TouchableOpacity onPress={refreshSuggestions} disabled={suggestionsLoading}>
+                <Text style={styles.refreshLink}>{suggestionsLoading ? 'Loading…' : 'Refresh'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setSuggestionsVisible(false)} style={styles.dismissClose}>
+                <Text style={styles.dismissCloseText}>{'×'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-          {showPastHarvests && pastPlants.map((plant) => (
-            <TouchableOpacity
-              key={plant.id}
-              style={[styles.plantCard, styles.plantCardMuted]}
-              onPress={() => setDetailTarget(plant)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.plantNameMuted}>{plant.plant_name}</Text>
-              <Text style={styles.statusTextMuted}>{STATUS_LABELS[plant.status]}</Text>
-            </TouchableOpacity>
-          ))}
+          {suggestionsLoading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color={colors.brand.primary} />
+              <Text style={styles.loadingText}>{LOADING_MESSAGES[loadingMsgIndex]}</Text>
+            </View>
+          ) : suggestionsError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorTitle}>Could not load suggestions</Text>
+              <Text style={styles.errorDetail} selectable>{suggestionsError}</Text>
+            </View>
+          ) : activeSuggestions.length === 0 ? (
+            <Text style={styles.emptyText}>
+              No suggestions right now {'—'} tap Refresh to generate new ones.
+            </Text>
+          ) : (
+            activeSuggestions.map((s) => (
+              <SuggestionCard
+                key={s.id}
+                suggestion={s}
+                isFromWishlist={wishlistNames.has(s.plant_name.toLowerCase().trim())}
+                onAddToGarden={() => handleAddToGarden(s.id, s.plant_name)}
+                onDismiss={() => handleDismissSuggestion(s.id)}
+              />
+            ))
+          )}
         </View>
+      )}
+
+      {/* ── Plant list ───────────────────────────────────────────────────── */}
+      {filteredPlants.length === 0 ? (
+        <View style={styles.emptyBlock}>
+          <Text style={styles.emptyText}>
+            {activeFilter === 'wishlist'
+              ? 'No plants in your list yet — add plants you want to grow later.'
+              : activeFilter === 'all'
+              ? 'Nothing recorded yet — add plants when you put seedlings in.'
+              : `No ${FILTERS.find((f) => f.key === activeFilter)?.label.toLowerCase()} plants right now.`}
+          </Text>
+        </View>
+      ) : (
+        filteredPlants.map(renderPlantCard)
       )}
 
       {/* ── Modals ────────────────────────────────────────────────────────── */}
@@ -494,18 +618,42 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
   content: { padding: 20 },
 
+  // Filter bar
+  filterBar: { backgroundColor: colors.background.app },
+  filterBarContent: { paddingHorizontal: 20, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
+  filterPill: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border.default, flexShrink: 0,
+  },
+  filterPillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
+  filterPillText: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  filterPillTextActive: { color: colors.brand.primary },
+
+  // Search
+  searchRow: {
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 8,
+    backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12,
+  },
+  searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
+  searchClear: { paddingLeft: 8, paddingVertical: 8 },
+  searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
+
+  // Suggestions section
   section: { marginBottom: 28 },
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 12,
   },
   sectionLabel: shared.sectionLabel,
+  suggestHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   refreshLink: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
-  collapseToggle: { fontSize: 13, color: colors.text.link, fontWeight: '600' },
+  dismissClose: { padding: 4 },
+  dismissCloseText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
 
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
   loadingText: { fontSize: 14, color: colors.text.muted },
   emptyText: { fontSize: 14, color: colors.text.placeholder, lineHeight: 20 },
+  emptyBlock: { paddingVertical: 20 },
   errorBox: {
     backgroundColor: colors.state.dangerLighter, borderWidth: 1, borderColor: colors.state.dangerBorder,
     borderRadius: 10, padding: 12, gap: 4,
@@ -513,6 +661,7 @@ const styles = StyleSheet.create({
   errorTitle: { fontSize: 14, fontWeight: '600', color: colors.state.danger },
   errorDetail: { fontSize: 12, color: colors.state.dangerText, lineHeight: 18 },
 
+  // Active plant card
   plantCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.background.surface, borderRadius: 12,
@@ -523,15 +672,26 @@ const styles = StyleSheet.create({
   plantName: { fontSize: 16, fontWeight: '600', color: colors.text.primary },
   plantVariety: { fontSize: 12, color: colors.text.placeholder, marginTop: 1 },
   plantDate: { fontSize: 12, color: colors.text.placeholder, marginTop: 2 },
-  plantNameMuted: { fontSize: 15, color: colors.text.placeholder, flex: 1 },
   plantActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 12, fontWeight: '600' },
-  statusTextMuted: { fontSize: 12, color: colors.text.placeholder },
 
   quickButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: colors.background.elevated },
   quickButtonText: { fontSize: 12, fontWeight: '600', color: colors.text.secondary },
   harvestQuickButton: { backgroundColor: colors.brand.primary },
   harvestQuickButtonText: { color: colors.text.inverse },
+
+  // Wishlist card
+  wishlistCard: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.text.placeholder,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  ctaText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
 });
