@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { loadCookLogForRecipe } from '../../lib/data';
 import {
   Modal, View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Linking, ActivityIndicator, Platform, Alert,
+  TouchableOpacity, Linking, ActivityIndicator, Platform,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import type { Recipe, RecipeCategory } from '../../types';

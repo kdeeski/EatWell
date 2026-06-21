@@ -4,8 +4,9 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator,
+  TextInput, ActivityIndicator,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';

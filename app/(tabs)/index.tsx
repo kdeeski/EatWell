@@ -3,7 +3,8 @@
 // any morning check-in that needs completing, and quick fridge notes.
 
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toTitleCase } from '../../lib/titleCase';

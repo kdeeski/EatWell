@@ -5,9 +5,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, PanResponder, ActivityIndicator, Modal, Alert,
+  Animated, PanResponder, ActivityIndicator, Modal,
   TextInput, FlatList, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import { upsertInventoryItem, toggleShoppingItemChecked, loadInventoryItems, loadGardenPlants, addAdHocShoppingItems, updateShoppingItem, deleteShoppingItems, refreshConditionalItems } from '../../lib/data';

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList,
-  ActivityIndicator, Linking, TextInput, Alert, Platform,
+  ActivityIndicator, Linking, TextInput, Platform,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import type { Recipe, RecipeCategory } from '../../types';

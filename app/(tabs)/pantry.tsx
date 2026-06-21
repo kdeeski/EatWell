@@ -7,10 +7,11 @@ import { useRouter } from 'expo-router';
 import { toTitleCase } from '../../lib/titleCase';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, ActivityIndicator, TextInput, Alert,
+  Modal, ActivityIndicator, TextInput,
   KeyboardAvoidingView, Platform, FlatList,
   Animated, PanResponder, StatusBar,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useAppStore } from '../../store/useAppStore';
 import { categorisePantryItems } from '../../lib/claude';
 import { upsertInventoryItem, updateInventoryItem, saveStocktakeItems, removeInventoryItem, addAdHocShoppingItem, updateShoppingItem } from '../../lib/data';

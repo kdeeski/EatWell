@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
   LayoutAnimation, UIManager,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);

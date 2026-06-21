@@ -5,8 +5,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, TextInput, Animated, PanResponder,
+  ActivityIndicator, TextInput, Animated, PanResponder,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';

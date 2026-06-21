@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator,
+  ScrollView, ActivityIndicator,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadGardenHarvestsForPlant } from '../../lib/data';
 import type { GardenPlant, GardenHarvest, PlantStatus } from '../../types';
