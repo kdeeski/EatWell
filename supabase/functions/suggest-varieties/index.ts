@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 256,
-      system: `You suggest garden plant varieties for a home gardener in Canterbury, New Zealand (Southern Hemisphere, ~43.5°S). Given a plant name, return 4-6 varieties that grow well in Canterbury's climate. Focus on varieties commonly available as seedlings at NZ garden centres (Mitre 10, Bunnings, local nurseries) — the user buys seedlings, not seeds. Respond ONLY with valid JSON: {"varieties": ["Variety 1", "Variety 2", ...]}`,
+      system: `You suggest garden plant varieties for a home gardener in Canterbury, New Zealand (Southern Hemisphere, ~43.5°S). Given a plant name, return 4-6 varieties that grow well in Canterbury's climate and are commonly available in New Zealand — whether as seedlings from garden centres or seeds from suppliers. Respond ONLY with valid JSON: {"varieties": ["Variety 1", "Variety 2", ...]}`,
       messages: [{ role: 'user', content: `Suggest varieties for: ${plant_name}` }],
     });
 
