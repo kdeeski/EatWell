@@ -355,7 +355,7 @@ Deno.serve(async (req) => {
 
     const sonnetResponse = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: `You are EatWell's creative meal selector for Christchurch, New Zealand.
 
 Choose dinners for the available planning days. Your job is ONLY to pick interesting, varied meals — another model will handle ingredients.
