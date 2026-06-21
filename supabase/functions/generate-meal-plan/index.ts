@@ -295,6 +295,34 @@ function normalisePlan(plan: any, availableDays: PlanningDay[]): any {
 
 // ── JSON parsing ────────────────────────────────────────────────────────────
 
+function recoverTruncatedArray(raw: string): any[] {
+  const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+  // Find each complete top-level object in the array by matching balanced braces
+  const results: any[] = [];
+  let depth = 0;
+  let objStart = -1;
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') { if (depth === 0) objStart = i; depth++; }
+    if (ch === '}') {
+      depth--;
+      if (depth === 0 && objStart >= 0) {
+        try {
+          results.push(JSON.parse(cleaned.slice(objStart, i + 1)));
+        } catch { /* skip malformed object */ }
+        objStart = -1;
+      }
+    }
+  }
+  return results;
+}
+
 function jsonOrError(raw: string): { parsed: any; error: string | null } {
   const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
@@ -376,8 +404,8 @@ RULES:
 
 Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, or seasoning. Aim for one dish the user might not have thought of.
 
-CRITICAL: Output ONLY raw JSON. No markdown fences, no explanation, no preamble. Start with { and end with }.
-{"meals":[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description with technique and flavour details","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}],"planning_notes":"string"}`,
+CRITICAL: Output ONLY a raw JSON array. No markdown fences, no explanation, no wrapping object. Start with [ and end with ].
+[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description with technique and flavour details","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}]`,
       messages: [{ role: 'user', content: creativityPrompt }],
     });
 
@@ -389,20 +417,37 @@ CRITICAL: Output ONLY raw JSON. No markdown fences, no explanation, no preamble.
     }
 
     const sonnetText = (sonnetResponse.content[0] as { type: string; text: string }).text;
-    const { parsed: mealChoices, error: sonnetError } = jsonOrError(sonnetText);
-    if (sonnetError) {
+    const { parsed: sonnetParsed, error: sonnetError } = jsonOrError(sonnetText);
+
+    // Pass 1 returns a bare array — recover partial results on truncation
+    let mealsArray: any[] = [];
+    if (sonnetParsed) {
+      mealsArray = Array.isArray(sonnetParsed) ? sonnetParsed : (sonnetParsed.meals ?? []);
+    } else if (sonnetResponse.stop_reason === 'max_tokens') {
+      // Truncated — try to recover complete meal objects
+      const recovered = recoverTruncatedArray(sonnetText);
+      if (recovered.length > 0) {
+        log(`pass 1 truncated but recovered ${recovered.length} complete meals`);
+        mealsArray = recovered;
+      } else {
+        log(`pass 1 JSON parse failed (unrecoverable): ${sonnetError}`);
+        return new Response(JSON.stringify({ error: sonnetError }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
       log(`pass 1 JSON parse failed: ${sonnetError}`);
       return new Response(JSON.stringify({ error: sonnetError }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    log(`pass 1 — ${mealChoices.meals?.length ?? 0} meals chosen`);
+    log(`pass 1 — ${mealsArray.length} meals chosen`);
 
     // ── Pass 2: Haiku generates ingredients for each meal (fast, structured) ─
     log('pass 2 — Haiku generating ingredients...');
 
-    const mealList = (mealChoices.meals ?? []).map((m: any) => ({
+    const mealList = mealsArray.map((m: any) => ({
       day_of_week: m.day_of_week,
       meal_name: m.meal_name,
       description: m.description,
@@ -478,7 +523,7 @@ Return only valid JSON.`,
 
     log(`done — ${plan.meals.length} meals, ${plan.meals.reduce((n: number, m: any) => n + m.ingredients.length, 0)} ingredients total`);
 
-    return new Response(JSON.stringify({ ...plan, planning_notes: mealChoices.planning_notes ?? plan.planning_notes ?? '' }), {
+    return new Response(JSON.stringify(plan), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
