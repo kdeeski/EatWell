@@ -377,7 +377,6 @@ export async function saveMealPlan(
     needs_recipe: m.needs_recipe,
     estimated_prep_minutes: m.estimated_prep_minutes,
     ingredients: m.ingredients,
-    holly_included: m.holly_included ?? ((m as any).guests_count > 0),
     guests_count: (m as any).guests_count ?? 0,
   }));
 
@@ -444,7 +443,7 @@ export async function pushMealToNextWeek(
     needs_recipe:           meal.needs_recipe,
     estimated_prep_minutes: meal.estimated_prep_minutes,
     ingredients:            meal.ingredients,
-    holly_included:         meal.holly_included,
+    guests_count:           meal.guests_count ?? 0,
   });
 
   const { data: meals, error: mealsError } = await supabase

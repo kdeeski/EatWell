@@ -79,7 +79,6 @@ export interface GeneratedMealPlan {
       ingredient_category: ItemCategory;
       herb_backup: string | null;
     }>;
-    holly_included?: boolean;
     guests_count?: number;
   }>;
   planning_notes: string; // AI's summary of why these meals were chosen

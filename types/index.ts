@@ -181,8 +181,7 @@ export interface PlannedMeal {
   needs_recipe: boolean;
   estimated_prep_minutes: number | null;
   ingredients: PlannedIngredient[];
-  holly_included: boolean;
-  guests_count?: number;
+  guests_count: number;
   created_at: string;
 }
 

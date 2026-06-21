@@ -5,123 +5,306 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function jsonOrError(raw: string, label: string): { parsed: any; error: string | null } {
-  const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-  try {
-    return { parsed: JSON.parse(cleaned), error: null };
-  } catch {
-    return { parsed: null, error: `${label} — invalid JSON. Raw start: ${cleaned.slice(0, 200)}` };
-  }
-}
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-// ── Allowed enum values ─────────────────────────────────────────────────────
-
-const INGREDIENT_CATEGORIES = [
+const ALLOWED_CATEGORIES = new Set([
   'meat_fish', 'dairy_eggs', 'produce', 'herbs_spices', 'pantry_dry_goods',
   'bread_bakery', 'cans_preserves', 'oils_vinegars', 'condiments_sauces',
   'beverages', 'alcohol', 'household',
-] as const;
+]);
 
-const STORES = ['grocer', 'butcher', 'supermarket', 'liquor_store'] as const;
-const BUY_TIMINGS = ['weekend', 'day_of', 'sunday_default'] as const;
+// ── Types ────────────────────────────────────────────────────────────────────
 
-// ── System prompt (three layers: hard rules → guidelines → output contract) ──
+type PlanningDay = {
+  day: number;
+  name: string;
+  guests: number;
+  people: string[];
+  dietary: string[];
+  fish_ok: boolean;
+  max_minutes: number | null;
+  weekend: boolean;
+};
 
-const SYSTEM_PROMPT = `You are EatWell's meal planning engine for Christchurch, New Zealand. Create practical, interesting weekly dinner plans using the user's available food, preferences, household schedule, and seasonal context.
+// ── Pre-compute scheduling (deterministic — no LLM needed) ──────────────────
 
-Return only valid JSON matching the requested schema. Do not include prose, markdown, comments, or extra keys.
+function buildPlanningDays(input: any): { available: PlanningDay[]; pinned: any[]; away: number[] } {
+  const nightsAway: number[] = input.nightsAway ?? [];
+  const pinnedMeals: any[] = input.pinnedMeals ?? [];
+  const members: any[] = input.householdMembers ?? [];
+  const prefs = input.preferences ?? null;
+  const weeknightMax = prefs?.weeknight_max_minutes ?? null;
+  const pinnedDays = new Set(pinnedMeals.map((m: any) => m.day_of_week));
 
-DECISION HIERARCHY (highest priority first):
-1. Safety and dietary exclusions always win.
-2. Nights away and pinned meals are fixed.
-3. Carry-forward and repeat meals must be honoured where there is an available night.
-4. Fresh fridge items should be used before they spoil.
-5. Freezer items may be used where they fit naturally but are not urgent.
-6. User preferences personalise the plan.
-7. Variety, seasonality, and waste reduction guide final choices.
+  const available: PlanningDay[] = [];
 
-─── HARD RULES ───
+  for (let d = 0; d < 7; d++) {
+    if (nightsAway.includes(d) || pinnedDays.has(d)) continue;
 
-SCHEDULING
-- Generate a meal for every day 0–6 that is not a night away and not a pinned meal. Never leave a slot empty.
-- Do not replace pinned meals, but factor them into variety, pasta, fish, and protein rotation checks.
-- Include all carry-forward meals on available days using their exact names.
-- Include all repeat meals where possible.
-- Respect all dietary restrictions and excluded proteins.
+    const peopleHome = members.filter((m: any) => (m.nights_home ?? []).includes(d));
+    const dietary = peopleHome
+      .map((m: any) => m.dietary_notes?.trim())
+      .filter(Boolean) as string[];
+    const fishOk = !dietary.some((n) =>
+      /no fish|fish allergy|no seafood|seafood allergy|doesn't eat fish|does not eat fish|avoid fish|avoid seafood/i.test(n)
+    );
+    const isWeekend = d >= 5;
 
-WEEKLY BALANCE
-- Exactly 1 fish/seafood meal per week. Place it only on a night where no fish-restricted household member is joining. Prefer Sunday. Set buy_timing to sunday_default for fish ingredients.
-- At least 1 fully vegetarian dinner (no meat, no fish — eggs/dairy fine). It must be substantial and interesting.
-- Every meal must be a complete dinner. Never suggest a dip, spread, condiment, or side dish as a standalone meal.
+    available.push({
+      day: d,
+      name: DAY_NAMES[d],
+      guests: peopleHome.length,
+      people: peopleHome.map((m: any) => m.name).filter(Boolean),
+      dietary,
+      fish_ok: fishOk,
+      max_minutes: isWeekend ? null : weeknightMax,
+      weekend: isWeekend,
+    });
+  }
 
-FRIDGE AND FREEZER
-- Use fridge items before they spoil. Mark fridge-sourced ingredients as from_fridge: true.
-- Freezer items are not urgent. Use only where they genuinely fit. Do not cluster similar freezer proteins on consecutive nights. Mark freezer-sourced ingredients as from_freezer: true.
-- Both from_fridge and from_freezer items should not be added as purchases.
+  const pinned = pinnedMeals.map((m: any) => ({
+    day: m.day_of_week,
+    name: DAY_NAMES[m.day_of_week],
+    meal: m.name,
+  }));
 
-VARIETY ACROSS WEEKS
-- Do not repeat last week's meals, close variants, same base format, or same protein cut — unless a fridge item, carry-forward, or repeat meal requires it.
+  return { available, pinned, away: nightsAway };
+}
 
-PASTA
-- Maximum 1 pasta dish per week unless 2+ carry-forward meals are pasta.
-- Never repeat a pasta shape in the same week, including pinned meals.
-- Always name the exact shape (Rigatoni, Spaghetti, Orecchiette, etc.) — never generic "Pasta" or "Dried Pasta".
-- Fresh pasta (pappardelle, tagliatelle, fettuccine, etc.): mark as is_pantry_staple: true and from_fridge: false — the user makes their own.
+// ── Build context blocks ────────────────────────────────────────────────────
 
-PORTIONS
-- Default: cook for 1 small appetite. Fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium.
-- Scale up when household members are joining that night.
+function itemList(items: any[] = []): string {
+  if (!items.length) return 'None';
+  return items.map((i: any) => `${i.quantity ?? ''} ${i.unit ?? ''} ${i.name ?? ''}`.trim()).filter(Boolean).join(', ');
+}
 
-INGREDIENTS
-- Garden items: only mark from_garden: true when the item is listed as available and genuinely used.
-- Long-life fridge staples (eggs, milk, cream, crème fraîche, parmesan, Greek yoghurt, butter, standard cheeses): do not list for small amounts. Only list for large amounts (300ml+ cream, 4+ eggs, 200g+ cheese). If listed, always name eggs as "Eggs".
-- Pantry staples: mark is_pantry_staple: true for items a well-equipped kitchen keeps (oils, salt, pepper, dried spices, flour, sugar, soy sauce, vinegars, canned tomatoes, rice, dried pulses, onions, garlic, stock, etc.).
-- Fresh herbs: set herb_backup to a short fallback. Note if hard to find in Christchurch.
-- Every ingredient must be a single item — never combine (e.g. separate "Salt" and "Black Pepper").
-- Always include fresh weekly purchases: fresh herbs, fresh fish, fresh meat, fresh produce, bread/bakery.
-- If yeast is required, use active dried yeast only with a blooming step.
+function buildUserPrompt(input: any, days: { available: PlanningDay[]; pinned: any[]; away: number[] }): string {
+  const prefs = input.preferences ?? null;
+  const carryForward: any[] = input.carryForwardMeals ?? [];
+  const repeatMeals: any[] = input.repeatMeals ?? [];
+  const previousMeals: string[] = input.previousMeals ?? [];
 
-FORMATTING
-- Metric measurements only. UK/NZ English.
-- Meal names: max 7 words, Title Case, use "with" and "and" as connectors.
-- Ingredient names: Title Case, single items.
-- ingredient_category: use exactly one of ${INGREDIENT_CATEGORIES.join(', ')}.
-- dairy_eggs for all dairy and egg items. herbs_spices for all herbs and spices. alcohol items: set store to liquor_store.
-- store: use exactly one of ${STORES.join(', ')}.
-- buy_timing: use exactly one of ${BUY_TIMINGS.join(', ')}. Use sunday_default for fish.
-- Set needs_recipe: true for dishes with non-obvious technique or more than 6 fresh components.
+  const sections: string[] = [];
 
-─── GUIDELINES ───
+  sections.push(`Plan dinners for this week.
 
-MEAL QUALITY
-- Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, seasoning, or texture contrast.
-- Avoid boring defaults (plain steamed protein with rice, generic stir-fry, basic salad as a main). Simple is fine if deliberate and well-executed.
-- Aim for one dish per week the user might not have thought of themselves.
+TODAY: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
-DIVERSITY
-- At least 3 broad culinary traditions across the week. No more than 2 meals from the same tradition.
-- At least 3 cooking approaches (braise, roast, sauté, stir-fry, grill, char, poach, steam, raw elements).
-- Avoid the same protein on consecutive nights where possible.
+DAYS THAT NEED MEALS:
+${JSON.stringify(days.available)}`);
 
-WASTE AND SEASONALITY
-- Cluster fresh ingredients across meals to minimise waste, especially herbs.
-- A single garden herb should appear in at most 2 meals.
-- Use seasonal New Zealand produce appropriate to the date.
+  if (days.pinned.length) {
+    sections.push(`PINNED MEALS (locked — factor into variety/rotation but do not replace):
+${JSON.stringify(days.pinned)}`);
+  }
 
-PERSONALISATION
-- Match user preferences: lean toward liked cuisines, avoid disliked, respect spice level, keep Mon–Thu within weeknight_max_minutes, apply weekend cooking preference.
-- Follow standing orders and cooking notes.
+  if (days.away.length) {
+    sections.push(`NIGHTS AWAY: ${days.away.map((d) => DAY_NAMES[d]).join(', ')}`);
+  }
 
-─── OUTPUT CONTRACT ───
+  sections.push(`FRIDGE (use before they spoil): ${itemList(input.fridgeItems)}`);
+  sections.push(`FREEZER (use where it fits, not urgent): ${itemList(input.freezerItems)}`);
+  sections.push(`GARDEN: ${(input.gardenAvailable ?? []).join(', ') || 'None'}`);
 
-Before returning, verify:
-- Every required day has exactly one meal. No night-away has a meal. No pinned day is replaced.
-- Carry-forward and repeat meals are included.
-- Exactly 1 fish meal (unless impossible). At least 1 vegetarian meal.
-- Max 1 pasta meal (unless carry-forward forces more). No repeated pasta shapes.
-- All ingredient_category and store values are from the allowed sets.
-- Every ingredient is a single item. All quantities are metric.
-- Response is valid JSON only.`;
+  const spontaneous = input.spontaneousAdditions ?? [];
+  if (spontaneous.length) sections.push(`SPONTANEOUS ADDITIONS: ${spontaneous.join(', ')}`);
+
+  if (previousMeals.length) {
+    sections.push(`LAST WEEK (avoid repeats/close variants): ${previousMeals.join(', ')}`);
+  }
+
+  if (carryForward.length) {
+    const lines = carryForward.map((m: any) => m.name + (m.description ? `: ${m.description}` : ''));
+    sections.push(`CARRY FORWARD (must include, exact names): ${lines.join('; ')}`);
+  }
+
+  if (repeatMeals.length) {
+    const lines = repeatMeals.map((m: any) => m.name + (m.description ? `: ${m.description}` : ''));
+    sections.push(`REPEAT MEALS (include these): ${lines.join('; ')}`);
+  }
+
+  if (prefs) {
+    const pLines: string[] = [];
+    if (prefs.cuisine_likes?.length) pLines.push(`Love: ${prefs.cuisine_likes.join(', ')}`);
+    if (prefs.cuisine_dislikes?.length) pLines.push(`Avoid: ${prefs.cuisine_dislikes.join(', ')}`);
+    if (prefs.proteins_excluded?.length) pLines.push(`Excluded proteins: ${prefs.proteins_excluded.join(', ')}`);
+    if (prefs.spice_level) pLines.push(`Spice: ${prefs.spice_level}`);
+    if (prefs.weeknight_max_minutes) pLines.push(`Weeknight max: ${prefs.weeknight_max_minutes}min`);
+    if (prefs.weekend_cooking) pLines.push(`Weekend: ${prefs.weekend_cooking === 'project' ? 'love a project' : 'keep it simple'}`);
+    if (prefs.cooking_notes) pLines.push(`Notes: ${prefs.cooking_notes}`);
+    if (pLines.length) sections.push(`PREFERENCES: ${pLines.join('. ')}`);
+    if (prefs.standing_orders) sections.push(`STANDING ORDERS (always apply): ${prefs.standing_orders}`);
+  }
+
+  sections.push(`Return ONLY this JSON:
+{"meals":[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25,"guests_count":0,"ingredients":[{"name":"string","quantity":1,"unit":"string","source":"buy|fridge|freezer|garden|pantry","store":"grocer|butcher|supermarket|liquor_store","buy_timing":"weekend|day_of|sunday_default","ingredient_category":"meat_fish|dairy_eggs|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces|beverages|alcohol|household","herb_backup":null}]}],"planning_notes":"string"}`);
+
+  return sections.join('\n\n');
+}
+
+// ── System prompt ───────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are EatWell's meal planning engine for Christchurch, New Zealand.
+
+The app pre-computes which days need meals, who is home, guest counts, dietary constraints, and fish eligibility. The planning_days array in the user prompt is the source of truth for scheduling — do not second-guess it.
+
+Return only valid JSON. No prose, markdown, or extra keys.
+
+PRIORITY ORDER:
+1. Dietary exclusions are absolute.
+2. Carry-forward and repeat meals must be included.
+3. Fridge items should be used before they spoil.
+4. Freezer items may be used where they fit naturally.
+5. Preferences personalise the plan.
+6. Variety, seasonality, and waste reduction guide remaining choices.
+
+HARD RULES
+
+Generate exactly one meal per planning day. No more, no fewer.
+
+Exactly 1 fish/seafood meal per week. Only on a day where fish_ok is true. Prefer Sunday. Set buy_timing to sunday_default for fish.
+
+At least 1 fully vegetarian dinner (no meat, no fish — eggs/dairy fine). Must be substantial.
+
+Every meal must be a complete dinner — never a dip, spread, condiment, or side dish alone.
+
+Max 1 pasta dish per week unless 2+ carry-forward meals are pasta. Never repeat a pasta shape (including pinned meals). Always name the exact shape — never generic "Pasta". Fresh pasta: set source to pantry (user makes their own).
+
+Fridge items: set source to fridge. Freezer items: set source to freezer. Do not cluster similar freezer proteins on consecutive nights. Garden items: set source to garden, only when listed as available and genuinely used.
+
+Do not repeat last week's meals or close variants unless fridge/carry-forward/repeat requires it.
+
+Respect max_minutes per day when provided.
+
+Portions: cook for 1 small appetite by default (fish 150-180g, chicken 2 thighs, red meat 150g, pasta/rice 70-80g). Scale up for guests.
+
+Long-life fridge staples (eggs, milk, cream, crème fraîche, parmesan, yoghurt, butter, cheese): omit for small amounts. Only list for large amounts (300ml+ cream, 4+ eggs, 200g+ cheese). If listed, name as "Eggs".
+
+Pantry staples (oils, salt, spices, flour, soy sauce, vinegars, canned tomatoes, rice, pulses, onions, garlic, stock): set source to pantry.
+
+Fresh herbs: always set herb_backup. Note if hard to find in Christchurch.
+
+Every ingredient must be a single item in Title Case. Never combine (e.g. separate Salt and Black Pepper).
+
+Metric only. UK/NZ English. Meal names: max 7 words, Title Case, use "with" and "and" not commas.
+
+ingredient_category: meat_fish, dairy_eggs, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces, beverages, alcohol, household. Use dairy_eggs for all dairy/eggs. herbs_spices for all herbs and spices. alcohol: set store to liquor_store.
+
+Set needs_recipe: true for non-obvious technique or 6+ fresh components.
+
+GUIDELINES
+
+Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, or seasoning.
+
+Avoid boring defaults. Simple is fine if deliberate.
+
+At least 3 culinary traditions across the week, max 2 from the same tradition.
+
+At least 3 cooking approaches (braise, roast, sauté, grill, poach, steam, raw).
+
+Avoid same protein on consecutive nights.
+
+Cluster fresh ingredients to reduce waste. Max 2 meals per garden herb.
+
+Use seasonal NZ produce for the date.
+
+If yeast is needed, use active dried yeast with a blooming step.`;
+
+// ── Post-generation normalisation (fix what the model gets wrong) ────────────
+
+function normaliseCategory(raw: string, name: string): string {
+  const cat = (raw ?? '').toLowerCase();
+  if (ALLOWED_CATEGORIES.has(cat)) return cat;
+
+  const n = name.toLowerCase();
+  if (/egg|milk|cream|butter|cheese|yoghurt|yogurt|parmesan|feta|mozzarella|ricotta|crème fraîche/.test(n)) return 'dairy_eggs';
+  if (/chicken|beef|pork|lamb|fish|salmon|cod|tarakihi|snapper|prawn|seafood|bacon|sausage|mince|steak/.test(n)) return 'meat_fish';
+  if (/parsley|coriander|basil|thyme|rosemary|sage|oregano|mint|dill|chilli|paprika|cumin|turmeric|pepper|salt/.test(n)) return 'herbs_spices';
+  if (/bread|sourdough|baguette|pita|tortilla/.test(n)) return 'bread_bakery';
+  if (/oil|vinegar/.test(n)) return 'oils_vinegars';
+  if (/sauce|mustard|paste|harissa|gochujang|miso/.test(n)) return 'condiments_sauces';
+  if (/rice|pasta|spaghetti|linguine|rigatoni|penne|flour|sugar|lentil|bean|chickpea|noodle/.test(n)) return 'pantry_dry_goods';
+  return 'produce';
+}
+
+function normaliseStore(store: string, category: string): string {
+  if (category === 'alcohol') return 'liquor_store';
+  const s = (store ?? '').toLowerCase();
+  if (['grocer', 'butcher', 'supermarket', 'liquor_store'].includes(s)) return s;
+  if (category === 'meat_fish') return 'butcher';
+  return 'supermarket';
+}
+
+function normaliseBuyTiming(timing: string, source: string, name: string): string {
+  const t = (timing ?? '').toLowerCase();
+  if (['weekend', 'day_of', 'sunday_default'].includes(t)) return t;
+  if (source === 'buy' && /fish|salmon|cod|snapper|tarakihi|prawn|seafood/i.test(name)) return 'sunday_default';
+  return 'weekend';
+}
+
+function toTitleCase(s: string): string {
+  const lower = new Set(['and', 'or', 'with', 'in', 'on', 'the', 'a', 'of', 'by']);
+  return s.split(/\s+/).map((w, i) => {
+    const l = w.toLowerCase();
+    if (i > 0 && lower.has(l)) return l;
+    return l.charAt(0).toUpperCase() + l.slice(1);
+  }).join(' ');
+}
+
+function normaliseIngredient(ing: any): any {
+  const source = ['buy', 'fridge', 'freezer', 'garden', 'pantry'].includes(ing.source)
+    ? ing.source
+    : (ing.from_freezer ? 'freezer' : ing.from_fridge ? 'fridge' : ing.from_garden ? 'garden' : ing.is_pantry_staple ? 'pantry' : 'buy');
+
+  const category = normaliseCategory(ing.ingredient_category, ing.name ?? '');
+
+  return {
+    name: toTitleCase(String(ing.name ?? '').trim()),
+    quantity: ing.quantity ?? 1,
+    unit: ing.unit ?? '',
+    store: normaliseStore(ing.store, category),
+    buy_timing: normaliseBuyTiming(ing.buy_timing, source, ing.name ?? ''),
+    from_fridge: source === 'fridge' || source === 'freezer',
+    from_freezer: source === 'freezer',
+    from_garden: source === 'garden',
+    is_pantry_staple: source === 'pantry',
+    ingredient_category: category,
+    herb_backup: category === 'herbs_spices' ? (ing.herb_backup ?? null) : null,
+  };
+}
+
+function normalisePlan(plan: any, availableDays: PlanningDay[]): any {
+  const meals = Array.isArray(plan.meals) ? plan.meals : [];
+  return {
+    meals: meals.map((m: any) => {
+      const day = availableDays.find((d) => d.day === m.day_of_week);
+      return {
+        day_of_week: m.day_of_week,
+        meal_name: String(m.meal_name ?? '').trim(),
+        description: String(m.description ?? '').trim(),
+        is_fish: Boolean(m.is_fish),
+        needs_recipe: Boolean(m.needs_recipe),
+        estimated_prep_minutes: Number(m.estimated_prep_minutes ?? 30),
+        guests_count: Number(m.guests_count ?? day?.guests ?? 0),
+        ingredients: Array.isArray(m.ingredients) ? m.ingredients.map(normaliseIngredient) : [],
+      };
+    }),
+    planning_notes: String(plan.planning_notes ?? ''),
+  };
+}
+
+// ── JSON parsing ────────────────────────────────────────────────────────────
+
+function jsonOrError(raw: string): { parsed: any; error: string | null } {
+  const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+  try {
+    return { parsed: JSON.parse(cleaned), error: null };
+  } catch {
+    return { parsed: null, error: `Invalid JSON. Start: ${cleaned.slice(0, 200)}` };
+  }
+}
+
+// ── Handler ─────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -133,156 +316,45 @@ Deno.serve(async (req) => {
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'ANTHROPIC_API_KEY secret not set' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const client = new Anthropic({ apiKey });
     const rawBody = await req.text();
     if (!rawBody) {
       return new Response(JSON.stringify({ error: 'Request body is empty' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
     const input = JSON.parse(rawBody);
+    const { available, pinned, away } = buildPlanningDays(input);
 
-    // ── Build dynamic context blocks ────────────────────────────────────────
-
-    const fridgeSummary = (input.fridgeItems ?? [])
-      .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
-      .join(', ');
-
-    const freezerSummary = (input.freezerItems ?? [])
-      .map((i: any) => `${i.quantity} ${i.unit} ${i.name}`)
-      .join(', ');
-
-    const prefs = input.preferences ?? null;
-
-    let prefsBlock = '';
-    if (prefs) {
-      const lines: string[] = [];
-      if (prefs.cuisine_likes?.length)    lines.push(`Cuisines I love: ${prefs.cuisine_likes.join(', ')}`);
-      if (prefs.cuisine_dislikes?.length) lines.push(`Cuisines to avoid: ${prefs.cuisine_dislikes.join(', ')}`);
-      if (prefs.proteins_excluded?.length) lines.push(`Proteins I don't eat: ${prefs.proteins_excluded.join(', ')}`);
-      if (prefs.spice_level)              lines.push(`Spice level: ${prefs.spice_level}`);
-      if (prefs.weeknight_max_minutes)    lines.push(`Max weeknight cooking time: ${prefs.weeknight_max_minutes} minutes`);
-      if (prefs.weekend_cooking)          lines.push(`Weekend cooking style: ${prefs.weekend_cooking === 'project' ? 'Love a cooking project' : 'Keep it simple'}`);
-      if (prefs.cooking_notes)            lines.push(`Personal notes: ${prefs.cooking_notes}`);
-      if (lines.length) prefsBlock = `\nUSER PREFERENCES:\n${lines.join('\n')}\n`;
+    if (available.length === 0) {
+      return new Response(
+        JSON.stringify({ meals: [], planning_notes: 'No available planning days.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
-    let standingOrdersBlock = '';
-    if (prefs?.standing_orders) {
-      standingOrdersBlock = `\nSTANDING ORDERS (always apply):\n${prefs.standing_orders}\n`;
-    }
-
-    const carryForward: Array<{ name: string; description: string | null }> = input.carryForwardMeals ?? [];
-    let carryForwardBlock = '';
-    if (carryForward.length > 0) {
-      const lines = carryForward.map((m) => `- ${m.name}${m.description ? `: ${m.description}` : ''}`);
-      carryForwardBlock = `\nCARRY FORWARD (must include all):\n${lines.join('\n')}\n`;
-    }
-
-    const repeatMeals: Array<{ name: string; rating: number; description: string | null }> = input.repeatMeals ?? [];
-    let repeatMealsBlock = '';
-    if (repeatMeals.length > 0) {
-      const stars = (r: number) => '★'.repeat(r) + '☆'.repeat(5 - r);
-      const lines = repeatMeals.map((m) => `- ${m.name} (${stars(m.rating)})${m.description ? `: ${m.description}` : ''}`);
-      repeatMealsBlock = `\nREPEAT MEALS (include all, distributed through the week):\n${lines.join('\n')}\n`;
-    }
-
-    const previousMeals: string[] = input.previousMeals ?? [];
-    let previousMealsBlock = '';
-    if (previousMeals.length > 0) {
-      previousMealsBlock = `\nLAST WEEK'S MEALS (do not repeat these or close variants):\n${previousMeals.map((n) => `- ${n}`).join('\n')}\n`;
-    }
-
-    const pinnedMeals: Array<{ name: string; day_of_week: number }> = input.pinnedMeals ?? [];
-    let pinnedMealsBlock = '';
-    if (pinnedMeals.length > 0) {
-      const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      const lines = pinnedMeals.map((m) => `- ${DAY_NAMES[m.day_of_week]}: ${m.name}`);
-      pinnedMealsBlock = `\nPINNED MEALS (locked — do not replace, but factor into rotation):\n${lines.join('\n')}\n`;
-    }
-
-    const DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const householdMembers = input.householdMembers ?? [];
-    let householdBlock = '';
-    if (householdMembers.length > 0) {
-      const lines = householdMembers.map((m: any) => {
-        const nights = (m.nights_home ?? []).map((d: number) => DAY_NAMES_FULL[d]).join(', ');
-        const dietary = m.dietary_notes ? ` (${m.dietary_notes})` : '';
-        return `- ${m.name}${dietary}: ${nights || 'not this week'}`;
-      });
-      householdBlock = `\nHOUSEHOLD:\n${lines.join('\n')}\n`;
-    }
-
-    // ── Build user prompt ───────────────────────────────────────────────────
-
-    const userPrompt = `Plan 7 dinners for this week.
-
-FRIDGE (use before they spoil):
-${fridgeSummary || 'Nothing noted'}
-
-FREEZER (use where it fits, not urgent):
-${freezerSummary || 'Nothing noted'}
-
-GARDEN (available now):
-${(input.gardenAvailable ?? []).join(', ') || 'Nothing ready'}
-
-SPONTANEOUS ADDITIONS:
-${(input.spontaneousAdditions ?? []).join(', ') || 'None'}
-${previousMealsBlock}${pinnedMealsBlock}${carryForwardBlock}${repeatMealsBlock}
-NIGHTS AWAY (0=Monday, skip these):
-${(input.nightsAway ?? []).join(', ') || 'None'}
-${householdBlock}${standingOrdersBlock}${prefsBlock}
-TODAY: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-
-Return ONLY this JSON shape:
-{
-  "meals": [
-    {
-      "day_of_week": 0,
-      "meal_name": "string",
-      "description": "2-3 sentence cooking description",
-      "is_fish": false,
-      "needs_recipe": false,
-      "estimated_prep_minutes": 25,
-      "guests_count": 0,
-      "ingredients": [
-        {
-          "name": "string",
-          "quantity": 1,
-          "unit": "string",
-          "store": "grocer|butcher|supermarket|liquor_store",
-          "buy_timing": "weekend|day_of|sunday_default",
-          "from_fridge": false,
-          "from_freezer": false,
-          "from_garden": false,
-          "is_pantry_staple": false,
-          "ingredient_category": "meat_fish|dairy_eggs|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces|beverages|alcohol|household",
-          "herb_backup": null
-        }
-      ]
-    }
-  ],
-  "planning_notes": "string"
-}`;
+    const client = new Anthropic({ apiKey });
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: 'user', content: buildUserPrompt(input, { available, pinned, away }) }],
     });
 
-    const raw = (response.content[0] as { type: string; text: string }).text;
-    const { parsed: plan, error: parseError } = jsonOrError(raw, 'Meal plan');
-    if (parseError) {
-      return new Response(JSON.stringify({ error: parseError }), {
+    const text = (response.content[0] as { type: string; text: string }).text;
+    const { parsed, error } = jsonOrError(text);
+    if (error) {
+      return new Response(JSON.stringify({ error }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const plan = normalisePlan(parsed, available);
 
     return new Response(JSON.stringify(plan), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -291,7 +363,7 @@ Return ONLY this JSON shape:
   } catch (err: any) {
     return new Response(
       JSON.stringify({ error: err.message ?? 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });
