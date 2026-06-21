@@ -8,6 +8,7 @@ import {
   Alert, ActivityIndicator, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/useAppStore';
 import {
   updateGardenPlantStatus,
@@ -453,8 +454,9 @@ export default function GardenScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Fixed header */}
-      <View style={[shared.headerBar, { paddingTop: insets.top + 16 }]}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background.app }}>
+      {/* Header */}
+      <View style={shared.headerBar}>
         <Text style={shared.headerTitle}>Garden</Text>
         <View style={shared.headerButtons}>
           <TouchableOpacity style={shared.btnOutline} onPress={handleSuggestToggle}>
@@ -474,27 +476,7 @@ export default function GardenScreen() {
         </View>
       </View>
 
-      {/* Filter pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={styles.filterBarContent}
-      >
-        {FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.filterPill, activeFilter === f.key && styles.filterPillActive]}
-            onPress={() => setActiveFilter(f.key)}
-          >
-            <Text style={[styles.filterPillText, activeFilter === f.key && styles.filterPillTextActive]}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Search bar */}
+      {/* Search */}
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
@@ -512,6 +494,22 @@ export default function GardenScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Filter pills */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterBarContent}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[styles.filterPill, activeFilter === f.key && styles.filterPillActive]}
+            onPress={() => setActiveFilter(f.key)}
+          >
+            <Text style={[styles.filterPillText, activeFilter === f.key && styles.filterPillTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      </SafeAreaView>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
 
@@ -621,7 +619,7 @@ const styles = StyleSheet.create({
 
   // Filter bar
   filterBar: { backgroundColor: colors.background.app },
-  filterBarContent: { paddingHorizontal: 20, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
+  filterBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
   filterPill: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
     backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border.default, flexShrink: 0,
@@ -631,10 +629,7 @@ const styles = StyleSheet.create({
   filterPillTextActive: { color: colors.brand.primary },
 
   // Search
-  searchRow: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 8,
-    backgroundColor: colors.background.elevated, borderRadius: 10, paddingHorizontal: 12,
-  },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 8, backgroundColor: colors.background.surface, borderRadius: 10, paddingHorizontal: 12 },
   searchInput: { flex: 1, height: 38, fontSize: 15, color: colors.text.primary },
   searchClear: { paddingLeft: 8, paddingVertical: 8 },
   searchClearText: { fontSize: 20, color: colors.text.placeholder, lineHeight: 22 },
