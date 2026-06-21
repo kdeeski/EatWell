@@ -110,10 +110,12 @@ export default function PlantDetailModal({ plant, onClose, onStatusChange, onHar
             {/* Meta info */}
             {plant.variety && <MetaRow label="Variety" value={plant.variety} />}
             {plant.location_note && <MetaRow label="Location" value={plant.location_note} />}
-            <MetaRow
-              label="Planted"
-              value={new Date(plant.planted_date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
-            />
+            {plant.planted_date && (
+              <MetaRow
+                label="Planted"
+                value={new Date(plant.planted_date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+              />
+            )}
             {plant.expected_ready_date && (
               <MetaRow
                 label="Expected ready"

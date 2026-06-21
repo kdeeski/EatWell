@@ -300,6 +300,8 @@ export default function CheckinFlow() {
           rating: null,
           would_cook_again: null,
           notes: null,
+          drink_name: null,
+          drink_notes: null,
           voice_note_url: null,
           ate_out: true,
         });

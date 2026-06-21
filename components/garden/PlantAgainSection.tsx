@@ -51,7 +51,7 @@ export default function PlantAgainSection({ plant, harvests, onAddToGarden }: Pr
         variety: plant.variety,
         current_month: now.getMonth() + 1,
         current_year: now.getFullYear(),
-        previous_planted_date: plant.planted_date,
+        previous_planted_date: plant.planted_date ?? '',
         previous_notes: plant.notes,
         previous_location: plant.location_note,
         harvest_summary: buildHarvestSummary(harvests),

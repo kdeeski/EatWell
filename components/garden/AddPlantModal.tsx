@@ -43,7 +43,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
       setPlantName(editPlant.plant_name);
       setVariety(editPlant.variety ?? '');
       setLocationNote(editPlant.location_note ?? '');
-      setPlantedDate(editPlant.planted_date);
+      setPlantedDate(editPlant.planted_date ?? '');
       setExpectedReady(editPlant.expected_ready_date ?? '');
       setIsCutAndComeAgain(editPlant.is_cut_and_come_again);
       setQuantityPlanted(editPlant.quantity_planted != null ? String(editPlant.quantity_planted) : '');

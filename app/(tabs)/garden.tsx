@@ -295,6 +295,7 @@ export default function GardenScreen() {
         notes: null,
         added_date: new Date().toISOString().split('T')[0],
         depleted: false,
+        is_staple: false,
       });
       upsertStore(inventoryItem);
 
