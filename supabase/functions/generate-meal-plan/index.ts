@@ -312,6 +312,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const t0 = Date.now();
+    const log = (label: string) => console.log(`[meal-plan] ${label} — ${Date.now() - t0}ms`);
+
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
       return new Response(
@@ -329,6 +332,7 @@ Deno.serve(async (req) => {
 
     const input = JSON.parse(rawBody);
     const { available, pinned, away } = buildPlanningDays(input);
+    log(`scheduling done — ${available.length} days to fill, ${pinned.length} pinned, ${away.length} away`);
 
     if (available.length === 0) {
       return new Response(
@@ -337,30 +341,42 @@ Deno.serve(async (req) => {
       );
     }
 
+    const userPrompt = buildUserPrompt(input, { available, pinned, away });
+    const systemLen = SYSTEM_PROMPT.length;
+    const userLen = userPrompt.length;
+    log(`prompts built — system: ${systemLen} chars, user: ${userLen} chars, total: ${systemLen + userLen} chars (~${Math.round((systemLen + userLen) / 4)} tokens est.)`);
+
     const client = new Anthropic({ apiKey });
+    log('calling Claude API...');
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildUserPrompt(input, { available, pinned, away }) }],
+      messages: [{ role: 'user', content: userPrompt }],
     });
+
+    const usage = response.usage;
+    log(`API done — input: ${usage.input_tokens} tokens, output: ${usage.output_tokens} tokens`);
 
     const text = (response.content[0] as { type: string; text: string }).text;
     const { parsed, error } = jsonOrError(text);
     if (error) {
+      log(`JSON parse failed: ${error}`);
       return new Response(JSON.stringify({ error }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const plan = normalisePlan(parsed, available);
+    log(`normalised — ${plan.meals.length} meals, ${plan.meals.reduce((n: number, m: any) => n + m.ingredients.length, 0)} ingredients total`);
 
     return new Response(JSON.stringify(plan), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (err: any) {
+    console.error(`[meal-plan] FAILED: ${err.message ?? 'Unknown error'}`);
     return new Response(
       JSON.stringify({ error: err.message ?? 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
