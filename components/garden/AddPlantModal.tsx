@@ -2,7 +2,12 @@ import { useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  LayoutAnimation, UIManager,
 } from 'react-native';
+
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addGardenPlant, updateGardenPlant } from '../../lib/data';
 import type { GardenPlant, PlantStatus } from '../../types';
@@ -176,13 +181,13 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               <View style={styles.modeRow}>
                 <TouchableOpacity
                   style={[styles.modePill, addMode === 'planting' && styles.modePillActive]}
-                  onPress={() => setAddMode('planting')}
+                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddMode('planting'); }}
                 >
                   <Text style={[styles.modePillText, addMode === 'planting' && styles.modePillTextActive]}>Planting</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modePill, addMode === 'wishlist' && styles.modePillActive]}
-                  onPress={() => setAddMode('wishlist')}
+                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddMode('wishlist'); }}
                 >
                   <Text style={[styles.modePillText, addMode === 'wishlist' && styles.modePillTextActive]}>Add to List</Text>
                 </TouchableOpacity>
