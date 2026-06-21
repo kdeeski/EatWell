@@ -51,6 +51,7 @@ export default function PlanningFlow() {
     return adjusted >= 4 ? 'week_picker' : 'fridge';
   });
   const [generatingMessage, setGeneratingMessage] = useState(0);
+  const [generatingElapsed, setGeneratingElapsed] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const GENERATING_MESSAGES = [
@@ -65,6 +66,7 @@ export default function PlanningFlow() {
   ];
 
   const generatingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Belt-and-suspenders: Expo Router may resolve params after the first render,
   // so the useState initializer can see weekOffsetParam as undefined even when a
@@ -83,17 +85,26 @@ export default function PlanningFlow() {
   useEffect(() => {
     if (step === 'generating') {
       setGeneratingMessage(0);
+      setGeneratingElapsed(0);
       generatingIntervalRef.current = setInterval(() => {
         setGeneratingMessage((prev) => Math.min(prev + 1, GENERATING_MESSAGES.length - 1));
       }, 4000);
+      elapsedIntervalRef.current = setInterval(() => {
+        setGeneratingElapsed((prev) => prev + 1);
+      }, 1000);
     } else {
       if (generatingIntervalRef.current) {
         clearInterval(generatingIntervalRef.current);
         generatingIntervalRef.current = null;
       }
+      if (elapsedIntervalRef.current) {
+        clearInterval(elapsedIntervalRef.current);
+        elapsedIntervalRef.current = null;
+      }
     }
     return () => {
       if (generatingIntervalRef.current) clearInterval(generatingIntervalRef.current);
+      if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     };
   }, [step]);
   const [fridgeConfirmed, setFridgeConfirmed] = useState(false);
@@ -781,7 +792,18 @@ export default function PlanningFlow() {
           <View style={styles.centeredBlock}>
             <ActivityIndicator size="large" color={colors.brand.primary} />
             <Text style={styles.generatingText}>{GENERATING_MESSAGES[generatingMessage]}</Text>
-            <Text style={styles.generatingSubtext}>This usually takes 20–40 seconds</Text>
+            <Text style={styles.generatingSubtext}>
+              {generatingElapsed < 5
+                ? 'Preparing your week...'
+                : generatingElapsed < 15
+                ? 'Claude is designing your meals...'
+                : generatingElapsed < 40
+                ? 'Still thinking — building a great week takes a moment...'
+                : generatingElapsed < 70
+                ? 'Taking longer than usual — hang tight...'
+                : 'Almost there — finalising your plan...'}
+            </Text>
+            <Text style={styles.generatingTimer}>{generatingElapsed}s</Text>
           </View>
         )}
 
@@ -910,7 +932,8 @@ const styles = StyleSheet.create({
 
   centeredBlock: { paddingTop: 60, gap: 20, alignItems: 'center' },
   generatingText: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
-  generatingSubtext: { fontSize: 13, color: colors.text.placeholder, textAlign: 'center' },
+  generatingSubtext: { fontSize: 13, color: colors.text.placeholder, textAlign: 'center', marginTop: 4, maxWidth: 280 },
+  generatingTimer: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', marginTop: 8, fontVariant: ['tabular-nums'] },
   doneTitle: { fontSize: 26, fontWeight: '700', color: colors.text.primary, textAlign: 'center' },
   doneBody: { fontSize: 15, color: colors.text.muted, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
   centeredButton: { alignSelf: 'stretch' },
