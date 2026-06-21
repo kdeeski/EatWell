@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, TextInput,
+  Alert, ActivityIndicator, TextInput, Animated, PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -71,6 +71,47 @@ function extractIngredientFrequency(meals: ReturnType<typeof useAppStore.getStat
     .sort((a, b) => b[1] - a[1])
     .slice(0, 15)
     .map(([name, meal_count]) => ({ name, meal_count }));
+}
+
+function SwipeablePlantRow({ plant, onSwipeRight, onSwipeLeft, rightLabel, children }: {
+  plant: GardenPlant;
+  onSwipeRight: () => void;
+  onSwipeLeft: () => void;
+  rightLabel: string;
+  children: React.ReactNode;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const THRESHOLD = 80;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+        Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8,
+      onPanResponderMove: (_, { dx }) => translateX.setValue(dx),
+      onPanResponderRelease: (_, { dx }) => {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+        if (dx > THRESHOLD) onSwipeRight();
+        else if (dx < -THRESHOLD) onSwipeLeft();
+      },
+    })
+  ).current;
+
+  const rightOpacity = translateX.interpolate({ inputRange: [0, THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
+  const leftOpacity = translateX.interpolate({ inputRange: [-THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
+
+  return (
+    <View style={{ overflow: 'hidden', marginBottom: 8 }}>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { opacity: rightOpacity }]}>
+        <Text style={styles.swipeBgText}>{rightLabel}</Text>
+      </Animated.View>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { opacity: leftOpacity }]}>
+        <Text style={styles.swipeBgText}>Finished</Text>
+      </Animated.View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
 }
 
 export default function GardenScreen() {
@@ -451,11 +492,11 @@ export default function GardenScreen() {
 
     // Finished/harvested card (muted)
     const isMuted = plant.status === 'harvested' || plant.status === 'finished';
+    const swipeable = plant.status === 'growing' || plant.status === 'planted' || plant.status === 'ready';
 
-    return (
+    const card = (
       <TouchableOpacity
-        key={plant.id}
-        style={[styles.plantCard, isMuted && styles.plantCardMuted]}
+        style={[styles.plantCard, isMuted && styles.plantCardMuted, swipeable && { marginBottom: 0 }]}
         onPress={() => setDetailTarget(plant)}
         activeOpacity={0.7}
       >
@@ -498,6 +539,25 @@ export default function GardenScreen() {
         </View>
       </TouchableOpacity>
     );
+
+    if (swipeable) {
+      return (
+        <SwipeablePlantRow
+          key={plant.id}
+          plant={plant}
+          onSwipeRight={() => {
+            if (plant.status === 'ready') setHarvestTarget(plant);
+            else handleMarkReady(plant);
+          }}
+          onSwipeLeft={() => handleStatusChange(plant.id, 'finished')}
+          rightLabel={plant.status === 'ready' ? 'Harvest' : 'Ready'}
+        >
+          {card}
+        </SwipeablePlantRow>
+      );
+    }
+
+    return <View key={plant.id}>{card}</View>;
   };
 
   return (
@@ -617,7 +677,12 @@ export default function GardenScreen() {
           </Text>
         </View>
       ) : (
-        filteredPlants.map(renderPlantCard)
+        <>
+          {filteredPlants.map(renderPlantCard)}
+          {filteredPlants.some((p) => p.status === 'growing' || p.status === 'planted' || p.status === 'ready') && (
+            <Text style={styles.swipeHint}>Swipe right for ready · Swipe left for finished</Text>
+          )}
+        </>
       )}
 
       {/* ── Modals ────────────────────────────────────────────────────────── */}
@@ -766,4 +831,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   ctaText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
+
+  // Swipe backgrounds
+  swipeBg: { position: 'absolute', top: 0, bottom: 0, width: 120, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
+  swipeBgRight: { left: 0, backgroundColor: colors.garden.ready },
+  swipeBgLeft: { right: 0, backgroundColor: colors.text.placeholder },
+  swipeBgText: { color: colors.text.inverse, fontWeight: '700', fontSize: 13 },
+  swipeHint: { fontSize: 12, color: colors.text.placeholder, textAlign: 'center', paddingVertical: 8 },
 });
