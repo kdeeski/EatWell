@@ -347,31 +347,133 @@ Deno.serve(async (req) => {
     log(`prompts built — system: ${systemLen} chars, user: ${userLen} chars, total: ${systemLen + userLen} chars (~${Math.round((systemLen + userLen) / 4)} tokens est.)`);
 
     const client = new Anthropic({ apiKey });
-    log('calling Claude API...');
 
-    const response = await client.messages.create({
+    // ── Pass 1: Sonnet picks the meals (creative, tiny output) ──────────────
+    log('pass 1 — Sonnet choosing meals...');
+
+    const creativityPrompt = buildUserPrompt(input, { available, pinned, away });
+
+    const sonnetResponse = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+      max_tokens: 2000,
+      system: `You are EatWell's creative meal selector for Christchurch, New Zealand.
+
+Choose dinners for the available planning days. Your job is ONLY to pick interesting, varied meals — another model will handle ingredients.
+
+RULES:
+- Exactly 1 fish/seafood meal (on a day where fish_ok is true, prefer Sunday)
+- At least 1 fully vegetarian dinner (no meat, no fish)
+- Max 1 pasta dish. Name the exact shape. Never generic "Pasta"
+- Every meal must be a complete dinner, not a dip/spread/side
+- Max 7 words per meal name. Title Case. Use "with" and "and" not commas
+- Avoid repeating last week's meals or close variants
+- At least 3 culinary traditions, max 2 from the same
+- At least 3 cooking techniques across the week
+- Avoid same protein on consecutive nights
+- Respect dietary constraints and excluded proteins per day
+- Respect max_minutes per day when provided
+- Use seasonal NZ produce for the date
+
+Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, or seasoning. Aim for one dish the user might not have thought of.
+
+Return ONLY JSON: {"meals":[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}],"planning_notes":"string"}`,
+      messages: [{ role: 'user', content: creativityPrompt }],
     });
 
-    const usage = response.usage;
-    log(`API done — input: ${usage.input_tokens} tokens, output: ${usage.output_tokens} tokens`);
+    const sonnetUsage = sonnetResponse.usage;
+    log(`pass 1 done — input: ${sonnetUsage.input_tokens}, output: ${sonnetUsage.output_tokens} tokens`);
 
-    const text = (response.content[0] as { type: string; text: string }).text;
-    const { parsed, error } = jsonOrError(text);
-    if (error) {
-      log(`JSON parse failed: ${error}`);
-      return new Response(JSON.stringify({ error }), {
+    const sonnetText = (sonnetResponse.content[0] as { type: string; text: string }).text;
+    const { parsed: mealChoices, error: sonnetError } = jsonOrError(sonnetText);
+    if (sonnetError) {
+      log(`pass 1 JSON parse failed: ${sonnetError}`);
+      return new Response(JSON.stringify({ error: sonnetError }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const plan = normalisePlan(parsed, available);
-    log(`normalised — ${plan.meals.length} meals, ${plan.meals.reduce((n: number, m: any) => n + m.ingredients.length, 0)} ingredients total`);
+    log(`pass 1 — ${mealChoices.meals?.length ?? 0} meals chosen`);
 
-    return new Response(JSON.stringify(plan), {
+    // ── Pass 2: Haiku generates ingredients for each meal (fast, structured) ─
+    log('pass 2 — Haiku generating ingredients...');
+
+    const mealList = (mealChoices.meals ?? []).map((m: any) => ({
+      day_of_week: m.day_of_week,
+      meal_name: m.meal_name,
+      description: m.description,
+      is_fish: m.is_fish ?? false,
+      needs_recipe: m.needs_recipe ?? false,
+      estimated_prep_minutes: m.estimated_prep_minutes ?? 30,
+    }));
+
+    const ingredientPrompt = `Generate ingredient lists for these meals. Each meal is already decided — do not change meal names or descriptions.
+
+MEALS TO FILL:
+${JSON.stringify(mealList)}
+
+FRIDGE (source: fridge): ${itemList(input.fridgeItems)}
+FREEZER (source: freezer): ${itemList(input.freezerItems)}
+GARDEN (source: garden): ${(input.gardenAvailable ?? []).join(', ') || 'None'}
+PLANNING DAYS: ${JSON.stringify(available)}
+
+Return the complete plan as JSON with ingredients added:
+{"meals":[{"day_of_week":0,"meal_name":"kept as-is","description":"kept as-is","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25,"guests_count":0,"ingredients":[{"name":"string","quantity":1,"unit":"string","source":"buy|fridge|freezer|garden|pantry","store":"grocer|butcher|supermarket|liquor_store","buy_timing":"weekend|day_of|sunday_default","ingredient_category":"meat_fish|dairy_eggs|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces|beverages|alcohol|household","herb_backup":null}]}],"planning_notes":"string"}`;
+
+    const haikuResponse = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 8000,
+      system: `You are EatWell's ingredient engine for Christchurch, New Zealand. Given a set of decided meals, generate complete ingredient lists.
+
+RULES:
+- Use fridge items where they fit the meal. Set source to fridge.
+- Use freezer items where they fit naturally. Set source to freezer. Do not cluster similar freezer proteins.
+- Use garden items only when listed as available and genuinely used. Set source to garden.
+- Pantry staples (oils, salt, spices, flour, soy sauce, vinegars, canned tomatoes, rice, pulses, onions, garlic, stock): set source to pantry.
+- Long-life fridge staples (eggs, milk, cream, crème fraîche, parmesan, yoghurt, butter, cheese): omit for small amounts. Only list for large amounts (300ml+ cream, 4+ eggs, 200g+ cheese). Name eggs as "Eggs".
+- Fresh pasta: set source to pantry (user makes their own).
+- Fresh herbs: set herb_backup to a short fallback.
+- Every ingredient must be a single item in Title Case. Never combine.
+- Metric only. UK/NZ English.
+- ingredient_category: meat_fish, dairy_eggs, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces, beverages, alcohol, household.
+- dairy_eggs for all dairy/eggs. herbs_spices for all herbs and spices. alcohol: set store to liquor_store.
+- Fish: set buy_timing to sunday_default.
+- Portions: cook for 1 small appetite (fish 150-180g, chicken 2 thighs, red meat 150g, pasta/rice 70-80g). Scale for guests_count.
+- Set guests_count from the planning day's guest count.
+- Do NOT change meal_name or description — keep them exactly as given.
+
+Return only valid JSON.`,
+      messages: [{ role: 'user', content: ingredientPrompt }],
+    });
+
+    const haikuUsage = haikuResponse.usage;
+    log(`pass 2 done — input: ${haikuUsage.input_tokens}, output: ${haikuUsage.output_tokens} tokens`);
+
+    const haikuText = (haikuResponse.content[0] as { type: string; text: string }).text;
+    const { parsed: fullPlan, error: haikuError } = jsonOrError(haikuText);
+    if (haikuError) {
+      log(`pass 2 JSON parse failed: ${haikuError}`);
+      return new Response(JSON.stringify({ error: haikuError }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const plan = normalisePlan(fullPlan, available);
+
+    // Ensure Sonnet's meal names/descriptions survived Haiku's pass
+    for (const original of mealList) {
+      const meal = plan.meals.find((m: any) => m.day_of_week === original.day_of_week);
+      if (meal) {
+        meal.meal_name = String(original.meal_name).trim();
+        meal.description = String(original.description).trim();
+        meal.is_fish = original.is_fish;
+        meal.needs_recipe = original.needs_recipe;
+        meal.estimated_prep_minutes = original.estimated_prep_minutes;
+      }
+    }
+
+    log(`done — ${plan.meals.length} meals, ${plan.meals.reduce((n: number, m: any) => n + m.ingredients.length, 0)} ingredients total`);
+
+    return new Response(JSON.stringify({ ...plan, planning_notes: mealChoices.planning_notes ?? plan.planning_notes ?? '' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
