@@ -178,6 +178,7 @@ export interface GardenSuggestionsInput {
   plants_in_ground: Array<{ plant_name: string; status: string }>;
   cooked_meal_ingredients: Array<{ name: string; meal_count: number }>;
   inventory: Array<{ name: string; location: string }>;
+  wishlist_plants: string[];
 }
 
 export async function generateGardenSuggestions(

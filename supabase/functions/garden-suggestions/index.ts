@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
       current_month,
       current_year,
       plants_in_ground = [],
+      wishlist_plants = [],
       cooked_meal_ingredients = [],
       inventory = [],
     } = input;
@@ -63,12 +64,17 @@ Deno.serve(async (req) => {
           .join(', ')
       : 'no data yet';
 
+    const wishlistText = wishlist_plants.length > 0
+      ? wishlist_plants.join(', ')
+      : 'none';
+
     const inventoryText = inventory.length > 0
       ? inventory.map((i: any) => i.name).join(', ')
       : 'nothing noted';
 
     const userPrompt = `Month: ${monthName} ${current_year}
 Plants in ground: ${plantsInGroundText}
+Wishlist (wants to grow): ${wishlistText}
 Top cooked ingredients (recent meal history): ${cookedIngredientsText}
 Current pantry/garden inventory: ${inventoryText}
 
@@ -81,7 +87,8 @@ Return:
       "why_worth_growing": "string",
       "why_suits_cooking": "string",
       "soil_notes": "string",
-      "sun_notes": "string"
+      "sun_notes": "string",
+      "companion_note": "string or null"
     }
   ]
 }`;
@@ -107,6 +114,8 @@ Rules:
 - why_suits_cooking: one sentence, reference their actual ingredient patterns where possible.
 - soil_notes: one short phrase describing ideal soil (e.g. "Well-drained, compost-enriched soil").
 - sun_notes: one short phrase describing sun requirement (e.g. "Full sun, 6+ hours" or "Part shade tolerant").
+- If a suggestion matches a plant on the user's wishlist, prioritise it and note which in-ground plants are good companions in companion_note. Format: 'Friends with: your rosemary, thyme' — only mention plants actually in their ground.
+- companion_note: one sentence about companion planting, considering what's in the ground. Null if no useful companion advice.
 - All why fields: one sentence maximum. soil_notes and sun_notes: one phrase each, no full stop.
 - Respond ONLY with valid JSON.`,
       messages: [{ role: 'user', content: userPrompt }],

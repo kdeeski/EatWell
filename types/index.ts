@@ -74,14 +74,14 @@ export interface UserPreferences {
 
 // ─── Garden ───────────────────────────────────────────────────────────────────
 
-export type PlantStatus = 'planted' | 'growing' | 'ready' | 'harvested' | 'finished';
+export type PlantStatus = 'planted' | 'growing' | 'ready' | 'harvested' | 'finished' | 'wishlist';
 export type HarvestStorage = 'fresh' | 'frozen' | 'preserved';
 
 export interface GardenPlant {
   id: string;
   user_id: string;
   plant_name: string;
-  planted_date: string; // ISO date
+  planted_date: string | null; // ISO date — null for wishlist items
   expected_ready_date: string | null; // ISO date
   status: PlantStatus;
   quantity_planted: number | null;
@@ -114,6 +114,7 @@ export interface GardenSuggestion {
   why_suits_cooking: string;
   soil_notes: string | null;
   sun_notes: string | null;
+  companion_note: string | null;
   month_generated: number;
   dismissed: boolean;
   added_to_garden: boolean;
