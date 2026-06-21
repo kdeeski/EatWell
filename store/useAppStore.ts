@@ -58,6 +58,8 @@ interface AppState {
   // ── User preferences ──────────────────────────────────────────────────────
   userPreferences: UserPreferences | null;
   setUserPreferences: (prefs: UserPreferences | null) => void;
+  needsOnboarding: boolean;
+  setNeedsOnboarding: (v: boolean) => void;
 
   // ── Recipes ───────────────────────────────────────────────────────────────
   recipes: Recipe[];
@@ -169,7 +171,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   // User preferences
   userPreferences: null,
-  setUserPreferences: (prefs) => set({ userPreferences: prefs }),
+  setUserPreferences: (prefs) => set({ userPreferences: prefs, needsOnboarding: false }),
+  needsOnboarding: false,
+  setNeedsOnboarding: (v) => set({ needsOnboarding: v }),
 
   // Recipes
   recipes: [],

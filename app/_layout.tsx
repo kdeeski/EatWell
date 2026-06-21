@@ -62,12 +62,17 @@ export default function RootLayout() {
     }
   }, [updateReady, session]);
 
+  const needsOnboarding = useAppStore((s) => s.needsOnboarding);
+
   useEffect(() => {
     if (session === undefined) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!session && !inAuthGroup) router.replace('/(auth)/login');
-    else if (session && inAuthGroup) router.replace('/(tabs)');
-  }, [session, segments]);
+    else if (session && inAuthGroup) {
+      if (needsOnboarding) router.replace('/onboarding');
+      else router.replace('/(tabs)');
+    }
+  }, [session, segments, needsOnboarding]);
 
   useEffect(() => {
     if (!session || bootstrapped.current) return;
@@ -87,6 +92,7 @@ export default function RootLayout() {
           if (shoppingData) setShoppingList(shoppingData.list, shoppingData.items);
           setTodayCheckin(todayCheckin);
           setUserPreferences(userPreferences);
+          if (!userPreferences) useAppStore.getState().setNeedsOnboarding(true);
           setRecipes(recipes);
           setBarItems(barItems);
           setCellarItems(cellarItems);
@@ -108,6 +114,7 @@ export default function RootLayout() {
         <Stack.Screen name="planning" options={{ presentation: 'modal' }} />
         <Stack.Screen name="checkin" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="onboarding" options={{ presentation: 'modal', gestureEnabled: false }} />
         <Stack.Screen name="bar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="cellar" options={{ presentation: 'modal' }} />
       </Stack>
