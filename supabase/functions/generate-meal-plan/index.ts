@@ -136,9 +136,6 @@ ${JSON.stringify(days.pinned)}`);
     if (prefs.standing_orders) sections.push(`STANDING ORDERS (always apply): ${prefs.standing_orders}`);
   }
 
-  sections.push(`Return ONLY this JSON:
-{"meals":[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25,"guests_count":0,"ingredients":[{"name":"string","quantity":1,"unit":"string","source":"buy|fridge|freezer|garden|pantry","store":"grocer|butcher|supermarket|liquor_store","buy_timing":"weekend|day_of|sunday_default","ingredient_category":"meat_fish|dairy_eggs|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces|beverages|alcohol|household","herb_backup":null}]}],"planning_notes":"string"}`);
-
   return sections.join('\n\n');
 }
 
@@ -383,10 +380,10 @@ Deno.serve(async (req) => {
 
     const sonnetResponse = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
+      max_tokens: 4000,
       system: `You are EatWell's creative meal selector for Christchurch, New Zealand.
 
-Choose dinners for the available planning days. Your job is ONLY to pick interesting, varied meals — another model will handle ingredients.
+Choose dinners for the available planning days. Your ONLY job is to pick meals — another model handles ingredients. Do NOT generate ingredients.
 
 RULES:
 - Exactly 1 fish/seafood meal (on a day where fish_ok is true, prefer Sunday)
@@ -404,9 +401,12 @@ RULES:
 
 Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, or seasoning. Aim for one dish the user might not have thought of.
 
-CRITICAL: Output ONLY a raw JSON array. No markdown fences, no explanation, no wrapping object. Start with [ and end with ].
-[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description with technique and flavour details","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}]`,
-      messages: [{ role: 'user', content: creativityPrompt }],
+Output a JSON array. One object per meal. No ingredients, no wrapping object, no markdown.
+Each object: {"day_of_week":0,"meal_name":"string","description":"2-3 sentences about cooking technique and flavours","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}`,
+      messages: [
+        { role: 'user', content: creativityPrompt },
+        { role: 'assistant', content: '[' },
+      ],
     });
 
     const sonnetUsage = sonnetResponse.usage;
@@ -416,7 +416,8 @@ CRITICAL: Output ONLY a raw JSON array. No markdown fences, no explanation, no w
       log('pass 1 TRUNCATED — output hit max_tokens limit');
     }
 
-    const sonnetText = (sonnetResponse.content[0] as { type: string; text: string }).text;
+    const sonnetRaw = (sonnetResponse.content[0] as { type: string; text: string }).text;
+    const sonnetText = '[' + sonnetRaw; // prepend the prefill character
     const { parsed: sonnetParsed, error: sonnetError } = jsonOrError(sonnetText);
 
     // Pass 1 returns a bare array — recover partial results on truncation
