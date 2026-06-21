@@ -497,7 +497,7 @@ export default function PlanScreen() {
                                 compact
                               />
                             )}
-                            {isSelected && isCurrentWeek && !cooked && (
+                            {isSelected && (isCurrentWeek || weekOffset === 1) && !cooked && (
                               <TouchableOpacity
                                 style={styles.secondaryAction}
                                 onPress={() => {
