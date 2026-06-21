@@ -156,26 +156,28 @@ export default function GardenScreen() {
 
   const filteredPlants = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return gardenPlants.filter((p) => {
-      // Search filter
-      if (q && !p.plant_name.toLowerCase().includes(q)) return false;
+    return gardenPlants
+      .filter((p) => {
+        // Search filter
+        if (q && !p.plant_name.toLowerCase().includes(q)) return false;
 
-      // Status filter
-      switch (activeFilter) {
-        case 'all':
-          return true;
-        case 'growing':
-          return p.status === 'planted' || p.status === 'growing';
-        case 'ready':
-          return p.status === 'ready';
-        case 'finished':
-          return p.status === 'harvested' || p.status === 'finished';
-        case 'wishlist':
-          return p.status === 'wishlist';
-        default:
-          return true;
-      }
-    });
+        // Status filter
+        switch (activeFilter) {
+          case 'all':
+            return true;
+          case 'growing':
+            return p.status === 'planted' || p.status === 'growing';
+          case 'ready':
+            return p.status === 'ready';
+          case 'finished':
+            return p.status === 'harvested' || p.status === 'finished';
+          case 'wishlist':
+            return p.status === 'wishlist';
+          default:
+            return true;
+        }
+      })
+      .sort((a, b) => a.plant_name.localeCompare(b.plant_name));
   }, [gardenPlants, activeFilter, searchQuery]);
 
   const wishlistNames = useMemo(
