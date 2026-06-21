@@ -403,10 +403,7 @@ Make the week feel like a thoughtful home menu. Prefer meals with clear techniqu
 
 Output a JSON array. One object per meal. No ingredients, no wrapping object, no markdown.
 Each object: {"day_of_week":0,"meal_name":"string","description":"2-3 sentences about cooking technique and flavours","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}`,
-      messages: [
-        { role: 'user', content: creativityPrompt },
-        { role: 'assistant', content: '[' },
-      ],
+      messages: [{ role: 'user', content: creativityPrompt + '\n\nRespond with ONLY a JSON array starting with [ — no other text.' }],
     });
 
     const sonnetUsage = sonnetResponse.usage;
@@ -416,8 +413,7 @@ Each object: {"day_of_week":0,"meal_name":"string","description":"2-3 sentences 
       log('pass 1 TRUNCATED — output hit max_tokens limit');
     }
 
-    const sonnetRaw = (sonnetResponse.content[0] as { type: string; text: string }).text;
-    const sonnetText = '[' + sonnetRaw; // prepend the prefill character
+    const sonnetText = (sonnetResponse.content[0] as { type: string; text: string }).text;
     const { parsed: sonnetParsed, error: sonnetError } = jsonOrError(sonnetText);
 
     // Pass 1 returns a bare array — recover partial results on truncation
