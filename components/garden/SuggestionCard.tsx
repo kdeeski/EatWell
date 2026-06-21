@@ -7,10 +7,11 @@ interface Props {
   suggestion: GardenSuggestion;
   isFromWishlist?: boolean;
   onAddToGarden: () => void;
+  onAddToWishlist: () => void;
   onDismiss: () => void;
 }
 
-export default function SuggestionCard({ suggestion, isFromWishlist, onAddToGarden, onDismiss }: Props) {
+export default function SuggestionCard({ suggestion, isFromWishlist, onAddToGarden, onAddToWishlist, onDismiss }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -67,8 +68,13 @@ export default function SuggestionCard({ suggestion, isFromWishlist, onAddToGard
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.addButton} onPress={onAddToGarden}>
-              <Text style={styles.addButtonText}>+ Add to Garden</Text>
+              <Text style={styles.addButtonText}>+ Plant Now</Text>
             </TouchableOpacity>
+            {!isFromWishlist && (
+              <TouchableOpacity style={styles.wishlistButton} onPress={onAddToWishlist}>
+                <Text style={styles.wishlistButtonText}>+ My List</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.dismissButton} onPress={onDismiss}>
               <Text style={styles.dismissButtonText}>Dismiss</Text>
             </TouchableOpacity>
@@ -181,6 +187,20 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: colors.text.inverse,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  wishlistButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.brand.primary,
+    backgroundColor: colors.brand.primary + '12',
+    alignItems: 'center',
+  },
+  wishlistButtonText: {
+    color: colors.brand.primary,
     fontSize: 14,
     fontWeight: '600',
   },

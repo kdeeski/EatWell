@@ -351,6 +351,7 @@ export default function PlanningFlow() {
               variety: null,
               location_note: null,
               is_cut_and_come_again: false,
+              suggestion_context: null,
             })
           )
       );

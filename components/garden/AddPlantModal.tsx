@@ -141,6 +141,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
             quantity_planted: isWishlist ? null : (quantityPlanted ? parseFloat(quantityPlanted) || null : null),
             notes: notes.trim() || null,
             is_cut_and_come_again: isWishlist ? false : isCutAndComeAgain,
+            suggestion_context: null,
           });
           onSave(plant);
           lastPlant = plant;

@@ -89,6 +89,15 @@ export interface HouseholdMember {
 export type PlantStatus = 'planted' | 'growing' | 'ready' | 'harvested' | 'finished' | 'wishlist';
 export type HarvestStorage = 'fresh' | 'frozen' | 'preserved';
 
+export interface SuggestionContext {
+  why_now: string;
+  why_worth_growing: string;
+  why_suits_cooking: string;
+  sun_notes?: string | null;
+  soil_notes?: string | null;
+  companion_note?: string | null;
+}
+
 export interface GardenPlant {
   id: string;
   user_id: string;
@@ -101,6 +110,7 @@ export interface GardenPlant {
   variety: string | null;
   location_note: string | null;
   is_cut_and_come_again: boolean;
+  suggestion_context: SuggestionContext | null;
   updated_at: string;
   created_at: string;
 }

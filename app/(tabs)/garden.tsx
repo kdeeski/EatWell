@@ -16,13 +16,14 @@ import {
   upsertInventoryItem,
   deleteGardenPlant,
   updateGardenPlant as updateGardenPlantDB,
+  addGardenPlant,
   loadGardenSuggestions,
   saveGardenSuggestions,
   dismissGardenSuggestion,
   markSuggestionAddedToGarden,
 } from '../../lib/data';
 import { generateGardenSuggestions } from '../../lib/claude';
-import type { GardenPlant, PlantStatus, HarvestStorage } from '../../types';
+import type { GardenPlant, GardenSuggestion, PlantStatus, HarvestStorage, SuggestionContext } from '../../types';
 import AddPlantModal from '../../components/garden/AddPlantModal';
 import HarvestModal from '../../components/garden/HarvestModal';
 import PlantDetailModal from '../../components/garden/PlantDetailModal';
@@ -242,6 +243,39 @@ export default function GardenScreen() {
     setAddPlantVisible(true);
   };
 
+  const handleAddToWishlist = async (suggestion: GardenSuggestion) => {
+    if (!userId) return;
+    const context: SuggestionContext = {
+      why_now: suggestion.why_now,
+      why_worth_growing: suggestion.why_worth_growing,
+      why_suits_cooking: suggestion.why_suits_cooking,
+      sun_notes: suggestion.sun_notes,
+      soil_notes: suggestion.soil_notes,
+      companion_note: suggestion.companion_note,
+    };
+    try {
+      const plant = await addGardenPlant({
+        user_id: userId,
+        plant_name: suggestion.plant_name,
+        variety: null,
+        planted_date: null,
+        expected_ready_date: null,
+        status: 'wishlist',
+        quantity_planted: null,
+        notes: null,
+        location_note: null,
+        is_cut_and_come_again: false,
+        suggestion_context: context,
+      });
+      addGardenPlantToStore(plant);
+      dismissSuggestion(suggestion.id);
+      try { await markSuggestionAddedToGarden(suggestion.id); } catch { /* silent */ }
+      try { await dismissGardenSuggestion(suggestion.id); } catch { /* silent */ }
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not add to list.');
+    }
+  };
+
   const handleDismissSuggestion = async (id: string) => {
     dismissSuggestion(id);
     try {
@@ -373,6 +407,7 @@ export default function GardenScreen() {
   const renderPlantCard = (plant: GardenPlant) => {
     // Wishlist card
     if (plant.status === 'wishlist') {
+      const ctx = plant.suggestion_context;
       return (
         <TouchableOpacity
           key={plant.id}
@@ -380,23 +415,36 @@ export default function GardenScreen() {
           onPress={() => setDetailTarget(plant)}
           activeOpacity={0.7}
         >
-          <View style={styles.plantInfo}>
-            <Text style={styles.plantName}>{plant.plant_name}</Text>
-            {plant.variety && (
-              <Text style={styles.plantVariety}>{plant.variety}</Text>
-            )}
+          <View style={styles.wishlistTop}>
+            <View style={styles.plantInfo}>
+              <Text style={styles.plantName}>{plant.plant_name}</Text>
+              {plant.variety && (
+                <Text style={styles.plantVariety}>{plant.variety}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={shared.ctaRow}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                setAddPlantInitialName(plant.plant_name);
+                setAddPlantVisible(true);
+              }}
+            >
+              <Text style={styles.ctaText}>Plant now</Text>
+              <Text style={shared.ctaArrow}>{'→'}</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={shared.ctaRow}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              setAddPlantInitialName(plant.plant_name);
-              setAddPlantVisible(true);
-            }}
-          >
-            <Text style={styles.ctaText}>Plant now</Text>
-            <Text style={shared.ctaArrow}>{'→'}</Text>
-          </TouchableOpacity>
+          {ctx && (
+            <View style={styles.wishlistContext}>
+              <Text style={styles.wishlistContextText}>{ctx.why_worth_growing}</Text>
+              {(ctx.sun_notes || ctx.soil_notes) && (
+                <View style={styles.wishlistGrowingNotes}>
+                  {ctx.sun_notes ? <Text style={styles.wishlistGrowingNote}>{'☀'} {ctx.sun_notes}</Text> : null}
+                  {ctx.soil_notes ? <Text style={styles.wishlistGrowingNote}>{'⬡'} {ctx.soil_notes}</Text> : null}
+                </View>
+              )}
+            </View>
+          )}
         </TouchableOpacity>
       );
     }
@@ -549,6 +597,7 @@ export default function GardenScreen() {
                 suggestion={s}
                 isFromWishlist={wishlistNames.has(s.plant_name.toLowerCase().trim())}
                 onAddToGarden={() => handleAddToGarden(s.id, s.plant_name)}
+                onAddToWishlist={() => handleAddToWishlist(s)}
                 onDismiss={() => handleDismissSuggestion(s.id)}
               />
             ))
@@ -680,7 +729,6 @@ const styles = StyleSheet.create({
 
   // Wishlist card
   wishlistCard: {
-    flexDirection: 'row', alignItems: 'center',
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: colors.text.placeholder,
@@ -688,6 +736,34 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
     backgroundColor: 'transparent',
+  },
+  wishlistTop: {
+    flexDirection: 'row', alignItems: 'center',
+  },
+  wishlistContext: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.hairline,
+  },
+  wishlistContextText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 19,
+  },
+  wishlistGrowingNotes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  wishlistGrowingNote: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    backgroundColor: colors.background.elevated,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   ctaText: { fontSize: 13, fontWeight: '600', color: colors.brand.primary },
 });
