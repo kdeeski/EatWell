@@ -212,7 +212,7 @@ export default function TodayScreen() {
           onPress={() => router.push('/settings')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.gearIcon}>⚙</Text>
+          <Text style={styles.gearIcon}>⋮</Text>
         </TouchableOpacity>
       </View>
 
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   content: { padding: 20 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   greeting: { fontSize: 28, fontWeight: '700', color: colors.text.primary },
-  gearIcon: { fontSize: 22, color: colors.text.placeholder },
+  gearIcon: { fontSize: 26, fontWeight: '700', color: colors.text.placeholder },
 
   checkinCard: {
     backgroundColor: colors.brand.primary,
