@@ -376,8 +376,8 @@ RULES:
 
 Make the week feel like a thoughtful home menu. Prefer meals with clear technique, sauce, or seasoning. Aim for one dish the user might not have thought of.
 
-CRITICAL: Output ONLY compact JSON, no markdown fences, no explanation. Keep descriptions under 20 words each.
-{"meals":[{"day_of_week":0,"meal_name":"string","description":"One short sentence about the dish","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}],"planning_notes":"Brief 1-sentence note"}`,
+CRITICAL: Output ONLY raw JSON. No markdown fences, no explanation, no preamble. Start with { and end with }.
+{"meals":[{"day_of_week":0,"meal_name":"string","description":"2-3 sentence cooking description with technique and flavour details","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25}],"planning_notes":"string"}`,
       messages: [{ role: 'user', content: creativityPrompt }],
     });
 
