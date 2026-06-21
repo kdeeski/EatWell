@@ -39,13 +39,17 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
   const [notes, setNotes]                 = useState('');
   const [saving, setSaving]               = useState(false);
   const [varietySuggestions, setVarietySuggestions] = useState<string[]>([]);
+  const [varietyNote, setVarietyNote] = useState<string | null>(null);
   const [varietyLoading, setVarietyLoading] = useState(false);
+  const [selectedVarieties, setSelectedVarieties] = useState<Set<string>>(new Set());
 
   const isEditing = !!editPlant;
 
   const handleOpen = () => {
     setVarietySuggestions([]);
+    setVarietyNote(null);
     setVarietyLoading(false);
+    setSelectedVarieties(new Set());
     if (editPlant) {
       setAddMode(editPlant.status === 'wishlist' ? 'wishlist' : 'planting');
       setPlantName(editPlant.plant_name);
@@ -83,6 +87,7 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
       const data = await response.json();
       if (data.varieties && Array.isArray(data.varieties)) {
         setVarietySuggestions(data.varieties);
+        setVarietyNote(data.note ?? null);
       }
     } catch {
       // Silent — variety suggestions are non-critical
@@ -114,19 +119,27 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
         });
         onSave(updated);
       } else {
-        const plant = await addGardenPlant({
-          user_id: userId,
-          plant_name: plantName.trim(),
-          variety: variety.trim() || null,
-          location_note: isWishlist ? null : (locationNote.trim() || null),
-          planted_date: isWishlist ? null : (plantedDate || today),
-          expected_ready_date: isWishlist ? null : (expectedReady.trim() || null),
-          status,
-          quantity_planted: isWishlist ? null : (quantityPlanted ? parseFloat(quantityPlanted) || null : null),
-          notes: notes.trim() || null,
-          is_cut_and_come_again: isWishlist ? false : isCutAndComeAgain,
-        });
-        onSave(plant);
+        const varieties = selectedVarieties.size > 1
+          ? [...selectedVarieties]
+          : [variety.trim() || null];
+
+        let lastPlant: GardenPlant | null = null;
+        for (const v of varieties) {
+          const plant = await addGardenPlant({
+            user_id: userId,
+            plant_name: plantName.trim(),
+            variety: v,
+            location_note: isWishlist ? null : (locationNote.trim() || null),
+            planted_date: isWishlist ? null : (plantedDate || today),
+            expected_ready_date: isWishlist ? null : (expectedReady.trim() || null),
+            status,
+            quantity_planted: isWishlist ? null : (quantityPlanted ? parseFloat(quantityPlanted) || null : null),
+            notes: notes.trim() || null,
+            is_cut_and_come_again: isWishlist ? false : isCutAndComeAgain,
+          });
+          onSave(plant);
+          lastPlant = plant;
+        }
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Could not save plant.');
@@ -204,16 +217,35 @@ export default function AddPlantModal({ visible, initialName, editPlant, userId,
               placeholderTextColor={colors.text.placeholder}
             />
             {varietySuggestions.length > 0 && (
-              <View style={styles.varietyChips}>
-                {varietySuggestions.map((v) => (
-                  <TouchableOpacity
-                    key={v}
-                    style={[styles.varietyChip, variety === v && styles.varietyChipActive]}
-                    onPress={() => setVariety(v)}
-                  >
-                    <Text style={[styles.varietyChipText, variety === v && styles.varietyChipTextActive]}>{v}</Text>
-                  </TouchableOpacity>
-                ))}
+              <View>
+                {varietyNote && <Text style={styles.varietyNote}>{varietyNote}</Text>}
+                <View style={styles.varietyChips}>
+                  {varietySuggestions.map((v) => {
+                    const selected = selectedVarieties.has(v);
+                    return (
+                      <TouchableOpacity
+                        key={v}
+                        style={[styles.varietyChip, selected && styles.varietyChipActive]}
+                        onPress={() => {
+                          setSelectedVarieties((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(v)) next.delete(v); else next.add(v);
+                            if (next.size === 1) setVariety([...next][0]);
+                            else if (next.size === 0) setVariety('');
+                            return next;
+                          });
+                        }}
+                      >
+                        <Text style={[styles.varietyChipText, selected && styles.varietyChipTextActive]}>{v}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {selectedVarieties.size > 1 && (
+                  <Text style={styles.varietyMultiHint}>
+                    {selectedVarieties.size} varieties selected — one entry per variety
+                  </Text>
+                )}
               </View>
             )}
 
@@ -327,6 +359,8 @@ const styles = StyleSheet.create({
   varietyChipActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   varietyChipText: { fontSize: 13, color: colors.text.secondary },
   varietyChipTextActive: { color: colors.brand.primary, fontWeight: '600' },
+  varietyNote: { fontSize: 12, color: colors.text.muted, marginTop: 8, lineHeight: 18, fontStyle: 'italic' },
+  varietyMultiHint: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
 
   fieldLabel: {
     ...shared.sectionLabel, marginTop: 14, marginBottom: 4,
