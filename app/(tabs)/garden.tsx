@@ -122,7 +122,7 @@ export default function GardenScreen() {
       // Status filter
       switch (activeFilter) {
         case 'all':
-          return p.status !== 'wishlist';
+          return true;
         case 'growing':
           return p.status === 'planted' || p.status === 'growing';
         case 'ready':
