@@ -22,6 +22,7 @@ import type {
   InventoryItem, ItemCategory, ItemLocation, Store,
   UserPreferences, Recipe,
   BarItem, CellarItem,
+  HouseholdMember,
 } from '../types';
 import type { GeneratedMealPlan } from './claude';
 
@@ -377,6 +378,7 @@ export async function saveMealPlan(
     estimated_prep_minutes: m.estimated_prep_minutes,
     ingredients: m.ingredients,
     holly_included: m.holly_included,
+    guests_count: (m as any).guests_count ?? 0,
   }));
 
   if (mealsToInsert.length > 0) {
@@ -1094,6 +1096,47 @@ export async function removeCellarItem(id: string): Promise<void> {
   const { error } = await supabase
     .from('cellar_items')
     .update({ depleted: true })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ─── Household Members ───────────────────────────────────────────────────────
+
+export async function loadHouseholdMembers(userId: string): Promise<HouseholdMember[]> {
+  const { data, error } = await supabase
+    .from('household_members')
+    .select('*')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as HouseholdMember[];
+}
+
+export async function saveHouseholdMember(member: Omit<HouseholdMember, 'id' | 'created_at'>): Promise<HouseholdMember> {
+  const { data, error } = await supabase
+    .from('household_members')
+    .insert(member)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as HouseholdMember;
+}
+
+export async function updateHouseholdMember(id: string, updates: Partial<Pick<HouseholdMember, 'name' | 'frequency_hint' | 'dietary_notes' | 'sort_order'>>): Promise<HouseholdMember> {
+  const { data, error } = await supabase
+    .from('household_members')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as HouseholdMember;
+}
+
+export async function deleteHouseholdMember(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('household_members')
+    .delete()
     .eq('id', id);
   if (error) throw error;
 }
