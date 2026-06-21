@@ -693,7 +693,7 @@ function ShoppingEditModal({ visible, item, onClose, onSaved }: {
 
   useEffect(() => {
     if (item) {
-      setName(item.name);
+      setName(toTitleCase(item.name));
       setQuantity(String(item.quantity));
       setUnit(item.unit);
       setStore(item.store);
