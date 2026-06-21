@@ -12,6 +12,7 @@ import type {
   Recipe,
   BarItem,
   CellarItem,
+  HouseholdMember,
 } from '../types';
 
 interface AppState {
@@ -82,6 +83,13 @@ interface AppState {
   addCellarItem: (item: CellarItem) => void;
   updateCellarItemInStore: (id: string, updates: Partial<CellarItem>) => void;
   removeCellarItemFromStore: (id: string) => void;
+
+  // ── Household Members ────────────────────────────────────────────────────
+  householdMembers: HouseholdMember[];
+  setHouseholdMembers: (members: HouseholdMember[]) => void;
+  addHouseholdMember: (member: HouseholdMember) => void;
+  updateHouseholdMemberInStore: (id: string, updates: Partial<HouseholdMember>) => void;
+  removeHouseholdMember: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -194,4 +202,15 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ cellarItems: state.cellarItems.map((i) => i.id === id ? { ...i, ...updates } : i) })),
   removeCellarItemFromStore: (id) =>
     set((state) => ({ cellarItems: state.cellarItems.filter((i) => i.id !== id) })),
+
+  // Household Members
+  householdMembers: [],
+  setHouseholdMembers: (members) => set({ householdMembers: members }),
+  addHouseholdMember: (member) => set((state) => ({ householdMembers: [...state.householdMembers, member] })),
+  updateHouseholdMemberInStore: (id, updates) => set((state) => ({
+    householdMembers: state.householdMembers.map((m) => m.id === id ? { ...m, ...updates } : m),
+  })),
+  removeHouseholdMember: (id) => set((state) => ({
+    householdMembers: state.householdMembers.filter((m) => m.id !== id),
+  })),
 }));

@@ -72,6 +72,18 @@ export interface UserPreferences {
   updated_at: string;
 }
 
+// ─── Household Members ───────────────────────────────────────────────────────
+
+export interface HouseholdMember {
+  id: string;
+  user_id: string;
+  name: string;
+  frequency_hint: string | null; // e.g. "every second week", "rarely home for dinner"
+  dietary_notes: string | null;  // e.g. "no fish", "vegetarian"
+  sort_order: number;
+  created_at: string;
+}
+
 // ─── Garden ───────────────────────────────────────────────────────────────────
 
 export type PlantStatus = 'planted' | 'growing' | 'ready' | 'harvested' | 'finished' | 'wishlist';
@@ -160,6 +172,7 @@ export interface PlannedMeal {
   estimated_prep_minutes: number | null;
   ingredients: PlannedIngredient[];
   holly_included: boolean;
+  guests_count?: number;
   created_at: string;
 }
 

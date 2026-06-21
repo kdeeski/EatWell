@@ -377,7 +377,7 @@ export async function saveMealPlan(
     needs_recipe: m.needs_recipe,
     estimated_prep_minutes: m.estimated_prep_minutes,
     ingredients: m.ingredients,
-    holly_included: m.holly_included,
+    holly_included: m.holly_included ?? ((m as any).guests_count > 0),
     guests_count: (m as any).guests_count ?? 0,
   }));
 

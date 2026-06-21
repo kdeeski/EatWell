@@ -23,7 +23,7 @@ export default function PlanningFlow() {
   const isQuickReplan = quickReplanParam === 'true';
   // IDs of meals the user pinned on the plan tab — these days are locked from regeneration
   const pinnedIds: string[] = pinnedIdsParam ? pinnedIdsParam.split(',').filter(Boolean) : [];
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore, householdMembers } = useAppStore();
   const fridgeItems = inventoryItems.filter(
     (i) => i.location === 'fridge' && !i.depleted && (i.quantity == null || i.quantity > 0)
   );
@@ -114,7 +114,7 @@ export default function PlanningFlow() {
 
   const [spontaneous, setSpontaneous] = useState('');
   const [nightsAway, setNightsAway] = useState<number[]>([]);
-  const [hollyHomeNights, setHollyHomeNights] = useState<number[]>([]);
+  const [memberNights, setMemberNights] = useState<Record<string, number[]>>({});
   const [carryForwardIds, setCarryForwardIds] = useState<string[]>([]);
   const [cookedThisWeekIds, setCookedThisWeekIds] = useState<Set<string>>(new Set());
 
@@ -145,10 +145,14 @@ export default function PlanningFlow() {
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
 
-  const toggleHollyNight = (day: number) =>
-    setHollyHomeNights((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+  const toggleMemberNight = (memberId: string, day: number) =>
+    setMemberNights((prev) => {
+      const current = prev[memberId] ?? [];
+      return {
+        ...prev,
+        [memberId]: current.includes(day) ? current.filter((d) => d !== day) : [...current, day],
+      };
+    });
 
   const toggleGardenHarvest = (name: string) =>
     setGardenHarvesting((prev) =>
@@ -282,7 +286,11 @@ export default function PlanningFlow() {
           .map((s) => s.trim())
           .filter(Boolean),
         nightsAway: nightsAway, // genuine away nights only — locked/pinned days handled via pinnedMeals block
-        hollyHomeNights,
+        householdMembers: householdMembers.map((m) => ({
+          name: m.name,
+          dietary_notes: m.dietary_notes,
+          nights_home: memberNights[m.id] ?? [],
+        })),
         carryForwardMeals,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
         previousMeals: previousMealNames.length > 0 ? previousMealNames : undefined,
@@ -294,7 +302,6 @@ export default function PlanningFlow() {
           spice_level: userPreferences.spice_level,
           weeknight_max_minutes: userPreferences.weeknight_max_minutes,
           weekend_cooking: userPreferences.weekend_cooking,
-          holly_joins_regularly: userPreferences.holly_joins_regularly,
           cooking_notes: userPreferences.cooking_notes,
           standing_orders: userPreferences.standing_orders,
         } : null,
@@ -516,20 +523,32 @@ export default function PlanningFlow() {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.stepBody}>Any nights Holly's joining you?</Text>
-            <View style={styles.dayGrid}>
-              {DAY_LABELS.map((label, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.dayChip, hollyHomeNights.includes(index) && styles.dayChipHolly]}
-                  onPress={() => toggleHollyNight(index)}
-                >
-                  <Text style={[styles.dayChipText, hollyHomeNights.includes(index) && styles.dayChipTextHolly]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {householdMembers.length > 0 && (
+              <>
+                <Text style={styles.stepBody}>Who's joining you this week?</Text>
+                {householdMembers.map((member) => (
+                  <View key={member.id} style={{ marginBottom: 16 }}>
+                    <Text style={styles.memberName}>{member.name}</Text>
+                    {member.frequency_hint && (
+                      <Text style={styles.memberHint}>{member.frequency_hint}</Text>
+                    )}
+                    <View style={styles.dayGrid}>
+                      {DAY_LABELS.map((label, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[styles.dayChip, (memberNights[member.id] ?? []).includes(index) && styles.dayChipHolly]}
+                          onPress={() => toggleMemberNight(member.id, index)}
+                        >
+                          <Text style={[styles.dayChipText, (memberNights[member.id] ?? []).includes(index) && styles.dayChipTextHolly]}>
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
             <TouchableOpacity style={styles.primaryButton} onPress={handleGenerate}>
               <Text style={styles.primaryButtonText}>Generate →</Text>
             </TouchableOpacity>
@@ -664,20 +683,32 @@ export default function PlanningFlow() {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.stepBody}>Any nights Holly's joining you?</Text>
-            <View style={styles.dayGrid}>
-              {DAY_LABELS.map((label, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.dayChip, hollyHomeNights.includes(index) && styles.dayChipHolly]}
-                  onPress={() => toggleHollyNight(index)}
-                >
-                  <Text style={[styles.dayChipText, hollyHomeNights.includes(index) && styles.dayChipTextHolly]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {householdMembers.length > 0 && (
+              <>
+                <Text style={styles.stepBody}>Who's joining you this week?</Text>
+                {householdMembers.map((member) => (
+                  <View key={member.id} style={{ marginBottom: 16 }}>
+                    <Text style={styles.memberName}>{member.name}</Text>
+                    {member.frequency_hint && (
+                      <Text style={styles.memberHint}>{member.frequency_hint}</Text>
+                    )}
+                    <View style={styles.dayGrid}>
+                      {DAY_LABELS.map((label, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[styles.dayChip, (memberNights[member.id] ?? []).includes(index) && styles.dayChipHolly]}
+                          onPress={() => toggleMemberNight(member.id, index)}
+                        >
+                          <Text style={[styles.dayChipText, (memberNights[member.id] ?? []).includes(index) && styles.dayChipTextHolly]}>
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() =>
@@ -863,6 +894,8 @@ const styles = StyleSheet.create({
   dayChipText: { fontSize: 14, color: colors.text.secondary },
   dayChipTextSelected: { color: colors.state.dangerText, fontWeight: '600' },
   dayChipTextHolly: { color: colors.brand.plumDark, fontWeight: '600' },
+  memberName: { fontSize: 15, fontWeight: '600', color: colors.text.primary, marginBottom: 2 },
+  memberHint: { fontSize: 13, color: colors.text.placeholder, marginBottom: 8 },
 
   primaryButton: {
     backgroundColor: colors.brand.primary,

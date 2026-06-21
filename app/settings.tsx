@@ -9,8 +9,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
-import { saveUserPreferences } from '../lib/data';
-import type { SpiceLevel, WeekendCooking, UserPreferences } from '../types';
+import { saveUserPreferences, loadHouseholdMembers, saveHouseholdMember, updateHouseholdMember, deleteHouseholdMember } from '../lib/data';
+import type { SpiceLevel, WeekendCooking, UserPreferences, HouseholdMember } from '../types';
 type WineDetailLevel = NonNullable<UserPreferences['wine_detail_level']>;
 import { colors } from '../constants/theme';
 import { shared } from '../constants/styles';
@@ -27,7 +27,7 @@ const PROTEINS = [
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userPreferences, setUserPreferences, userId } = useAppStore();
+  const { userPreferences, setUserPreferences, userId, householdMembers, setHouseholdMembers, addHouseholdMember: addMemberToStore, updateHouseholdMemberInStore, removeHouseholdMember: removeMemberFromStore } = useAppStore();
 
   // Initialise from store, falling back to defaults
   const [cuisineLikes, setCuisineLikes]       = useState<string[]>(userPreferences?.cuisine_likes ?? []);
@@ -36,7 +36,6 @@ export default function SettingsScreen() {
   const [spiceLevel, setSpiceLevel]           = useState<SpiceLevel>(userPreferences?.spice_level ?? 'medium');
   const [weeknightMins, setWeeknightMins]     = useState<number>(userPreferences?.weeknight_max_minutes ?? 45);
   const [weekendCooking, setWeekendCooking]   = useState<WeekendCooking>(userPreferences?.weekend_cooking ?? 'project');
-  const [hollyJoins, setHollyJoins]           = useState<boolean>(userPreferences?.holly_joins_regularly ?? true);
   const [cookingNotes, setCookingNotes]       = useState<string>(userPreferences?.cooking_notes ?? '');
   const [standingOrders, setStandingOrders]   = useState<string>(userPreferences?.standing_orders ?? '');
   const [rotationRatio, setRotationRatio]     = useState<number>(userPreferences?.rotation_repeat_ratio ?? 0);
@@ -46,6 +45,69 @@ export default function SettingsScreen() {
   const [wineGuideSite, setWineGuideSite]     = useState<string>(userPreferences?.wine_guide_site ?? 'goodpairdays.com');
   const [recipeSearchSite, setRecipeSearchSite] = useState<string>(userPreferences?.recipe_search_site ?? 'recipetineats.com');
   const [saving, setSaving]                   = useState(false);
+
+  // ── Household member form state ──
+  const [showAddMember, setShowAddMember]     = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [memberName, setMemberName]           = useState('');
+  const [memberFrequency, setMemberFrequency] = useState('');
+  const [memberDietary, setMemberDietary]     = useState('');
+  const [memberSaving, setMemberSaving]       = useState(false);
+
+  const resetMemberForm = () => {
+    setMemberName('');
+    setMemberFrequency('');
+    setMemberDietary('');
+    setShowAddMember(false);
+    setEditingMemberId(null);
+  };
+
+  const startEditMember = (member: HouseholdMember) => {
+    setEditingMemberId(member.id);
+    setMemberName(member.name);
+    setMemberFrequency(member.frequency_hint ?? '');
+    setMemberDietary(member.dietary_notes ?? '');
+    setShowAddMember(false);
+  };
+
+  const handleSaveMember = async () => {
+    if (!userId || !memberName.trim()) return;
+    setMemberSaving(true);
+    try {
+      if (editingMemberId) {
+        const updated = await updateHouseholdMember(editingMemberId, {
+          name: memberName.trim(),
+          frequency_hint: memberFrequency.trim() || null,
+          dietary_notes: memberDietary.trim() || null,
+        });
+        updateHouseholdMemberInStore(editingMemberId, updated);
+      } else {
+        const saved = await saveHouseholdMember({
+          user_id: userId,
+          name: memberName.trim(),
+          frequency_hint: memberFrequency.trim() || null,
+          dietary_notes: memberDietary.trim() || null,
+          sort_order: householdMembers.length,
+        });
+        addMemberToStore(saved);
+      }
+      resetMemberForm();
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not save member.');
+    } finally {
+      setMemberSaving(false);
+    }
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    try {
+      await deleteHouseholdMember(id);
+      removeMemberFromStore(id);
+      if (editingMemberId === id) resetMemberForm();
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not delete member.');
+    }
+  };
 
   const handleSave = async () => {
     if (!userId) return;
@@ -58,7 +120,7 @@ export default function SettingsScreen() {
         spice_level: spiceLevel,
         weeknight_max_minutes: weeknightMins,
         weekend_cooking: weekendCooking,
-        holly_joins_regularly: hollyJoins,
+        holly_joins_regularly: false,
         cooking_notes: cookingNotes.trim() || null,
         standing_orders: standingOrders.trim() || null,
         rotation_repeat_ratio: rotationRatio,
@@ -101,9 +163,102 @@ export default function SettingsScreen() {
         {/* ── Household ───────────────────────────────────────── */}
         <SectionHeader>Household</SectionHeader>
 
-        <Row label="Holly joins regularly" hint="Scales portions and excludes fish on her nights">
-          <Toggle value={hollyJoins} onToggle={() => setHollyJoins((v) => !v)} />
-        </Row>
+        {householdMembers.map((member) => (
+          <View key={member.id} style={{ marginBottom: 8 }}>
+            {editingMemberId === member.id ? (
+              <View style={styles.memberCard}>
+                <FieldLabel>Name</FieldLabel>
+                <TextInput
+                  style={styles.memberInput}
+                  value={memberName}
+                  onChangeText={setMemberName}
+                  placeholder="Name"
+                  placeholderTextColor={colors.text.placeholder}
+                  autoFocus
+                />
+                <FieldLabel>Frequency</FieldLabel>
+                <TextInput
+                  style={styles.memberInput}
+                  value={memberFrequency}
+                  onChangeText={setMemberFrequency}
+                  placeholder="e.g. every second week, most nights"
+                  placeholderTextColor={colors.text.placeholder}
+                />
+                <FieldLabel>Dietary notes</FieldLabel>
+                <TextInput
+                  style={styles.memberInput}
+                  value={memberDietary}
+                  onChangeText={setMemberDietary}
+                  placeholder="e.g. no fish, vegetarian"
+                  placeholderTextColor={colors.text.placeholder}
+                />
+                <View style={styles.memberFormButtons}>
+                  <TouchableOpacity onPress={resetMemberForm}>
+                    <Text style={styles.memberCancelBtn}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleSaveMember} disabled={memberSaving || !memberName.trim()}>
+                    <Text style={[styles.memberSaveBtn, (!memberName.trim() || memberSaving) && { opacity: 0.4 }]}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.memberCard} onPress={() => startEditMember(member)} activeOpacity={0.7}>
+                <View style={styles.memberCardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.memberCardName}>{member.name}</Text>
+                    {member.frequency_hint ? <Text style={styles.memberCardMuted}>{member.frequency_hint}</Text> : null}
+                    {member.dietary_notes ? <Text style={styles.memberCardMuted}>{member.dietary_notes}</Text> : null}
+                  </View>
+                  <TouchableOpacity onPress={() => handleDeleteMember(member.id)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                    <Text style={styles.memberDeleteBtn}>x</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+
+        {showAddMember ? (
+          <View style={styles.memberCard}>
+            <FieldLabel>Name</FieldLabel>
+            <TextInput
+              style={styles.memberInput}
+              value={memberName}
+              onChangeText={setMemberName}
+              placeholder="Name"
+              placeholderTextColor={colors.text.placeholder}
+              autoFocus
+            />
+            <FieldLabel>Frequency</FieldLabel>
+            <TextInput
+              style={styles.memberInput}
+              value={memberFrequency}
+              onChangeText={setMemberFrequency}
+              placeholder="e.g. every second week, most nights"
+              placeholderTextColor={colors.text.placeholder}
+            />
+            <FieldLabel>Dietary notes</FieldLabel>
+            <TextInput
+              style={styles.memberInput}
+              value={memberDietary}
+              onChangeText={setMemberDietary}
+              placeholder="e.g. no fish, vegetarian"
+              placeholderTextColor={colors.text.placeholder}
+            />
+            <View style={styles.memberFormButtons}>
+              <TouchableOpacity onPress={resetMemberForm}>
+                <Text style={styles.memberCancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveMember} disabled={memberSaving || !memberName.trim()}>
+                <Text style={[styles.memberSaveBtn, (!memberName.trim() || memberSaving) && { opacity: 0.4 }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => { resetMemberForm(); setShowAddMember(true); }} style={styles.addMemberBtn}>
+            <Text style={styles.addMemberBtnText}>+ Add member</Text>
+          </TouchableOpacity>
+        )}
 
         {/* ── Meal planning ───────────────────────────────────── */}
         <SectionHeader>Meal Planning</SectionHeader>
@@ -432,4 +587,41 @@ const styles = StyleSheet.create({
     fontSize: 15, color: colors.text.primary,
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 11 },
+
+  // Household member styles
+  memberCard: {
+    backgroundColor: colors.background.surface, borderRadius: 12, padding: 14,
+  },
+  memberCardHeader: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+  },
+  memberCardName: {
+    fontSize: 15, fontWeight: '600', color: colors.text.primary,
+  },
+  memberCardMuted: {
+    fontSize: 13, color: colors.text.placeholder, marginTop: 2,
+  },
+  memberDeleteBtn: {
+    fontSize: 16, color: colors.state.danger, fontWeight: '600', paddingHorizontal: 4,
+  },
+  memberInput: {
+    backgroundColor: colors.background.elevated, borderWidth: 1, borderColor: colors.border.default,
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
+    fontSize: 15, color: colors.text.primary, marginBottom: 8,
+  },
+  memberFormButtons: {
+    flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 4,
+  },
+  memberCancelBtn: {
+    fontSize: 15, color: colors.text.muted, fontWeight: '500',
+  },
+  memberSaveBtn: {
+    fontSize: 15, color: colors.text.link, fontWeight: '600',
+  },
+  addMemberBtn: {
+    paddingVertical: 12, alignItems: 'center',
+  },
+  addMemberBtnText: {
+    fontSize: 15, color: colors.text.link, fontWeight: '600',
+  },
 });

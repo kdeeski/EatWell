@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     let standingOrdersBlock = '';
     if (prefs?.standing_orders) {
-      standingOrdersBlock = `\nSTANDING ORDERS (apply to Holly nights — nights where holly_included: true — unless the rule explicitly says otherwise):\n${prefs.standing_orders}\n`;
+      standingOrdersBlock = `\nSTANDING ORDERS (always apply — these are the user's standing instructions for every meal plan):\n${prefs.standing_orders}\n`;
     }
 
     const carryForward: Array<{ name: string; description: string | null }> = input.carryForwardMeals ?? [];
@@ -99,6 +99,19 @@ Deno.serve(async (req) => {
       pinnedMealsBlock = `\nPINNED MEALS (already set — do NOT generate a meal for these days, but you MUST factor them into pasta uniqueness, protein rotation, and variety rules when planning the remaining days):\n${lines.join('\n')}\n`;
     }
 
+    // Build household summary
+    const DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const householdMembers = input.householdMembers ?? [];
+    let householdBlock = '';
+    if (householdMembers.length > 0) {
+      const lines = householdMembers.map((m: any) => {
+        const nights = (m.nights_home ?? []).map((d: number) => DAY_NAMES_FULL[d]).join(', ');
+        const dietary = m.dietary_notes ? ` (${m.dietary_notes})` : '';
+        return `- ${m.name}${dietary}: ${nights || 'not this week'}`;
+      });
+      householdBlock = `\nHOUSEHOLD MEMBERS JOINING:\n${lines.join('\n')}\n`;
+    }
+
     // ── Step 1: Generate meal structure (no descriptions — keeps tokens low) ──
 
     const structurePrompt = `
@@ -119,9 +132,7 @@ ${previousMealsBlock}${pinnedMealsBlock}${carryForwardBlock}${repeatMealsBlock}
 NIGHTS AWAY (0=Monday, skip these days):
 ${(input.nightsAway ?? []).join(', ') || 'None'}
 
-HOLLY HOME (include her preferences these nights):
-${(input.hollyHomeNights ?? []).join(', ') || 'None this week'}
-${standingOrdersBlock}${prefsBlock}
+${householdBlock}${standingOrdersBlock}${prefsBlock}
 TODAY'S DATE: ${new Date().toLocaleDateString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
 Return ONLY a JSON object with this exact shape — no prose:
@@ -134,7 +145,7 @@ Return ONLY a JSON object with this exact shape — no prose:
       "is_fish": false,
       "needs_recipe": false,
       "estimated_prep_minutes": 25,
-      "holly_included": false,
+      "guests_count": 0,
       "ingredients": [
         {
           "name": "string",
@@ -167,11 +178,11 @@ RULES:
 - A freezer item should feel like a welcome choice, not an obligation. Only use it if it genuinely fits a meal you'd want to cook anyway.
 - Mark freezer-sourced ingredients as from_fridge: true (same flag — means "don't buy this").
 
-2. Fish/seafood on solo nights only — Holly dislikes fish. Default fish to Sunday (freshest after Saturday shop). Set buy_timing: "sunday_default" for fish. Days can be reordered by the user. MAX ONE fish or seafood meal per week — do not plan fish on multiple nights regardless of availability.
+2. Fish/seafood placement — check household members' dietary notes for fish restrictions. Only plan fish on nights where no member with a fish restriction is joining. Default fish to Sunday (freshest after Saturday shop). Set buy_timing: "sunday_default" for fish. Days can be reordered by the user. MAX ONE fish or seafood meal per week — do not plan fish on multiple nights regardless of availability.
 
 3. Cluster fresh ingredients across meals to minimise waste — especially fresh herbs. Only include a herb if the dish genuinely calls for it.
 
-4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On Holly nights (holly_included: true), scale the full dish to serve 2–3.
+4. Cook for ONE small appetite. Portions: fish 150–180g, chicken 2 thighs or 1 small breast, red meat/pork/lamb 150g, prawns 150g, dry pasta/rice 70–80g, kumara/potato 1–2 medium. On nights when household members are joining, scale portions accordingly. Cook for 1 on solo nights. When members join, scale to serve the appropriate number.
 
 5. VARIED AND GENUINELY INTERESTING MEALS — every week should read like a thoughtful restaurant menu, not a default recipe book. Prioritise technique-driven dishes that feel rewarding to cook. Mix quick weeknight meals with longer weekend projects. Every meal must be a complete, satisfying dinner — never suggest a dip, spread, condiment, or side dish (e.g. whipped feta, hummus, tzatziki, guacamole) as a standalone meal.
 

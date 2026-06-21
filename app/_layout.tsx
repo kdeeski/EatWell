@@ -7,7 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/useAppStore';
-import { bootstrapUserData } from '../lib/data';
+import { bootstrapUserData, loadHouseholdMembers } from '../lib/data';
 import type { Session } from '@supabase/supabase-js';
 
 // Hold the native splash until we're ready to show the app (no-op on web)
@@ -19,7 +19,7 @@ export default function RootLayout() {
   const {
     setUserId, setInventoryItems, setGardenPlants,
     setMealPlan, setShoppingList, setTodayCheckin, setUserPreferences, setRecipes,
-    setBarItems, setCellarItems,
+    setBarItems, setCellarItems, setHouseholdMembers,
   } = useAppStore();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   // On web there are no OTA updates — skip the check entirely
@@ -90,6 +90,8 @@ export default function RootLayout() {
           setRecipes(recipes);
           setBarItems(barItems);
           setCellarItems(cellarItems);
+          // Load household members alongside other data
+          loadHouseholdMembers(session.user.id).then((members) => setHouseholdMembers(members)).catch(console.error);
         }
       )
     ).catch((e) => console.error('Bootstrap chain failed:', e));

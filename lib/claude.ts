@@ -37,7 +37,11 @@ export interface MealPlanInput {
   gardenAvailable: string[];       // plant names available to harvest this week
   spontaneousAdditions: string[];  // market finds, neighbour gifts, etc.
   nightsAway: number[];            // day_of_week values (0=Mon) user is away
-  hollyHomeNights: number[];       // day_of_week values Holly is home (Phase 2)
+  householdMembers?: Array<{
+    name: string;
+    dietary_notes: string | null;
+    nights_home: number[];
+  }>;                               // household members and which nights they're joining
   repeatMeals?: RepeatMeal[];      // high-rated stash meals to rotate in
   carryForwardMeals?: CarryForwardMeal[]; // uncompleted meals from current week
   previousMeals?: string[];        // meal names from last week — Claude avoids repeating them
@@ -49,7 +53,6 @@ export interface MealPlanInput {
     | 'spice_level'
     | 'weeknight_max_minutes'
     | 'weekend_cooking'
-    | 'holly_joins_regularly'
     | 'cooking_notes'
     | 'standing_orders'
   > | null;
@@ -75,7 +78,8 @@ export interface GeneratedMealPlan {
       ingredient_category: ItemCategory;
       herb_backup: string | null;
     }>;
-    holly_included: boolean;
+    holly_included?: boolean;
+    guests_count?: number;
   }>;
   planning_notes: string; // AI's summary of why these meals were chosen
 }
