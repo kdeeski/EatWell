@@ -424,6 +424,7 @@ export default function PlanningFlow() {
               notes: 'Added during meal planning',
               added_date: todayStr,
               depleted: false,
+              is_staple: false,
             });
             upsertInventoryInStore(saved);
           })
