@@ -24,6 +24,7 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   // On web there are no OTA updates — skip the check entirely
   const [updateReady, setUpdateReady] = useState(Platform.OS === 'web');
+  const [bootstrapDone, setBootstrapDone] = useState(false);
   const bootstrapped = useRef(false);
 
   useEffect(() => {
@@ -68,11 +69,11 @@ export default function RootLayout() {
     if (session === undefined) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!session && !inAuthGroup) router.replace('/(auth)/login');
-    else if (session && inAuthGroup) {
+    else if (session && inAuthGroup && bootstrapDone) {
       if (needsOnboarding) router.replace('/onboarding');
       else router.replace('/(tabs)');
     }
-  }, [session, segments, needsOnboarding]);
+  }, [session, segments, needsOnboarding, bootstrapDone]);
 
   useEffect(() => {
     if (!session || bootstrapped.current) return;
@@ -96,11 +97,11 @@ export default function RootLayout() {
           setRecipes(recipes);
           setBarItems(barItems);
           setCellarItems(cellarItems);
-          // Load household members alongside other data
           loadHouseholdMembers(session.user.id).then((members) => setHouseholdMembers(members)).catch(console.error);
+          setBootstrapDone(true);
         }
       )
-    ).catch((e) => console.error('Bootstrap chain failed:', e));
+    ).catch((e) => { console.error('Bootstrap chain failed:', e); setBootstrapDone(true); });
   }, [session?.user?.id]);
 
   if (!updateReady || session === undefined) return null;
