@@ -248,6 +248,17 @@ function toTitleCase(s: string): string {
   }).join(' ');
 }
 
+function isUsefulHerbBackup(name: string, backup: string): boolean {
+  const n = name.toLowerCase().replace(/^(fresh|dried|ground|smoked)\s+/, '').trim();
+  const b = backup.toLowerCase().replace(/^(fresh|dried|ground|smoked)\s+/, '').trim();
+  if (n === b) return false;
+  // "Ground Coriander" → "Coriander Powder" is not useful
+  if (n.replace(/\s*(powder|ground|seeds?|flakes?)\s*/g, '') === b.replace(/\s*(powder|ground|seeds?|flakes?)\s*/g, '')) return false;
+  // Only fresh herbs should have backups (dried version as fallback)
+  if (!/^fresh\s/i.test(name)) return false;
+  return true;
+}
+
 function normaliseIngredient(ing: any): any {
   const source = ['buy', 'fridge', 'freezer', 'garden', 'pantry'].includes(ing.source)
     ? ing.source
@@ -266,7 +277,9 @@ function normaliseIngredient(ing: any): any {
     from_garden: source === 'garden',
     is_pantry_staple: source === 'pantry',
     ingredient_category: category,
-    herb_backup: category === 'herbs_spices' ? (ing.herb_backup ?? null) : null,
+    herb_backup: category === 'herbs_spices' && ing.herb_backup && isUsefulHerbBackup(ing.name ?? '', ing.herb_backup)
+      ? String(ing.herb_backup).trim()
+      : null,
   };
 }
 
