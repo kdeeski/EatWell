@@ -10,6 +10,7 @@ import { Alert } from '../lib/alert';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
+import { supabase } from '../lib/supabase';
 import { saveUserPreferences, loadHouseholdMembers, saveHouseholdMember, updateHouseholdMember, deleteHouseholdMember } from '../lib/data';
 import type { SpiceLevel, WeekendCooking, UserPreferences, HouseholdMember } from '../types';
 type WineDetailLevel = NonNullable<UserPreferences['wine_detail_level']>;
@@ -468,6 +469,19 @@ export default function SettingsScreen() {
         />
         <Text style={styles.hint}>The "Find →" recipe browser searches this site by default.</Text>
 
+        {/* ── Sign out ──────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={() => {
+            Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Sign out', style: 'destructive', onPress: () => supabase.auth.signOut() },
+            ]);
+          }}
+        >
+          <Text style={styles.signOutText}>Sign out</Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </View>
   );
@@ -624,5 +638,12 @@ const styles = StyleSheet.create({
   },
   addMemberBtnText: {
     fontSize: 15, color: colors.text.link, fontWeight: '600',
+  },
+  signOutBtn: {
+    marginTop: 32, paddingVertical: 14, alignItems: 'center',
+    borderRadius: 14, borderWidth: 1, borderColor: colors.state.dangerBorder,
+  },
+  signOutText: {
+    fontSize: 15, fontWeight: '600', color: colors.state.danger,
   },
 });
