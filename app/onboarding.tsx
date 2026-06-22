@@ -4,6 +4,7 @@ import {
   TextInput, KeyboardAvoidingView, Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
@@ -17,7 +18,7 @@ const CUISINES = [
 ];
 
 const PROTEINS = [
-  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game', 'All Meat (Vegetarian)',
+  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game', 'Vegetarian (No Meat)',
 ];
 
 const STEPS = ['welcome', 'location', 'household', 'cuisines', 'dietary', 'cooking'] as const;
@@ -106,9 +107,11 @@ export default function OnboardingScreen() {
         addMemberToStore(saved);
       }
 
-      router.replace('/(tabs)');
+      router.replace('/planning');
     } catch (e: any) {
       console.error('Onboarding save failed:', e?.message);
+      Alert.alert('Error', e?.message ?? 'Could not save preferences. You can set them up later in Settings.');
+      router.replace('/(tabs)');
     } finally {
       setSaving(false);
     }

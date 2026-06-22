@@ -23,7 +23,7 @@ const CUISINES = [
 ];
 
 const PROTEINS = [
-  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game', 'All Meat (Vegetarian)',
+  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game', 'Vegetarian (No Meat)',
 ];
 
 export default function SettingsScreen() {
