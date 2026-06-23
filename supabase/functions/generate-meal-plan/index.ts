@@ -493,6 +493,7 @@ RULES:
 - Fresh pasta: set source to pantry (user makes their own).
 - Fresh herbs: set herb_backup to a short fallback.
 - Every ingredient must be a single item in Title Case. Never combine.
+- Never use bare "Chilli" or "Chili" — always specify the form: "Fresh Chilli", "Chilli Flakes", "Ground Chilli", etc.
 - Metric only. UK/NZ English.
 - ingredient_category: meat_fish, dairy_eggs, produce, herbs_spices, pantry_dry_goods, bread_bakery, cans_preserves, oils_vinegars, condiments_sauces, beverages, alcohol, household.
 - dairy_eggs for all dairy/eggs. herbs_spices for all herbs and spices. alcohol: set store to liquor_store.

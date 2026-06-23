@@ -28,8 +28,6 @@ const FRESH_BY_DEFAULT = new Set([
 const ALIASES: Record<string, string> = {
   'rice':         'jasmine rice',
   'risotto rice': 'arborio rice',
-  'chilli':       'chilli flakes',
-  'chili':        'chilli flakes',
 };
 
 export function normaliseIngredientName(raw: string): string {
