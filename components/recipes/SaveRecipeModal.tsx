@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import RecipeBrowserModal from './RecipeBrowserModal';
 import ImportFromClaudeModal from './ImportFromClaudeModal';
 import { colors } from '../../constants/theme';
+import { Alert } from '../../lib/alert';
 import { shareOrCopy } from '../../lib/shareOrCopy';
 
 const CATEGORIES: { key: RecipeCategory; label: string }[] = [
@@ -60,7 +61,10 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   "ingredients": "150g Chicken Thighs\\n2 cloves Garlic\\n1 tsp Smoked Paprika",
   "method": "1. First step.\\n2. Second step.\\n3. Third step."
 }`;
-    await shareOrCopy(brief);
+    const result = await shareOrCopy(brief);
+    if (result === 'copied') {
+      Alert.alert('Copied', 'Recipe prompt copied to clipboard — paste it into Claude.');
+    }
   };
 
   const [name, setName]               = useState(existingRecipe?.name ?? prefill?.name ?? '');
