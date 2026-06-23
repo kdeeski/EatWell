@@ -156,8 +156,11 @@ export default function ShoppingScreen() {
       // Don't auto-confirm ad-hoc items — they were explicitly added to buy
       if (item.is_adhoc) return;
       const normItem = normaliseIngredientName(item.name.toLowerCase().trim());
+      const isSpice = correctedCategory(item) === 'herbs_spices';
       const match = invNorms.some((invName) => {
         if (invName === normItem) return true;
+        // Herbs/spices must match exactly — "chilli" ≠ "chilli flakes" ≠ "ground chilli"
+        if (isSpice) return false;
         // Substring match for compound names ("tinned chickpeas" vs "chickpeas"),
         // but only when both sides are long enough to avoid false positives
         // ("oil" matching "olive oil", "onion" matching "spring onion").
