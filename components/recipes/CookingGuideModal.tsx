@@ -131,7 +131,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
     setLoading(true);
     setError(null);
     setGuide(null);
-    getCookingGuide(mealName, description, recipes.map((r) => r.name))
+    getCookingGuide(mealName, description, recipes.map((r) => r.name), ingredients)
       .then((g) => setGuide(g))
       .catch((e) => setError(e?.message ?? 'Failed to load cooking guide'))
       .finally(() => setLoading(false));
@@ -232,7 +232,7 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
               <TouchableOpacity style={styles.retryBtn} onPress={() => {
                 setLoading(true);
                 setError(null);
-                getCookingGuide(mealName, description, recipes.map((r) => r.name))
+                getCookingGuide(mealName, description, recipes.map((r) => r.name), ingredients)
                   .then((g) => setGuide(g))
                   .catch((e) => setError(e?.message ?? 'Failed to load cooking guide'))
                   .finally(() => setLoading(false));

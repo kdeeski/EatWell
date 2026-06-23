@@ -266,7 +266,7 @@ export interface CookingGuide {
   glossary: Array<{ term: string; definition: string }>;
 }
 
-export async function getCookingGuide(mealName: string, description: string, existingNames?: string[]): Promise<CookingGuide> {
+export async function getCookingGuide(mealName: string, description: string, existingNames?: string[], ingredients?: string): Promise<CookingGuide> {
   const url = 'https://xjscuzizvxawfapmhdct.supabase.co/functions/v1/cooking-guide';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqc2N1eml6dnhhd2ZhcG1oZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY1MDksImV4cCI6MjA5MDE2MjUwOX0.MzpYCE5ROSdMALHZMVYDJ0zBnk3lZbBG5Xwh2_HW1o0';
 
@@ -280,7 +280,7 @@ export async function getCookingGuide(mealName: string, description: string, exi
         'Authorization': `Bearer ${anonKey}`,
         'apikey': anonKey,
       },
-      body: JSON.stringify({ meal_name: mealName, description, existing_names: existingNames }),
+      body: JSON.stringify({ meal_name: mealName, description, existing_names: existingNames, ...(ingredients && { ingredients }) }),
       signal: controller.signal,
     });
     const data = await response.json();
