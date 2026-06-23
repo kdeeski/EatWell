@@ -60,7 +60,7 @@ export default function PlanScreen() {
   const [dirty, setDirty] = useState(false);
   const [guideTarget, setGuideTarget] = useState<PlannedMeal | null>(null);
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
-  const [saveForMeal, setSaveForMeal] = useState<string | null>(null);
+  const [saveForMeal, setSaveForMeal] = useState<PlannedMeal | null>(null);
   const [cookedMap, setCookedMap]     = useState<Record<string, CookedMeal>>({});
 
   // Week navigation
@@ -475,7 +475,7 @@ export default function PlanScreen() {
                                 <>
                                   <TouchableOpacity
                                     style={shared.ctaRow}
-                                    onPress={() => setSaveForMeal(toTitleCase(meal.meal_name))}
+                                    onPress={() => setSaveForMeal(meal)}
                                   >
                                     <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
                                     <Text style={shared.ctaArrow}>→</Text>
@@ -620,7 +620,12 @@ export default function PlanScreen() {
       {saveForMeal && (
         <SaveRecipeModal
           visible
-          prefill={{ name: saveForMeal, category: 'mains' }}
+          prefill={{
+            name: toTitleCase(saveForMeal.meal_name),
+            category: 'mains',
+            description: saveForMeal.description ?? undefined,
+            ingredients: formatIngredients(saveForMeal.ingredients),
+          }}
           onSave={() => setSaveForMeal(null)}
           onClose={() => setSaveForMeal(null)}
         />

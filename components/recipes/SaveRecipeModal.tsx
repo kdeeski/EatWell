@@ -48,8 +48,11 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
 
   const isEdit = !!existingRecipe;
 
-  const handleShareBrief = async (mealName: string) => {
-    const brief = `I'm planning to cook ${mealName}. Please write a recipe for it and format the response as JSON using exactly this structure — no extra fields:
+  const handleShareBrief = async (mealName: string, mealDescription: string, plannedIngredients: string) => {
+    const context = mealDescription || plannedIngredients
+      ? `\n\nHere's what I've planned:${mealDescription ? `\n${mealDescription}` : ''}${plannedIngredients ? `\n\nPlanned ingredients:\n${plannedIngredients}` : ''}\n\nUse these exact ingredients and quantities — don't reinvent the dish.`
+      : '';
+    const brief = `I'm planning to cook ${mealName}.${context} Please write a recipe for it and format the response as JSON using exactly this structure — no extra fields:
 {
   "name": "Recipe Name in Title Case",
   "category": "mains | sauces_dressings | sides | desserts | baking | marinades_rubs | glossary",
@@ -175,7 +178,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                   {!isEdit && (
                     <View style={styles.importLinks}>
                       {name.trim() && (
-                        <TouchableOpacity onPress={() => handleShareBrief(name.trim())}>
+                        <TouchableOpacity onPress={() => handleShareBrief(name.trim(), description, ingredients)}>
                           <Text style={styles.importLink}>Ask Claude →</Text>
                         </TouchableOpacity>
                       )}
