@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { saveUserPreferences, saveHouseholdMember } from '../lib/data';
-import type { SpiceLevel, WeekendCooking } from '../types';
+import type { SpiceLevel, WeekendCooking, DietaryStyle } from '../types';
 import { colors } from '../constants/theme';
 
 const CUISINES = [
@@ -18,7 +18,14 @@ const CUISINES = [
 ];
 
 const PROTEINS = [
-  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game', 'Vegetarian (No Meat)',
+  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game',
+];
+
+const DIETARY_STYLES: { value: DietaryStyle; label: string; hint: string }[] = [
+  { value: 'omnivore', label: 'Omnivore', hint: 'Everything' },
+  { value: 'pescatarian', label: 'Pescatarian', hint: 'Fish but no meat' },
+  { value: 'vegetarian', label: 'Vegetarian', hint: 'No meat or fish' },
+  { value: 'vegan', label: 'Vegan', hint: 'No animal products' },
 ];
 
 const STEPS = ['welcome', 'location', 'household', 'cuisines', 'dietary', 'cooking'] as const;
@@ -38,6 +45,7 @@ export default function OnboardingScreen() {
   const [members, setMembers] = useState<{ name: string; dietary: string }[]>([]);
   const [memberDietary, setMemberDietary] = useState('');
   const [cuisineLikes, setCuisineLikes] = useState<string[]>([]);
+  const [dietaryStyle, setDietaryStyle] = useState<DietaryStyle>('omnivore');
   const [proteinsExcluded, setProteinsExcluded] = useState<string[]>([]);
   const [spiceLevel, setSpiceLevel] = useState<SpiceLevel>('medium');
   const [weeknightMins, setWeeknightMins] = useState(45);
@@ -76,6 +84,7 @@ export default function OnboardingScreen() {
     try {
       // Save preferences
       const saved = await saveUserPreferences(userId, {
+        dietary_style: dietaryStyle,
         cuisine_likes: cuisineLikes,
         cuisine_dislikes: [],
         proteins_excluded: proteinsExcluded,
@@ -209,25 +218,45 @@ export default function OnboardingScreen() {
       case 'dietary':
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Any proteins to avoid?</Text>
+            <Text style={styles.stepTitle}>How do you eat?</Text>
             <Text style={styles.stepDescription}>
-              These will never appear in your meal plans.
+              This shapes every meal plan we generate.
             </Text>
             <View style={styles.pillGrid}>
-              {PROTEINS.map((p) => (
+              {DIETARY_STYLES.map((ds) => (
                 <TouchableOpacity
-                  key={p}
-                  style={[styles.pill, proteinsExcluded.includes(p) && styles.pillExcluded]}
-                  onPress={() => toggleItem(proteinsExcluded, setProteinsExcluded, p)}
+                  key={ds.value}
+                  style={[styles.pill, dietaryStyle === ds.value && styles.pillActive]}
+                  onPress={() => setDietaryStyle(ds.value)}
                 >
-                  <Text style={[styles.pillText, proteinsExcluded.includes(p) && styles.pillExcludedText]}>{p}</Text>
+                  <View>
+                    <Text style={[styles.pillText, dietaryStyle === ds.value && styles.pillTextActive]}>{ds.label}</Text>
+                    <Text style={[styles.pillHint, dietaryStyle === ds.value && styles.pillHintActive]}>{ds.hint}</Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
 
+            {(dietaryStyle === 'omnivore' || dietaryStyle === 'pescatarian') && (
+              <>
+                <Text style={[styles.stepTitle, { marginTop: 28 }]}>Any proteins to avoid?</Text>
+                <View style={styles.pillGrid}>
+                  {PROTEINS.map((p) => (
+                    <TouchableOpacity
+                      key={p}
+                      style={[styles.pill, proteinsExcluded.includes(p) && styles.pillExcluded]}
+                      onPress={() => toggleItem(proteinsExcluded, setProteinsExcluded, p)}
+                    >
+                      <Text style={[styles.pillText, proteinsExcluded.includes(p) && styles.pillExcludedText]}>{p}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
             <Text style={[styles.stepTitle, { marginTop: 28 }]}>Spice level</Text>
             <View style={styles.pillGrid}>
-              {(['mild', 'medium', 'hot'] as SpiceLevel[]).map((s) => (
+              {(['mild', 'medium', 'bold'] as SpiceLevel[]).map((s) => (
                 <TouchableOpacity
                   key={s}
                   style={[styles.pill, spiceLevel === s && styles.pillActive]}
@@ -351,6 +380,8 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: colors.brand.primary + '22', borderColor: colors.brand.primary },
   pillText: { fontSize: 14, color: colors.text.secondary, fontWeight: '500' },
   pillTextActive: { color: colors.brand.primary, fontWeight: '600' },
+  pillHint: { fontSize: 11, color: colors.text.placeholder, marginTop: 2 },
+  pillHintActive: { color: colors.brand.primary },
   pillExcluded: { backgroundColor: colors.state.dangerLighter, borderColor: colors.state.dangerBorder },
   pillExcludedText: { color: colors.state.danger, fontWeight: '600' },
 

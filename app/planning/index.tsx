@@ -307,6 +307,7 @@ export default function PlanningFlow() {
         previousMeals: previousMealNames.length > 0 ? previousMealNames : undefined,
         pinnedMeals: pinnedMealsList.length > 0 ? pinnedMealsList : undefined,
         preferences: userPreferences ? {
+          dietary_style: userPreferences.dietary_style,
           cuisine_likes: userPreferences.cuisine_likes,
           cuisine_dislikes: userPreferences.cuisine_dislikes,
           proteins_excluded: userPreferences.proteins_excluded,

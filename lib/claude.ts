@@ -47,6 +47,7 @@ export interface MealPlanInput {
   previousMeals?: string[];        // meal names from last week — Claude avoids repeating them
   pinnedMeals?: PinnedMeal[];      // meals already locked in — Claude must respect their pasta/protein for variety rules
   preferences?: Pick<UserPreferences,
+    | 'dietary_style'
     | 'cuisine_likes'
     | 'cuisine_dislikes'
     | 'proteins_excluded'

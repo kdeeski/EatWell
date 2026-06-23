@@ -125,6 +125,9 @@ ${JSON.stringify(days.pinned)}`);
 
   if (prefs) {
     const pLines: string[] = [];
+    if (prefs.dietary_style && prefs.dietary_style !== 'omnivore') {
+      pLines.push(`Dietary style: ${prefs.dietary_style}`);
+    }
     if (prefs.cuisine_likes?.length) pLines.push(`Love: ${prefs.cuisine_likes.join(', ')}`);
     if (prefs.cuisine_dislikes?.length) pLines.push(`Avoid: ${prefs.cuisine_dislikes.join(', ')}`);
     if (prefs.proteins_excluded?.length) pLines.push(`Excluded proteins: ${prefs.proteins_excluded.join(', ')}`);
@@ -159,9 +162,7 @@ HARD RULES
 
 Generate exactly one meal per planning day. No more, no fewer.
 
-Exactly 1 fish/seafood meal per week. Only on a day where fish_ok is true. Prefer Sunday. Set buy_timing to sunday_default for fish.
-
-At least 1 fully vegetarian dinner (no meat, no fish — eggs/dairy fine). Must be substantial.
+Follow the user's dietary_style. For omnivore: exactly 1 fish/seafood meal (fish_ok day, prefer Sunday, buy_timing sunday_default) and at least 1 vegetarian dinner. For pescatarian: no meat, 1-2 fish meals. For vegetarian: all meals vegetarian. For vegan: all meals vegan.
 
 Every meal must be a complete dinner — never a dip, spread, condiment, or side dish alone.
 
@@ -391,6 +392,32 @@ Deno.serve(async (req) => {
 
     const creativityPrompt = buildUserPrompt(input, { available, pinned, away });
 
+    const dietaryStyle = input.preferences?.dietary_style ?? 'omnivore';
+    let dietaryRules: string;
+    switch (dietaryStyle) {
+      case 'vegan':
+        dietaryRules = `- ALL meals must be vegan — no meat, fish, dairy, eggs, or honey
+- Every meal must be protein-rich (legumes, tofu, tempeh, seitan, nuts)
+- Ensure variety: not all legume-based, mix techniques and cuisines`;
+        break;
+      case 'vegetarian':
+        dietaryRules = `- ALL meals must be vegetarian — no meat, no fish
+- Eggs and dairy are fine
+- Every meal must be substantial (not just a salad or side)
+- Ensure variety: not all pasta/grain-based, mix techniques and cuisines`;
+        break;
+      case 'pescatarian':
+        dietaryRules = `- No meat (no beef, pork, lamb, chicken, game) — fish and seafood are fine
+- 1-2 fish/seafood meals per week (on days where fish_ok is true, prefer Sunday). Set is_fish: true for these
+- Remaining meals should be vegetarian (eggs/dairy fine)
+- Ensure variety across fish and vegetarian meals`;
+        break;
+      default:
+        dietaryRules = `- Exactly 1 fish/seafood meal per week (on a day where fish_ok is true, prefer Sunday). Set is_fish: true for this meal
+- At least 1 fully vegetarian dinner (no meat, no fish — eggs/dairy fine). Must be substantial`;
+        break;
+    }
+
     const sonnetResponse = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
@@ -398,9 +425,10 @@ Deno.serve(async (req) => {
 
 Choose dinners for the available planning days. Your ONLY job is to pick meals — another model handles ingredients. Do NOT generate ingredients.
 
+DIETARY STYLE: ${dietaryStyle}
+${dietaryRules}
+
 RULES:
-- Exactly 1 fish/seafood meal (on a day where fish_ok is true, prefer Sunday)
-- At least 1 fully vegetarian dinner (no meat, no fish)
 - Max 1 pasta dish. Name the exact shape. Never generic "Pasta"
 - Every meal must be a complete dinner, not a dip/spread/side
 - Max 7 words per meal name. Title Case. Use "with" and "and" not commas

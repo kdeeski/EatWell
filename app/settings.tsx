@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { saveUserPreferences, loadHouseholdMembers, saveHouseholdMember, updateHouseholdMember, deleteHouseholdMember } from '../lib/data';
-import type { SpiceLevel, WeekendCooking, UserPreferences, HouseholdMember } from '../types';
+import type { SpiceLevel, WeekendCooking, DietaryStyle, UserPreferences, HouseholdMember } from '../types';
 type WineDetailLevel = NonNullable<UserPreferences['wine_detail_level']>;
 import { colors } from '../constants/theme';
 import { shared } from '../constants/styles';
@@ -23,7 +23,14 @@ const CUISINES = [
 ];
 
 const PROTEINS = [
-  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game', 'Vegetarian (No Meat)',
+  'Pork', 'Lamb', 'Beef', 'Chicken', 'Fish', 'Shellfish', 'Game',
+];
+
+const DIETARY_STYLES: { value: DietaryStyle; label: string }[] = [
+  { value: 'omnivore', label: 'Omnivore' },
+  { value: 'pescatarian', label: 'Pescatarian' },
+  { value: 'vegetarian', label: 'Vegetarian' },
+  { value: 'vegan', label: 'Vegan' },
 ];
 
 export default function SettingsScreen() {
@@ -34,6 +41,7 @@ export default function SettingsScreen() {
   // Initialise from store, falling back to defaults
   const [cuisineLikes, setCuisineLikes]       = useState<string[]>(userPreferences?.cuisine_likes ?? []);
   const [cuisineDislikes, setCuisineDislikes] = useState<string[]>(userPreferences?.cuisine_dislikes ?? []);
+  const [dietaryStyle, setDietaryStyle]         = useState<DietaryStyle>(userPreferences?.dietary_style ?? 'omnivore');
   const [proteinsExcluded, setProteinsExcluded] = useState<string[]>(userPreferences?.proteins_excluded ?? []);
   const [spiceLevel, setSpiceLevel]           = useState<SpiceLevel>(userPreferences?.spice_level ?? 'medium');
   const [weeknightMins, setWeeknightMins]     = useState<number>(userPreferences?.weeknight_max_minutes ?? 45);
@@ -116,6 +124,7 @@ export default function SettingsScreen() {
     setSaving(true);
     try {
       const saved = await saveUserPreferences(userId, {
+        dietary_style: dietaryStyle,
         cuisine_likes: cuisineLikes,
         cuisine_dislikes: cuisineDislikes,
         proteins_excluded: proteinsExcluded,
@@ -287,13 +296,32 @@ export default function SettingsScreen() {
           }}
         />
 
-        <FieldLabel>Proteins I don't eat</FieldLabel>
-        <PillGroup
-          items={PROTEINS}
-          selected={proteinsExcluded}
-          color={colors.state.danger}
-          onToggle={(item) => toggleItem(proteinsExcluded, setProteinsExcluded, item)}
-        />
+        <FieldLabel>Dietary style</FieldLabel>
+        <View style={styles.pillRow}>
+          {DIETARY_STYLES.map((ds) => (
+            <TouchableOpacity
+              key={ds.value}
+              style={[styles.pill, dietaryStyle === ds.value && styles.pillSelected]}
+              onPress={() => setDietaryStyle(ds.value)}
+            >
+              <Text style={[styles.pillText, dietaryStyle === ds.value && styles.pillTextActive]}>
+                {ds.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {(dietaryStyle === 'omnivore' || dietaryStyle === 'pescatarian') && (
+          <>
+            <FieldLabel>Proteins I don't eat</FieldLabel>
+            <PillGroup
+              items={PROTEINS}
+              selected={proteinsExcluded}
+              color={colors.state.danger}
+              onToggle={(item) => toggleItem(proteinsExcluded, setProteinsExcluded, item)}
+            />
+          </>
+        )}
 
         <FieldLabel>Spice level</FieldLabel>
         <View style={styles.pillRow}>

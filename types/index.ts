@@ -49,10 +49,12 @@ export interface InventoryItem {
 
 export type SpiceLevel = 'mild' | 'medium' | 'bold';
 export type WeekendCooking = 'quick' | 'project';
+export type DietaryStyle = 'omnivore' | 'pescatarian' | 'vegetarian' | 'vegan';
 
 export interface UserPreferences {
   id: string;
   user_id: string;
+  dietary_style: DietaryStyle;
   cuisine_likes: string[];
   cuisine_dislikes: string[];
   proteins_excluded: string[];
