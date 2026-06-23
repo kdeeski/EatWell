@@ -454,35 +454,10 @@ Each object: {"day_of_week":0,"meal_name":"string","description":"2-3 sentences 
 
     log(`pass 1 — ${mealsArray.length} meals chosen`);
 
-    // ── Pass 2: Haiku generates ingredients for each meal (fast, structured) ─
-    log('pass 2 — Haiku generating ingredients...');
+    // ── Pass 2: Haiku generates ingredients per meal IN PARALLEL ─────────────
+    log(`pass 2 — Haiku generating ingredients for ${mealsArray.length} meals in parallel...`);
 
-    const mealList = mealsArray.map((m: any) => ({
-      day_of_week: m.day_of_week,
-      meal_name: m.meal_name,
-      description: m.description,
-      is_fish: m.is_fish ?? false,
-      needs_recipe: m.needs_recipe ?? false,
-      estimated_prep_minutes: m.estimated_prep_minutes ?? 30,
-    }));
-
-    const ingredientPrompt = `Generate ingredient lists for these meals. Each meal is already decided — do not change meal names or descriptions.
-
-MEALS TO FILL:
-${JSON.stringify(mealList)}
-
-FRIDGE (source: fridge): ${itemList(input.fridgeItems)}
-FREEZER (source: freezer): ${itemList(input.freezerItems)}
-GARDEN (source: garden): ${(input.gardenAvailable ?? []).join(', ') || 'None'}
-PLANNING DAYS: ${JSON.stringify(available)}
-
-Return the complete plan as JSON with ingredients added:
-{"meals":[{"day_of_week":0,"meal_name":"kept as-is","description":"kept as-is","is_fish":false,"needs_recipe":false,"estimated_prep_minutes":25,"guests_count":0,"ingredients":[{"name":"string","quantity":1,"unit":"string","source":"buy|fridge|freezer|garden|pantry","store":"grocer|butcher|supermarket|liquor_store","buy_timing":"weekend|day_of|sunday_default","ingredient_category":"meat_fish|dairy_eggs|produce|herbs_spices|pantry_dry_goods|bread_bakery|cans_preserves|oils_vinegars|condiments_sauces|beverages|alcohol|household","herb_backup":null}]}],"planning_notes":"string"}`;
-
-    const haikuResponse = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 8000,
-      system: `You are EatWell's ingredient engine for Christchurch, New Zealand. Given a set of decided meals, generate complete ingredient lists.
+    const haikuSystem = `You are EatWell's ingredient engine for Christchurch, New Zealand. Given a single decided meal, generate its complete ingredient list.
 
 RULES:
 - Use fridge items where they fit the meal. Set source to fridge.
@@ -502,33 +477,64 @@ RULES:
 - Set guests_count from the planning day's guest count.
 - Do NOT change meal_name or description — keep them exactly as given.
 
-Return only valid JSON.`,
-      messages: [{ role: 'user', content: ingredientPrompt }],
-    });
+Return only valid JSON.`;
 
-    const haikuUsage = haikuResponse.usage;
-    log(`pass 2 done — input: ${haikuUsage.input_tokens}, output: ${haikuUsage.output_tokens} tokens`);
+    const contextBlock = `FRIDGE (source: fridge): ${itemList(input.fridgeItems)}
+FREEZER (source: freezer): ${itemList(input.freezerItems)}
+GARDEN (source: garden): ${(input.gardenAvailable ?? []).join(', ') || 'None'}`;
 
-    const haikuText = (haikuResponse.content[0] as { type: string; text: string }).text;
-    const { parsed: fullPlan, error: haikuError } = jsonOrError(haikuText);
-    if (haikuError) {
-      log(`pass 2 JSON parse failed: ${haikuError}`);
-      return new Response(JSON.stringify({ error: haikuError }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const haikuResults = await Promise.all(mealsArray.map(async (m: any) => {
+      const mealInfo = {
+        day_of_week: m.day_of_week,
+        meal_name: m.meal_name,
+        description: m.description,
+        is_fish: m.is_fish ?? false,
+        needs_recipe: m.needs_recipe ?? false,
+        estimated_prep_minutes: m.estimated_prep_minutes ?? 30,
+      };
+      const day = available.find((d) => d.day === m.day_of_week);
+
+      const prompt = `Generate the ingredient list for this meal:
+${JSON.stringify(mealInfo)}
+
+PLANNING DAY: ${JSON.stringify(day)}
+${contextBlock}
+
+Return JSON: {"day_of_week":${m.day_of_week},"meal_name":"kept as-is","description":"kept as-is","is_fish":${mealInfo.is_fish},"needs_recipe":${mealInfo.needs_recipe},"estimated_prep_minutes":${mealInfo.estimated_prep_minutes},"guests_count":${day?.guests ?? 0},"ingredients":[{"name":"string","quantity":1,"unit":"string","source":"buy|fridge|freezer|garden|pantry","store":"grocer|butcher|supermarket|liquor_store","buy_timing":"weekend|day_of|sunday_default","ingredient_category":"...","herb_backup":null}]}`;
+
+      const resp = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        system: haikuSystem,
+        messages: [{ role: 'user', content: prompt }],
       });
-    }
 
-    const plan = normalisePlan(fullPlan, available);
+      const usage = resp.usage;
+      log(`  meal "${m.meal_name}" — ${usage.input_tokens}+${usage.output_tokens} tokens`);
+
+      const text = (resp.content[0] as { type: string; text: string }).text;
+      const { parsed, error } = jsonOrError(text);
+      if (error) {
+        log(`  meal "${m.meal_name}" JSON parse failed: ${error}`);
+        return { ...mealInfo, guests_count: day?.guests ?? 0, ingredients: [] };
+      }
+      return parsed;
+    }));
+
+    const totalHaikuInput = haikuResults.length;
+    log(`pass 2 done — ${totalHaikuInput} meals processed in parallel`);
+
+    const plan = normalisePlan({ meals: haikuResults }, available);
 
     // Ensure Sonnet's meal names/descriptions survived Haiku's pass
-    for (const original of mealList) {
+    for (const original of mealsArray) {
       const meal = plan.meals.find((m: any) => m.day_of_week === original.day_of_week);
       if (meal) {
         meal.meal_name = String(original.meal_name).trim();
         meal.description = String(original.description).trim();
-        meal.is_fish = original.is_fish;
-        meal.needs_recipe = original.needs_recipe;
-        meal.estimated_prep_minutes = original.estimated_prep_minutes;
+        meal.is_fish = original.is_fish ?? false;
+        meal.needs_recipe = original.needs_recipe ?? false;
+        meal.estimated_prep_minutes = original.estimated_prep_minutes ?? 30;
       }
     }
 
