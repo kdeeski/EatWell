@@ -421,7 +421,7 @@ export default function PlanScreen() {
                                 : <>
                                     {meal.is_fish      && <Text style={styles.fishBadge}>Buy Fresh</Text>}
                                     {meal.needs_recipe && <Text style={styles.recipeBadge}>Recipe</Text>}
-                                    {pinnedMealIds.has(meal.id) && <Text style={styles.pinnedBadge}>📌 Pinned</Text>}
+                                    {pinnedMealIds.has(meal.id) && <Text style={styles.pinnedBadge}>Pinned</Text>}
                                   </>
                               }
                             </View>
@@ -510,7 +510,7 @@ export default function PlanScreen() {
                                 }}
                               >
                                 <Text style={[styles.pinBtnText, pinnedMealIds.has(meal.id) && styles.pinBtnTextActive]}>
-                                  {pinnedMealIds.has(meal.id) ? '📌 Keeping this on replan' : 'Keep this on replan'}
+                                  {pinnedMealIds.has(meal.id) ? 'Keeping this on replan' : 'Keep this on replan'}
                                 </Text>
                               </TouchableOpacity>
                             )}
