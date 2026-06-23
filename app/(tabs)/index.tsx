@@ -377,6 +377,7 @@ export default function TodayScreen() {
                 <TextInput
                   style={styles.notesInput}
                   placeholder="Any notes? (optional)"
+                  placeholderTextColor={colors.text.placeholder}
                   value={logNotes}
                   onChangeText={setLogNotes}
                   multiline
@@ -384,6 +385,7 @@ export default function TodayScreen() {
                 <TextInput
                   style={styles.notesInput}
                   placeholder="What did you drink? (optional)"
+                  placeholderTextColor={colors.text.placeholder}
                   value={logDrinkName}
                   onChangeText={setLogDrinkName}
                 />
@@ -391,6 +393,7 @@ export default function TodayScreen() {
                   <TextInput
                     style={styles.notesInput}
                     placeholder="Tasting notes…"
+                    placeholderTextColor={colors.text.placeholder}
                     value={logDrinkNotes}
                     onChangeText={setLogDrinkNotes}
                     multiline
@@ -464,10 +467,11 @@ export default function TodayScreen() {
                     <Text style={styles.yesNoText}>One-off</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput style={styles.notesInput} placeholder="Any notes? (optional)" value={elseLogNotes} onChangeText={setElseLogNotes} multiline />
+                <TextInput style={styles.notesInput} placeholder="Any notes? (optional)" placeholderTextColor={colors.text.placeholder} value={elseLogNotes} onChangeText={setElseLogNotes} multiline />
                 <TextInput
                   style={styles.notesInput}
                   placeholder="What did you drink? (optional)"
+                  placeholderTextColor={colors.text.placeholder}
                   value={elseLogDrinkName}
                   onChangeText={setElseLogDrinkName}
                 />
@@ -475,6 +479,7 @@ export default function TodayScreen() {
                   <TextInput
                     style={styles.notesInput}
                     placeholder="Tasting notes…"
+                    placeholderTextColor={colors.text.placeholder}
                     value={elseLogDrinkNotes}
                     onChangeText={setElseLogDrinkNotes}
                     multiline

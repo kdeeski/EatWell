@@ -435,6 +435,7 @@ export default function CheckinFlow() {
             <TextInput
               style={styles.notesInput}
               placeholder="Search your recipes or type a name…"
+              placeholderTextColor={colors.text.placeholder}
               value={somethingElseName}
               onChangeText={setSomethingElseName}
               autoFocus
@@ -519,6 +520,7 @@ export default function CheckinFlow() {
             <TextInput
               style={styles.notesInput}
               placeholder="What worked, what didn't, any tweaks..."
+              placeholderTextColor={colors.text.placeholder}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -529,6 +531,7 @@ export default function CheckinFlow() {
             <TextInput
               style={styles.notesInput}
               placeholder="e.g. Felton Road Pinot Noir 2022"
+              placeholderTextColor={colors.text.placeholder}
               value={drinkName}
               onChangeText={setDrinkName}
             />
@@ -536,6 +539,7 @@ export default function CheckinFlow() {
               <TextInput
                 style={[styles.notesInput, { marginTop: 8 }]}
                 placeholder="Tasting notes…"
+                placeholderTextColor={colors.text.placeholder}
                 value={drinkNotes}
                 onChangeText={setDrinkNotes}
                 multiline
