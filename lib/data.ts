@@ -5,6 +5,9 @@
 import { supabase } from './supabase';
 import { toTitleCase } from './titleCase';
 
+const PLANNED_MEAL_COLUMNS = 'id, meal_plan_id, day_of_week, meal_name, description, is_fish, needs_recipe, estimated_prep_minutes, ingredients, guests_count, created_at';
+const MEAL_PLAN_COLUMNS = 'id, user_id, week_start_date, generated_at, confirmed, notes, created_at';
+
 // Returns YYYY-MM-DD in the device's local timezone (not UTC).
 // toISOString() is UTC and gives the wrong date for NZ users in the morning.
 export function localDateString(date: Date = new Date()): string {
@@ -269,7 +272,7 @@ export async function loadMealPlanForWeek(
 ): Promise<{ plan: MealPlan; meals: PlannedMeal[] } | null> {
   const { data: plans, error } = await supabase
     .from('meal_plans')
-    .select('*')
+    .select(MEAL_PLAN_COLUMNS)
     .eq('user_id', userId)
     .eq('week_start_date', weekStartDate)
     .order('created_at', { ascending: false })
@@ -279,7 +282,7 @@ export async function loadMealPlanForWeek(
   const plan = plans[0] as MealPlan;
   const { data: meals, error: mealsError } = await supabase
     .from('planned_meals')
-    .select('*')
+    .select(PLANNED_MEAL_COLUMNS)
     .eq('meal_plan_id', plan.id)
     .order('day_of_week');
   if (mealsError) throw mealsError;
@@ -302,7 +305,7 @@ export async function loadCurrentMealPlan(
   const thisMonday = getThisWeekMonday();
   const { data: plans, error: planError } = await supabase
     .from('meal_plans')
-    .select('*')
+    .select(MEAL_PLAN_COLUMNS)
     .eq('user_id', userId)
     .lte('week_start_date', thisMonday)
     .order('week_start_date', { ascending: false })
@@ -316,7 +319,7 @@ export async function loadCurrentMealPlan(
 
   const { data: meals, error: mealsError } = await supabase
     .from('planned_meals')
-    .select('*')
+    .select(PLANNED_MEAL_COLUMNS)
     .eq('meal_plan_id', plan.id)
     .order('day_of_week');
 
@@ -343,7 +346,7 @@ export async function saveMealPlan(
 
   const { data: plan, error: planError } = await supabase
     .from('meal_plans')
-    .select('*')
+    .select(MEAL_PLAN_COLUMNS)
     .eq('user_id', userId)
     .eq('week_start_date', weekStartDate)
     .single();
@@ -389,7 +392,7 @@ export async function saveMealPlan(
   // the return value must include both new and pre-existing meals.
   const { data: allMeals, error: mealsError } = await supabase
     .from('planned_meals')
-    .select('*')
+    .select(PLANNED_MEAL_COLUMNS)
     .eq('meal_plan_id', plan.id)
     .order('day_of_week');
   if (mealsError) throw mealsError;
@@ -414,7 +417,7 @@ export async function pushMealToNextWeek(
 
   const { data: plan, error: planError } = await supabase
     .from('meal_plans')
-    .select('*')
+    .select(MEAL_PLAN_COLUMNS)
     .eq('user_id', userId)
     .eq('week_start_date', nextWeekStart)
     .single();
@@ -448,7 +451,7 @@ export async function pushMealToNextWeek(
 
   const { data: meals, error: mealsError } = await supabase
     .from('planned_meals')
-    .select('*')
+    .select(PLANNED_MEAL_COLUMNS)
     .eq('meal_plan_id', plan.id)
     .order('day_of_week');
   if (mealsError) throw mealsError;
