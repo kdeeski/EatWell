@@ -1,0 +1,101 @@
+const variant = process.env.APP_VARIANT ?? 'production';
+
+const variantConfig = {
+  development: {
+    name: 'EatWell (Dev)',
+    packageSuffix: '.dev',
+    schemeSuffix: '-dev',
+  },
+  preview: {
+    name: 'EatWell (Preview)',
+    packageSuffix: '.preview',
+    schemeSuffix: '-preview',
+  },
+  production: {
+    name: 'EatWell',
+    packageSuffix: '',
+    schemeSuffix: '',
+  },
+};
+
+const config = variantConfig[variant] ?? variantConfig.production;
+
+module.exports = {
+  expo: {
+    name: config.name,
+    slug: 'eatwell',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/icon.png',
+    userInterfaceStyle: 'light',
+    scheme: `eatwell${config.schemeSuffix}`,
+    splash: {
+      image: './assets/splash-icon.png',
+      resizeMode: 'cover',
+      backgroundColor: '#2D6A4F',
+    },
+    ios: {
+      supportsTablet: false,
+      bundleIdentifier: `com.eatwell.app${config.packageSuffix}`,
+      buildNumber: '1',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
+    },
+    android: {
+      package: `com.eatwell.app${config.packageSuffix}`,
+      adaptiveIcon: {
+        backgroundColor: '#2D6A4F',
+        foregroundImage: './assets/android-icon-foreground.png',
+        backgroundImage: './assets/android-icon-background.png',
+        monochromeImage: './assets/android-icon-monochrome.png',
+      },
+      predictiveBackGestureEnabled: false,
+    },
+    web: {
+      favicon: './assets/favicon.png',
+      bundler: 'metro',
+      name: 'EatWell',
+      shortName: 'EatWell',
+      description: 'Your personal meal planner — weekly menus, shopping lists, and pantry tracking.',
+      themeColor: '#2D6A4F',
+      backgroundColor: '#FAFAF8',
+      preferRelatedApplications: false,
+    },
+    owner: 'kdeacon',
+    updates: {
+      url: 'https://u.expo.dev/ff9f32fa-6006-4a5f-94bd-7893fb84d066',
+      enabled: true,
+      checkAutomatically: 'ON_LOAD',
+      fallbackToCacheTimeout: 0,
+    },
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
+    extra: {
+      eas: {
+        projectId: 'ff9f32fa-6006-4a5f-94bd-7893fb84d066',
+      },
+      appVariant: variant,
+    },
+    plugins: [
+      'expo-router',
+      'expo-updates',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'EatWell needs access to your photos to analyse your pantry.',
+          cameraPermission: 'EatWell needs camera access to photograph your pantry.',
+        },
+      ],
+      [
+        'expo-notifications',
+        {
+          icon: './assets/notification-icon.png',
+          color: '#3B7A57',
+          sounds: [],
+        },
+      ],
+    ],
+  },
+};

@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/useAppStore';
 import { bootstrapUserData, loadHouseholdMembers } from '../lib/data';
 import type { Session } from '@supabase/supabase-js';
+
+const APP_VARIANT = Constants.expoConfig?.extra?.appVariant ?? 'production';
 
 // Hold the native splash until we're ready to show the app (no-op on web)
 if (Platform.OS !== 'web') SplashScreen.preventAutoHideAsync();
@@ -119,6 +122,22 @@ export default function RootLayout() {
         <Stack.Screen name="bar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="cellar" options={{ presentation: 'modal' }} />
       </Stack>
+      {APP_VARIANT !== 'production' && (
+        <View style={variantStyles.badge} pointerEvents="none">
+          <Text style={variantStyles.badgeText}>
+            {APP_VARIANT === 'development' ? 'DEV' : 'PREVIEW'}
+          </Text>
+        </View>
+      )}
     </SafeAreaProvider>
   );
 }
+
+const variantStyles = StyleSheet.create({
+  badge: {
+    position: 'absolute', top: 4, right: 4,
+    backgroundColor: '#FF6B00', borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 2, opacity: 0.8,
+  },
+  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 1 },
+});
