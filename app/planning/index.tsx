@@ -611,6 +611,7 @@ export default function PlanningFlow() {
             <TextInput
               style={styles.input}
               placeholder="e.g. crème fraîche, bacon, parmesan (comma separated)"
+              placeholderTextColor={colors.text.placeholder}
               value={fridgeExtras}
               onChangeText={setFridgeExtras}
               multiline
@@ -648,6 +649,7 @@ export default function PlanningFlow() {
             <TextInput
               style={styles.input}
               placeholder="Anything else ready that's not listed? e.g. basil, lemons, silverbeet..."
+              placeholderTextColor={colors.text.placeholder}
               value={gardenExtras}
               onChangeText={setGardenExtras}
               multiline
@@ -669,6 +671,7 @@ export default function PlanningFlow() {
             <TextInput
               style={styles.input}
               placeholder="e.g. salmon fillet, feijoas (comma separated)"
+              placeholderTextColor={colors.text.placeholder}
               value={spontaneous}
               onChangeText={setSpontaneous}
               multiline
