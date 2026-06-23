@@ -585,6 +585,7 @@ export default function CheckinFlow() {
             <TextInput
               style={styles.stashSearchInput}
               placeholder="Search recipes…"
+              placeholderTextColor={colors.text.placeholder}
               value={tonightStashSearch}
               onChangeText={setTonightStashSearch}
               autoCapitalize="none"
