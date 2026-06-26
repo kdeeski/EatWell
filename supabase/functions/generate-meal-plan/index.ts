@@ -118,6 +118,12 @@ ${JSON.stringify(days.pinned)}`);
     sections.push(`CARRY FORWARD (must include, exact names): ${lines.join('; ')}`);
   }
 
+  const queuedMeals: any[] = input.queuedMeals ?? [];
+  if (queuedMeals.length) {
+    const lines = queuedMeals.map((m: any) => m.name + (m.description ? `: ${m.description}` : ''));
+    sections.push(`REQUESTED MEALS (must include, from recipe stash): ${lines.join('; ')}`);
+  }
+
   if (repeatMeals.length) {
     const lines = repeatMeals.map((m: any) => m.name + (m.description ? `: ${m.description}` : ''));
     sections.push(`REPEAT MEALS (include these): ${lines.join('; ')}`);

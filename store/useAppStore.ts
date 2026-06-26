@@ -68,6 +68,12 @@ interface AppState {
   updateRecipeInStore: (id: string, updates: Partial<Recipe>) => void;
   removeRecipe: (id: string) => void;
 
+  // ── Recipe queue (recipes to include in next meal plan) ──────────────────
+  queuedRecipeIds: string[];
+  queueRecipe: (id: string) => void;
+  dequeueRecipe: (id: string) => void;
+  clearQueuedRecipes: () => void;
+
   // ── Tonight something-else choice (persists until morning check-in uses it) ─
   tonightSomethingElseName: string | null;
   setTonightSomethingElseName: (name: string | null) => void;
@@ -186,6 +192,14 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   removeRecipe: (id) =>
     set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) })),
+
+  // Recipe queue
+  queuedRecipeIds: [],
+  queueRecipe: (id) =>
+    set((state) => ({ queuedRecipeIds: state.queuedRecipeIds.includes(id) ? state.queuedRecipeIds : [...state.queuedRecipeIds, id] })),
+  dequeueRecipe: (id) =>
+    set((state) => ({ queuedRecipeIds: state.queuedRecipeIds.filter((rid) => rid !== id) })),
+  clearQueuedRecipes: () => set({ queuedRecipeIds: [] }),
 
   // Bar
   barItems: [],

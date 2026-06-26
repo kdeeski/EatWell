@@ -23,7 +23,7 @@ export default function PlanningFlow() {
   const isQuickReplan = quickReplanParam === 'true';
   // IDs of meals the user pinned on the plan tab — these days are locked from regeneration
   const pinnedIds: string[] = pinnedIdsParam ? pinnedIdsParam.split(',').filter(Boolean) : [];
-  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore, householdMembers } = useAppStore();
+  const { inventoryItems, gardenPlants, setMealPlan, setShoppingList, setGardenPlants, addGardenPlantsToStore, userId, userPreferences, recipes, plannedMeals, upsertInventoryItem: upsertInventoryInStore, householdMembers, queuedRecipeIds, clearQueuedRecipes } = useAppStore();
   const fridgeItems = inventoryItems.filter(
     (i) => i.location === 'fridge' && !i.depleted && (i.quantity == null || i.quantity > 0)
   );
@@ -303,6 +303,12 @@ export default function PlanningFlow() {
           nights_home: memberNights[m.id] ?? [],
         })),
         carryForwardMeals,
+        queuedMeals: queuedRecipeIds.length > 0
+          ? queuedRecipeIds
+              .map((id) => recipes.find((r) => r.id === id))
+              .filter(Boolean)
+              .map((r) => ({ name: r!.name, description: r!.description }))
+          : undefined,
         repeatMeals: repeatMeals.length > 0 ? repeatMeals : undefined,
         previousMeals: previousMealNames.length > 0 ? previousMealNames : undefined,
         pinnedMeals: pinnedMealsList.length > 0 ? pinnedMealsList : undefined,
@@ -452,6 +458,7 @@ export default function PlanningFlow() {
           .forEach((i) => upsertInventoryInStore({ ...i, depleted: true }));
       }
 
+      if (queuedRecipeIds.length > 0) clearQueuedRecipes();
       setStep('done');
     } catch (e: any) {
       console.error(e);
@@ -726,6 +733,19 @@ export default function PlanningFlow() {
                 ))}
               </>
             )}
+            {queuedRecipeIds.length > 0 && (
+              <View style={styles.queuedNote}>
+                <Text style={styles.queuedNoteText}>
+                  {queuedRecipeIds.length === 1 ? '1 recipe' : `${queuedRecipeIds.length} recipes`} queued from your stash
+                </Text>
+                <Text style={styles.queuedNoteNames}>
+                  {queuedRecipeIds
+                    .map((id) => recipes.find((r) => r.id === id)?.name)
+                    .filter(Boolean)
+                    .join(', ')}
+                </Text>
+              </View>
+            )}
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() =>
@@ -924,6 +944,15 @@ const styles = StyleSheet.create({
   dayChipTextHolly: { color: colors.brand.plumDark, fontWeight: '600' },
   memberName: { fontSize: 15, fontWeight: '600', color: colors.text.primary, marginBottom: 2 },
   memberHint: { fontSize: 13, color: colors.text.placeholder, marginBottom: 8 },
+
+  queuedNote: {
+    backgroundColor: colors.brand.primary + '12',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+  },
+  queuedNoteText: { fontSize: 14, fontWeight: '600', color: colors.brand.primary },
+  queuedNoteNames: { fontSize: 13, color: colors.text.muted, marginTop: 4 },
 
   primaryButton: {
     backgroundColor: colors.brand.primary,

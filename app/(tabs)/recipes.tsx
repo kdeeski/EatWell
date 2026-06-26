@@ -55,7 +55,7 @@ const CATEGORY_COLOURS: Record<RecipeCategory, string> = {
 
 export default function RecipesScreen() {
   const insets = useSafeAreaInsets();
-  const { recipes, removeRecipe, updateRecipeInStore, userId } = useAppStore();
+  const { recipes, removeRecipe, updateRecipeInStore, userId, queuedRecipeIds, queueRecipe, dequeueRecipe } = useAppStore();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -249,6 +249,18 @@ export default function RecipesScreen() {
                           {item.source_url ? 'View original recipe' : 'View full recipe'}
                         </Text>
                         <Text style={shared.ctaArrow}>→</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {item.category === 'mains' && (
+                      <TouchableOpacity
+                        style={shared.ctaRow}
+                        onPress={() => queuedRecipeIds.includes(item.id) ? dequeueRecipe(item.id) : queueRecipe(item.id)}
+                      >
+                        <Text style={[styles.expandedViewFull, queuedRecipeIds.includes(item.id) && { color: colors.brand.primary }]}>
+                          {queuedRecipeIds.includes(item.id) ? 'Queued for next plan' : 'Plan this'}
+                        </Text>
+                        <Text style={shared.ctaArrow}>{queuedRecipeIds.includes(item.id) ? '×' : '→'}</Text>
                       </TouchableOpacity>
                     )}
 

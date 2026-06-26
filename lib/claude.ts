@@ -44,6 +44,7 @@ export interface MealPlanInput {
   }>;                               // household members and which nights they're joining
   repeatMeals?: RepeatMeal[];      // high-rated stash meals to rotate in
   carryForwardMeals?: CarryForwardMeal[]; // uncompleted meals from current week
+  queuedMeals?: CarryForwardMeal[];     // recipes queued from the stash — must include
   previousMeals?: string[];        // meal names from last week — Claude avoids repeating them
   pinnedMeals?: PinnedMeal[];      // meals already locked in — Claude must respect their pasta/protein for variety rules
   preferences?: Pick<UserPreferences,
