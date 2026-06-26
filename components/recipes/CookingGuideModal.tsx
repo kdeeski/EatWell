@@ -22,6 +22,7 @@ interface Props {
   onClose: () => void;
   prefillGuide?: CookingGuide; // skip API call when guide already saved in stash
   ingredients?: string;        // pre-formatted ingredient list for the save modal
+  onGuideLoaded?: (guide: CookingGuide) => void;
 }
 
 type SavePrefill = { name: string; category: RecipeCategory; description?: string; ingredients?: string; method?: string; guideJson?: RecipeGuideJson };
@@ -100,7 +101,7 @@ function ComponentCard({
   );
 }
 
-export default function CookingGuideModal({ mealName, description, visible, onClose, prefillGuide, ingredients }: Props) {
+export default function CookingGuideModal({ mealName, description, visible, onClose, prefillGuide, ingredients, onGuideLoaded }: Props) {
   const insets = useSafeAreaInsets();
   const { userId, recipes, addRecipe } = useAppStore();
 
@@ -126,13 +127,14 @@ export default function CookingGuideModal({ mealName, description, visible, onCl
       setGuide(prefillGuide);
       setLoading(false);
       setError(null);
+      onGuideLoaded?.(prefillGuide);
       return;
     }
     setLoading(true);
     setError(null);
     setGuide(null);
     getCookingGuide(mealName, description, recipes.map((r) => r.name), ingredients)
-      .then((g) => setGuide(g))
+      .then((g) => { setGuide(g); onGuideLoaded?.(g); })
       .catch((e) => setError(e?.message ?? 'Failed to load cooking guide'))
       .finally(() => setLoading(false));
   }, [visible, mealName, description, prefillGuide]);

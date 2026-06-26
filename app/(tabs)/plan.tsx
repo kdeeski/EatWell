@@ -62,6 +62,7 @@ export default function PlanScreen() {
   const [stashRecipe, setStashRecipe] = useState<Recipe | null>(null);
   const [saveForMeal, setSaveForMeal] = useState<PlannedMeal | null>(null);
   const [cookedMap, setCookedMap]     = useState<Record<string, CookedMeal>>({});
+  const [guideCache, setGuideCache]   = useState<Record<string, { method: string; ingredients?: string }>>({});
 
   // Week navigation
   const [weekOffset, setWeekOffset]   = useState(0); // 0 = current week
@@ -613,6 +614,13 @@ export default function PlanScreen() {
           onClose={() => setGuideTarget(null)}
           prefillGuide={recipes.find((r) => r.name.toLowerCase() === guideTarget.meal_name.toLowerCase() && r.guide_json)?.guide_json ?? undefined}
           ingredients={formatIngredients(guideTarget.ingredients)}
+          onGuideLoaded={(g) => setGuideCache((prev) => ({
+            ...prev,
+            [guideTarget.id]: {
+              method: g.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+              ingredients: g.ingredients?.join('\n'),
+            },
+          }))}
         />
       )}
 
@@ -625,6 +633,7 @@ export default function PlanScreen() {
             category: 'mains',
             description: saveForMeal.description ?? undefined,
             ingredients: formatIngredients(saveForMeal.ingredients),
+            method: guideCache[saveForMeal.id]?.method,
           }}
           onSave={() => setSaveForMeal(null)}
           onClose={() => setSaveForMeal(null)}
