@@ -450,37 +450,37 @@ export default function PlanScreen() {
                                 : null;
                             })()}
                             {isSelected && !cooked && (() => {
-                              const mealRecipes = recipes.filter(
-                                (r) => !['sauces_dressings', 'marinades_rubs', 'glossary'].includes(r.category)
-                              );
-                              const match = findStashMatch(meal.meal_name, mealRecipes);
-                              return match ? (
-                                match.source_url ? (
-                                  <TouchableOpacity
-                                    style={shared.ctaRow}
-                                    onPress={() => Linking.openURL(match.source_url!)}
-                                  >
-                                    <Text style={styles.stashNudgeText}>View recipe</Text>
-                                    <Text style={shared.ctaArrow}>→</Text>
-                                  </TouchableOpacity>
-                                ) : (
-                                  <TouchableOpacity
-                                    style={shared.ctaRow}
-                                    onPress={() => setStashRecipe(match)}
-                                  >
-                                    <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
-                                    <Text style={shared.ctaArrow}>→</Text>
-                                  </TouchableOpacity>
-                                )
-                              ) : (
+                              const mainsOnly = recipes.filter((r) => r.category === 'mains');
+                              const match = findStashMatch(meal.meal_name, mainsOnly);
+                              return (
                                 <>
-                                  <TouchableOpacity
-                                    style={shared.ctaRow}
-                                    onPress={() => setSaveForMeal(meal)}
-                                  >
-                                    <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
-                                    <Text style={shared.ctaArrow}>→</Text>
-                                  </TouchableOpacity>
+                                  {match ? (
+                                    match.source_url ? (
+                                      <TouchableOpacity
+                                        style={shared.ctaRow}
+                                        onPress={() => Linking.openURL(match.source_url!)}
+                                      >
+                                        <Text style={styles.stashNudgeText}>View recipe</Text>
+                                        <Text style={shared.ctaArrow}>→</Text>
+                                      </TouchableOpacity>
+                                    ) : (
+                                      <TouchableOpacity
+                                        style={shared.ctaRow}
+                                        onPress={() => setStashRecipe(match)}
+                                      >
+                                        <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
+                                        <Text style={shared.ctaArrow}>→</Text>
+                                      </TouchableOpacity>
+                                    )
+                                  ) : (
+                                    <TouchableOpacity
+                                      style={shared.ctaRow}
+                                      onPress={() => setSaveForMeal(meal)}
+                                    >
+                                      <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                                      <Text style={shared.ctaArrow}>→</Text>
+                                    </TouchableOpacity>
+                                  )}
                                   <TouchableOpacity
                                     style={shared.ctaRow}
                                     onPress={() => setGuideTarget(meal)}

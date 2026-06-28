@@ -289,34 +289,37 @@ export default function TodayScreen() {
               <Text style={styles.mealDesc}>{tonightsMeal.description}</Text>
             ) : null}
             {(() => {
-              const match = findStashMatch(tonightsMeal.meal_name, recipes);
-              return match ? (
-                match.source_url ? (
-                  <TouchableOpacity
-                    style={shared.ctaRow}
-                    onPress={() => Linking.openURL(match.source_url!)}
-                  >
-                    <Text style={styles.stashNudgeText}>View recipe</Text>
-                    <Text style={shared.ctaArrow}>→</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={shared.ctaRow}
-                    onPress={() => setStashRecipe(match)}
-                  >
-                    <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
-                    <Text style={shared.ctaArrow}>→</Text>
-                  </TouchableOpacity>
-                )
-              ) : (
+              const mainsOnly = recipes.filter((r) => r.category === 'mains');
+              const match = findStashMatch(tonightsMeal.meal_name, mainsOnly);
+              return (
                 <>
-                  <TouchableOpacity
-                    style={shared.ctaRow}
-                    onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
-                  >
-                    <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
-                    <Text style={shared.ctaArrow}>→</Text>
-                  </TouchableOpacity>
+                  {match ? (
+                    match.source_url ? (
+                      <TouchableOpacity
+                        style={shared.ctaRow}
+                        onPress={() => Linking.openURL(match.source_url!)}
+                      >
+                        <Text style={styles.stashNudgeText}>View recipe</Text>
+                        <Text style={shared.ctaArrow}>→</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={shared.ctaRow}
+                        onPress={() => setStashRecipe(match)}
+                      >
+                        <Text style={styles.stashNudgeText}>You have a recipe for this</Text>
+                        <Text style={shared.ctaArrow}>→</Text>
+                      </TouchableOpacity>
+                    )
+                  ) : (
+                    <TouchableOpacity
+                      style={shared.ctaRow}
+                      onPress={() => setSaveForMeal(toTitleCase(tonightsMeal.meal_name))}
+                    >
+                      <Text style={styles.saveRecipeText}>+ Save a recipe for this</Text>
+                      <Text style={shared.ctaArrow}>→</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={shared.ctaRow}
                     onPress={() => setGuideTarget(tonightsMeal)}
