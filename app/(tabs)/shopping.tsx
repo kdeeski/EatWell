@@ -269,7 +269,7 @@ export default function ShoppingScreen() {
       const [freshInv, freshPlants, conditionalResult] = await Promise.all([
         loadInventoryItems(userId),
         loadGardenPlants(userId),
-        refreshConditionalItems(userId, shoppingItems),
+        refreshConditionalItems(userId, shoppingItems, shoppingList?.week_start_date),
       ]);
       setInventoryItems(freshInv);
       setGardenPlants(freshPlants);

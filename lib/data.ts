@@ -740,12 +740,27 @@ export async function saveShoppingList(
 
 export async function refreshConditionalItems(
   userId: string,
-  items: ShoppingListItem[]
+  items: ShoppingListItem[],
+  listWeekStartDate?: string // YYYY-MM-DD of the shopping list's target week
 ): Promise<{ updatedIds: string[]; summaries: string[] }> {
   const conditionalItems = items.filter(
     (i) => i.conditional_meal_ids && i.conditional_meal_ids.length > 0
   );
   if (conditionalItems.length === 0) return { updatedIds: [], summaries: [] };
+
+  // Earmarked items are always from the previous week. Once we're in (or past)
+  // the shopping list's week, those reservations are stale regardless of cooking logs.
+  let staleByWeek = new Set<string>();
+  if (listWeekStartDate) {
+    const now = new Date();
+    const d = now.getDay();
+    const thisMon = new Date(now);
+    thisMon.setDate(now.getDate() - ((d + 6) % 7));
+    const thisMondayStr = `${thisMon.getFullYear()}-${String(thisMon.getMonth() + 1).padStart(2, '0')}-${String(thisMon.getDate()).padStart(2, '0')}`;
+    if (thisMondayStr >= listWeekStartDate) {
+      staleByWeek = new Set(conditionalItems.flatMap((i) => i.conditional_meal_ids!));
+    }
+  }
 
   const allMealIds = [...new Set(conditionalItems.flatMap((i) => i.conditional_meal_ids!))];
   const { data: cookedRows } = await supabase
@@ -755,14 +770,15 @@ export async function refreshConditionalItems(
     .in('planned_meal_id', allMealIds);
 
   const cookedMealIds = new Set((cookedRows ?? []).map((r) => r.planned_meal_id).filter(Boolean));
-  if (cookedMealIds.size === 0) return { updatedIds: [], summaries: [] };
+  const staleMealIds = new Set([...cookedMealIds, ...staleByWeek]);
+  if (staleMealIds.size === 0) return { updatedIds: [], summaries: [] };
 
   const updatedIds: string[] = [];
   const summaries: string[] = [];
 
   for (const item of conditionalItems) {
-    const allCooked = item.conditional_meal_ids!.every((id) => cookedMealIds.has(id));
-    if (!allCooked) continue;
+    const allStale = item.conditional_meal_ids!.every((id) => staleMealIds.has(id));
+    if (!allStale) continue;
 
     await supabase
       .from('shopping_list_items')
