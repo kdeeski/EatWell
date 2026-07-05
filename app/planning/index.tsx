@@ -570,6 +570,40 @@ export default function PlanningFlow() {
                 ))}
               </>
             )}
+            {targetWeekOffset === 1 && plannedMeals.filter((m) => !cookedThisWeekIds.has(m.id)).length > 0 && (
+              <>
+                <Text style={styles.stepBody}>Anything to carry forward from this week?</Text>
+                {plannedMeals.filter((m) => !cookedThisWeekIds.has(m.id)).map((meal) => {
+                  const selected = carryForwardIds.includes(meal.id);
+                  return (
+                    <TouchableOpacity
+                      key={meal.id}
+                      style={[styles.tapOption, selected && styles.tapOptionSelected]}
+                      onPress={() => toggleCarryForward(meal.id)}
+                    >
+                      <Text style={[styles.tapOptionText, selected && styles.tapOptionTextSelected]}>
+                        {meal.meal_name}
+                      </Text>
+                      {meal.description ? (
+                        <Text style={[styles.carryForwardDesc, selected && { color: colors.brand.primaryDark }]} numberOfLines={1}>
+                          {meal.description}
+                        </Text>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+            {queuedRecipeIds.length > 0 && (
+              <View style={styles.queuedNote}>
+                <Text style={styles.queuedNoteText}>
+                  {queuedRecipeIds.length === 1 ? '1 recipe' : `${queuedRecipeIds.length} recipes`} queued from your stash
+                </Text>
+                <Text style={styles.queuedNoteNames}>
+                  {queuedRecipeIds.map((id) => recipes.find((r) => r.id === id)?.name).filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            )}
             <TouchableOpacity style={styles.primaryButton} onPress={handleGenerate}>
               <Text style={styles.primaryButtonText}>Generate →</Text>
             </TouchableOpacity>
