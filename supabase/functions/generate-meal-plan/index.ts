@@ -267,11 +267,14 @@ function isUsefulHerbBackup(name: string, backup: string): boolean {
 }
 
 function normaliseIngredient(ing: any): any {
-  const source = ['buy', 'fridge', 'freezer', 'garden', 'pantry'].includes(ing.source)
+  const category = normaliseCategory(ing.ingredient_category, ing.name ?? '');
+
+  let source = ['buy', 'fridge', 'freezer', 'garden', 'pantry'].includes(ing.source)
     ? ing.source
     : (ing.from_freezer ? 'freezer' : ing.from_fridge ? 'fridge' : ing.from_garden ? 'garden' : ing.is_pantry_staple ? 'pantry' : 'buy');
 
-  const category = normaliseCategory(ing.ingredient_category, ing.name ?? '');
+  // Meat and fish are perishables — never pantry staples regardless of what the AI returns
+  if (category === 'meat_fish' && source === 'pantry') source = 'buy';
 
   return {
     name: toTitleCase(String(ing.name ?? '').trim()),
