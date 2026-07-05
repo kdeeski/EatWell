@@ -80,6 +80,30 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
   const [error, setError]             = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
   const [showImport, setShowImport]   = useState(false);
+  const [fetchingMeta, setFetchingMeta] = useState(false);
+
+  const fetchUrlMeta = async (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || description.trim()) return; // don't overwrite existing description
+    try {
+      new URL(trimmed); // validate URL shape
+    } catch { return; }
+    setFetchingMeta(true);
+    try {
+      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(trimmed)}`);
+      const json = await res.json();
+      const html: string = json?.contents ?? '';
+      // Extract meta description
+      const metaMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+        ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+      const ogMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
+        ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+      const found = (metaMatch?.[1] ?? ogMatch?.[1] ?? '').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n)).replace(/&amp;/g, '&').replace(/&quot;/g, '"').trim();
+      if (found) setDescription(found.slice(0, 300));
+    } catch { /* non-critical */ } finally {
+      setFetchingMeta(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { setError('Name is required'); return; }
@@ -126,7 +150,7 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
           recipeName={name || 'recipe'}
           visible={showBrowser}
           searchSite={userPreferences?.recipe_search_site}
-          onUseUrl={(url) => { setSourceUrl(url); setShowBrowser(false); }}
+          onUseUrl={(url) => { setSourceUrl(url); setShowBrowser(false); fetchUrlMeta(url); }}
           onClose={() => setShowBrowser(false)}
         />
       )}
@@ -264,15 +288,19 @@ export default function SaveRecipeModal({ visible, existingRecipe, prefill, onSa
                       style={[styles.textInput, { flex: 1 }]}
                       value={sourceUrl}
                       onChangeText={setSourceUrl}
+                      onBlur={() => fetchUrlMeta(sourceUrl)}
                       placeholder="https://..."
                       placeholderTextColor={colors.text.placeholder}
                       keyboardType="url"
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
-                    <TouchableOpacity onPress={() => setShowBrowser(true)} style={{ marginLeft: 8 }}>
-                      <Text style={styles.findOnWebBtn}>Find →</Text>
-                    </TouchableOpacity>
+                    {fetchingMeta
+                      ? <ActivityIndicator size="small" color={colors.text.placeholder} style={{ marginLeft: 10 }} />
+                      : <TouchableOpacity onPress={() => setShowBrowser(true)} style={{ marginLeft: 8 }}>
+                          <Text style={styles.findOnWebBtn}>Find →</Text>
+                        </TouchableOpacity>
+                    }
                   </View>
                 ) : (
                   <View style={styles.bookRow}>
