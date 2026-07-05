@@ -144,6 +144,7 @@ export default function GardenScreen() {
   const [activeFilter, setActiveFilter]             = useState<GardenFilter>('all');
   const [searchQuery, setSearchQuery]               = useState('');
   const [suggestionsVisible, setSuggestionsVisible] = useState(false);
+  const [rainfallMm, setRainfallMm]                 = useState<number | null>(null);
 
   const LOADING_MESSAGES = [
     'Looking at what you already grow…',
@@ -152,6 +153,20 @@ export default function GardenScreen() {
     'Finding what\'s worth growing at home…',
     'Almost there…',
   ];
+
+  // ── Rainfall check (Open-Meteo, Christchurch) ────────────────────────────────
+  useEffect(() => {
+    // latitude/longitude for Christchurch, NZ
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=-43.53&longitude=172.64&daily=precipitation_sum&past_days=3&forecast_days=1&timezone=Pacific%2FAuckland')
+      .then((r) => r.json())
+      .then((data) => {
+        const values: number[] = data?.daily?.precipitation_sum ?? [];
+        // Sum last 3 days (indices 0-2); index 3 is today's forecast
+        const total = values.slice(0, 3).reduce((s: number, v: number) => s + (v ?? 0), 0);
+        setRainfallMm(Math.round(total * 10) / 10);
+      })
+      .catch(() => { /* non-critical — stay null */ });
+  }, []);
 
   // ── Filtered plant list ───────────────────────────────────────────────────────
 
@@ -624,6 +639,17 @@ export default function GardenScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
 
+      {/* ── Rainfall nudge ────────────────────────────────────────────────── */}
+      {rainfallMm !== null && rainfallMm < 5 && (
+        <View style={styles.rainfallNudge}>
+          <Text style={styles.rainfallNudgeText}>
+            {rainfallMm === 0
+              ? 'No rain in the last 3 days — your garden may need water.'
+              : `Only ${rainfallMm}mm in the last 3 days — your garden may need water.`}
+          </Text>
+        </View>
+      )}
+
       {/* ── Suggestions (inline expansion) ───────────────────────────────── */}
       {suggestionsVisible && (
         <View style={styles.section}>
@@ -733,6 +759,17 @@ export default function GardenScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.app },
   content: { padding: 20 },
+
+  rainfallNudge: {
+    backgroundColor: colors.background.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  rainfallNudgeText: { fontSize: 14, color: colors.text.muted, lineHeight: 20 },
 
   // Filter bar
   filterBar: { backgroundColor: colors.background.app },
