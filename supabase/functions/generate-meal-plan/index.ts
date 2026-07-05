@@ -158,7 +158,7 @@ Return only valid JSON. No prose, markdown, or extra keys.
 
 PRIORITY ORDER:
 1. Dietary exclusions are absolute.
-2. Carry-forward and repeat meals must be included.
+2. Carry-forward, requested (stash), and repeat meals must be included.
 3. Fridge items should be used before they spoil.
 4. Freezer items may be used where they fit naturally.
 5. Preferences personalise the plan.
