@@ -8,6 +8,7 @@ import { saveRecipe } from '../lib/data';
 import { useAppStore } from '../store/useAppStore';
 import { colors } from '../constants/theme';
 import { shared } from '../constants/styles';
+import CookingGuideModal from './recipes/CookingGuideModal';
 
 interface Props {
   mealName: string;
@@ -24,6 +25,7 @@ export default function DrinkPairingSection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [cocktailGuide, setCocktailGuide] = useState<{ name: string; reason: string } | null>(null);
 
   const doFetch = async () => {
     setLoading(true);
@@ -76,69 +78,87 @@ export default function DrinkPairingSection({
   }
 
   return (
-    <View style={s.section}>
-      <TouchableOpacity onPress={handleToggle} hitSlop={{ top: 4, bottom: 4 }}>
-        <Text style={s.sectionLabel}>Suggested drinks</Text>
-      </TouchableOpacity>
-
-      {loading && (
-        <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start' }} />
-      )}
-
-      {error && (
-        <TouchableOpacity onPress={doFetch}>
-          <Text style={s.errorText}>{error} Tap to retry.</Text>
+    <>
+      <View style={s.section}>
+        <TouchableOpacity onPress={handleToggle} hitSlop={{ top: 4, bottom: 4 }}>
+          <Text style={s.sectionLabel}>Suggested drinks</Text>
         </TouchableOpacity>
-      )}
 
-      {result && (
-        <>
-          {result.pairings.map((p, i) => {
-            const inGlossary = showGlossary && recipes.some(
-              (r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase()
-            );
-            return (
-              <View key={i} style={s.card}>
-                <Text style={s.varietal}>{p.varietal}</Text>
-                <Text style={s.reason}>{p.reason}</Text>
-                {p.pairing_note ? <Text style={s.note}>{p.pairing_note}</Text> : null}
-                {showGlossary && userId && (
-                  inGlossary
-                    ? <Text style={base.glossarySaved}>In glossary ✓</Text>
-                    : <TouchableOpacity onPress={async () => {
-                        const saved = await saveRecipe(userId, {
-                          name: p.varietal, category: 'glossary',
-                          description: p.reason + (p.pairing_note ? '\n' + p.pairing_note : ''),
-                          ingredients: null, method: null, source_url: null,
-                          source_book: null, page_number: null,
-                          rating: null, would_cook_again: null,
-                          cooked_meal_id: null, guide_json: null, bite_pairing: null,
-                        });
-                        addRecipe(saved);
-                      }}>
-                        <Text style={base.glossaryAdd}>+ Save to glossary</Text>
-                      </TouchableOpacity>
-                )}
-              </View>
-            );
-          })}
-          {result.cocktail && (
-            <View style={[s.card, base.cocktailCard]}>
-              <Text style={[s.varietal, base.cocktailName]}>🍸 {result.cocktail.name}</Text>
-              <Text style={s.reason}>{result.cocktail.reason}</Text>
+        {loading && (
+          <ActivityIndicator size="small" color={colors.brand.primary} style={{ alignSelf: 'flex-start' }} />
+        )}
+
+        {error && (
+          <TouchableOpacity onPress={doFetch}>
+            <Text style={s.errorText}>{error} Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
+        {result && (
+          <>
+            {result.pairings.map((p, i) => {
+              const inGlossary = showGlossary && recipes.some(
+                (r) => r.category === 'glossary' && r.name.toLowerCase() === p.varietal.toLowerCase()
+              );
+              return (
+                <View key={i} style={s.card}>
+                  <Text style={s.varietal}>{p.varietal}</Text>
+                  <Text style={s.reason}>{p.reason}</Text>
+                  {p.pairing_note ? <Text style={s.note}>{p.pairing_note}</Text> : null}
+                  {showGlossary && userId && (
+                    inGlossary
+                      ? <Text style={base.glossarySaved}>In glossary ✓</Text>
+                      : <TouchableOpacity onPress={async () => {
+                          const saved = await saveRecipe(userId, {
+                            name: p.varietal, category: 'glossary',
+                            description: p.reason + (p.pairing_note ? '\n' + p.pairing_note : ''),
+                            ingredients: null, method: null, source_url: null,
+                            source_book: null, page_number: null,
+                            rating: null, would_cook_again: null,
+                            cooked_meal_id: null, guide_json: null, bite_pairing: null,
+                          });
+                          addRecipe(saved);
+                        }}>
+                          <Text style={base.glossaryAdd}>+ Save to glossary</Text>
+                        </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+            {result.cocktail && (
+              <TouchableOpacity
+                style={[s.card, base.cocktailCard]}
+                onPress={() => setCocktailGuide(result.cocktail!)}
+                activeOpacity={0.75}
+              >
+                <View style={base.cocktailHeader}>
+                  <Text style={[s.varietal, base.cocktailName]}>🍸 {result.cocktail.name}</Text>
+                  <Text style={base.cocktailArrow}>→</Text>
+                </View>
+                <Text style={s.reason}>{result.cocktail.reason}</Text>
+              </TouchableOpacity>
+            )}
+            <View style={base.actionRow}>
+              <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={base.actionText}>×</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={doFetch} disabled={loading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={base.actionText}>Regenerate</Text>
+              </TouchableOpacity>
             </View>
-          )}
-          <View style={base.actionRow}>
-            <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={base.actionText}>×</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={doFetch} disabled={loading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={base.actionText}>Regenerate</Text>
-            </TouchableOpacity>
-          </View>
-        </>
+          </>
+        )}
+      </View>
+
+      {cocktailGuide && (
+        <CookingGuideModal
+          visible
+          mealName={cocktailGuide.name}
+          description={cocktailGuide.reason}
+          onClose={() => setCocktailGuide(null)}
+        />
       )}
-    </View>
+    </>
   );
 }
 
@@ -146,7 +166,9 @@ const base = StyleSheet.create({
   glossaryAdd: { fontSize: 12, color: colors.brand.primary, fontWeight: '600', marginTop: 6 },
   glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
   cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
+  cocktailHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cocktailName: { color: colors.brand.plum },
+  cocktailArrow: { fontSize: 14, color: colors.brand.plum, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   actionText: { fontSize: 12, color: colors.text.placeholder },
 });
