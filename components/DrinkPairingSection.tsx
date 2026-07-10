@@ -126,15 +126,18 @@ export default function DrinkPairingSection({
               );
             })}
             {result.cocktail && (
-              <TouchableOpacity
-                style={[s.card, base.cocktailCard]}
-                onPress={() => setCocktailGuide(result.cocktail!)}
-                activeOpacity={0.75}
-              >
+              <View style={[s.card, base.cocktailCard]}>
                 <Text style={[s.varietal, base.cocktailName]}>🍸 {result.cocktail.name}</Text>
                 <Text style={s.reason}>{result.cocktail.reason}</Text>
-                <Text style={base.cocktailHint}>Tap for recipe →</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={shared.ctaRow}
+                  onPress={() => setCocktailGuide(result.cocktail!)}
+                  hitSlop={{ top: 8, bottom: 8 }}
+                >
+                  <Text style={base.cocktailCta}>How to make it</Text>
+                  <Text style={shared.ctaArrow}>→</Text>
+                </TouchableOpacity>
+              </View>
             )}
             <View style={base.actionRow}>
               <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -165,7 +168,7 @@ const base = StyleSheet.create({
   glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
   cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
   cocktailName: { color: colors.brand.plum },
-  cocktailHint: { fontSize: 12, color: colors.brand.plum, fontWeight: '600', marginTop: 4, opacity: 0.7 },
+  cocktailCta: { fontSize: 13, fontWeight: '600', color: colors.brand.plum },
   actionRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   actionText: { fontSize: 12, color: colors.text.placeholder },
 });
