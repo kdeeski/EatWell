@@ -161,8 +161,8 @@ export default function GardenScreen() {
       .then((r) => r.json())
       .then((data) => {
         const values: number[] = data?.daily?.precipitation_sum ?? [];
-        // Sum last 3 days (indices 0-2); index 3 is today's forecast
-        const total = values.slice(0, 3).reduce((s: number, v: number) => s + (v ?? 0), 0);
+        // Indices 0-2 = last 3 days, index 3 = today — include all 4
+        const total = values.slice(0, 4).reduce((s: number, v: number) => s + (v ?? 0), 0);
         setRainfallMm(Math.round(total * 10) / 10);
       })
       .catch(() => { /* non-critical — stay null */ });
@@ -640,7 +640,7 @@ export default function GardenScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
 
       {/* ── Rainfall nudge ────────────────────────────────────────────────── */}
-      {rainfallMm !== null && rainfallMm < 5 && (
+      {rainfallMm !== null && rainfallMm < 10 && (
         <View style={styles.rainfallNudge}>
           <Text style={styles.rainfallNudgeText}>
             {rainfallMm === 0
