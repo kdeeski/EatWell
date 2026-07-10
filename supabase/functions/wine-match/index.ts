@@ -55,30 +55,34 @@ Deno.serve(async (req) => {
       : `{ "pairings": [{ "varietal": "string", "reason": "string" }], "cocktail": { "name": "string", "reason": "string" } }`;
 
     const systemPrompt = isDetailed
-      ? `You are a drinks pairing assistant for EatWell. Given a meal name and optional description, suggest 2-3 wine pairings and one cocktail pairing.
+      ? `You are a drinks pairing assistant for EatWell. Given a meal name and optional description, suggest exactly 2 wine pairings and exactly 1 cocktail or mixed drink pairing.
 
 For each wine pairing provide:
 - varietal: the wine varietal (e.g. "Pinot Noir", "Sauvignon Blanc")
 - reason: one sentence explaining why it works with this dish
 - pairing_note: a short paragraph (2-3 sentences) on the food-wine interaction — flavour elements, texture/weight match, and serving tips
 
-For the cocktail provide:
-- name: a specific cocktail name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy")
+For the cocktail/mixed drink provide:
+- name: a specific drink name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy", "Margarita")
 - reason: one sentence explaining why it complements the dish
-- If bar inventory is provided, ONLY suggest a cocktail that can be made from those spirits. If none suit the dish, suggest the closest possible match using available ingredients.
+- If bar inventory is provided, ONLY suggest a drink that can be made from those spirits. If none suit the dish, suggest the closest possible match using available ingredients.
+
+Always return exactly 2 pairings in the array and exactly 1 cocktail. No more, no fewer.
 
 Respond ONLY with valid JSON matching this exact schema:
 ${schemaDesc}`
-      : `You are a drinks pairing assistant for EatWell. Given a meal name and optional description, suggest 2-3 wine pairings and one cocktail pairing.
+      : `You are a drinks pairing assistant for EatWell. Given a meal name and optional description, suggest exactly 2 wine pairings and exactly 1 cocktail or mixed drink pairing.
 
 For each wine pairing provide:
 - varietal: the wine varietal (e.g. "Pinot Noir", "Sauvignon Blanc")
 - reason: one sentence explaining why it works with this dish
 
-For the cocktail provide:
-- name: a specific cocktail name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy")
+For the cocktail/mixed drink provide:
+- name: a specific drink name (e.g. "Negroni", "Aperol Spritz", "Dark and Stormy", "Margarita")
 - reason: one sentence explaining why it complements the dish
-- If bar inventory is provided, ONLY suggest a cocktail that can be made from those spirits. If none suit the dish, suggest the closest possible match using available ingredients.
+- If bar inventory is provided, ONLY suggest a drink that can be made from those spirits. If none suit the dish, suggest the closest possible match using available ingredients.
+
+Always return exactly 2 pairings in the array and exactly 1 cocktail. No more, no fewer.
 
 Respond ONLY with valid JSON matching this exact schema:
 ${schemaDesc}`;

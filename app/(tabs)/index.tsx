@@ -336,7 +336,6 @@ export default function TodayScreen() {
               mealName={tonightsMeal.meal_name}
               description={tonightsMeal.description}
               showGlossary
-              showCocktail
             />
 
             {/* Inline "log as cooked" */}

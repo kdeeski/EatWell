@@ -263,7 +263,6 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                 mealName={recipe.name}
                 description={recipe.description}
                 showGlossary
-                showCocktail
               />
             )}
 

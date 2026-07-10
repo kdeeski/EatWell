@@ -14,11 +14,10 @@ interface Props {
   description?: string | null;
   compact?: boolean;
   showGlossary?: boolean;
-  showCocktail?: boolean;
 }
 
 export default function DrinkPairingSection({
-  mealName, description, compact, showGlossary, showCocktail,
+  mealName, description, compact, showGlossary,
 }: Props) {
   const { userId, recipes, addRecipe, inventoryItems, userPreferences } = useAppStore();
   const [result, setResult] = useState<WineMatchResult | null>(null);
@@ -30,16 +29,14 @@ export default function DrinkPairingSection({
     setLoading(true);
     setError(null);
     try {
-      const barInventory = showCocktail
-        ? inventoryItems
-            .filter((i) => (i.location === 'bar' || i.location === 'cellar') && !i.depleted)
-            .map((i) => i.name)
-        : undefined;
+      const barInventory = inventoryItems
+        .filter((i) => (i.location === 'bar' || i.location === 'cellar') && !i.depleted)
+        .map((i) => i.name);
       const data = await getWineMatch({
         meal_name: mealName,
         description: description ?? undefined,
         detail_level: userPreferences?.wine_detail_level ?? 'simple',
-        ...(barInventory?.length ? { bar_inventory: barInventory } : {}),
+        ...(barInventory.length ? { bar_inventory: barInventory } : {}),
       });
       setResult(data);
     } catch (e: any) {
@@ -125,7 +122,7 @@ export default function DrinkPairingSection({
               </View>
             );
           })}
-          {showCocktail && result.cocktail && (
+          {result.cocktail && (
             <View style={[s.card, base.cocktailCard]}>
               <Text style={[s.varietal, base.cocktailName]}>🍸 {result.cocktail.name}</Text>
               <Text style={s.reason}>{result.cocktail.reason}</Text>
