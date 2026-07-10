@@ -131,11 +131,9 @@ export default function DrinkPairingSection({
                 onPress={() => setCocktailGuide(result.cocktail!)}
                 activeOpacity={0.75}
               >
-                <View style={base.cocktailHeader}>
-                  <Text style={[s.varietal, base.cocktailName]}>🍸 {result.cocktail.name}</Text>
-                  <Text style={base.cocktailArrow}>→</Text>
-                </View>
+                <Text style={[s.varietal, base.cocktailName]}>🍸 {result.cocktail.name}</Text>
                 <Text style={s.reason}>{result.cocktail.reason}</Text>
+                <Text style={base.cocktailHint}>Tap for recipe →</Text>
               </TouchableOpacity>
             )}
             <View style={base.actionRow}>
@@ -166,9 +164,8 @@ const base = StyleSheet.create({
   glossaryAdd: { fontSize: 12, color: colors.brand.primary, fontWeight: '600', marginTop: 6 },
   glossarySaved: { fontSize: 12, color: colors.text.placeholder, marginTop: 6 },
   cocktailCard: { backgroundColor: colors.brand.plumLighter, borderColor: colors.brand.plumLight },
-  cocktailHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cocktailName: { color: colors.brand.plum },
-  cocktailArrow: { fontSize: 14, color: colors.brand.plum, fontWeight: '600' },
+  cocktailHint: { fontSize: 12, color: colors.brand.plum, fontWeight: '600', marginTop: 4, opacity: 0.7 },
   actionRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   actionText: { fontSize: 12, color: colors.text.placeholder },
 });
