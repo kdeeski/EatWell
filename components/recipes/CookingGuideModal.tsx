@@ -72,13 +72,20 @@ function ComponentCard({
       {!expanded && <Text style={styles.componentHint}>Tap for details</Text>}
       {expanded && (
         <>
-          <Text style={styles.componentDesc}>{desc}</Text>
+          {desc ? <Text style={styles.componentDesc}>{desc}</Text> : null}
           {steps.map((step, i) => (
             <View key={i} style={styles.stepRow}>
               <Text style={styles.stepNum}>{i + 1}.</Text>
               <Text style={styles.stepText}>{step}</Text>
             </View>
           ))}
+          {!desc && steps.length === 0 && (
+            <Text style={styles.componentHint}>
+              {fromStash
+                ? 'No details saved in your stash yet — add a method there to see it here.'
+                : 'No steps available.'}
+            </Text>
+          )}
           {!fromStash && (
             <TouchableOpacity
               style={shared.ctaRow}
