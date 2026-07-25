@@ -109,6 +109,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
   const insets = useSafeAreaInsets();
   const { userId } = useAppStore();
   const [screenOn, setScreenOn] = useState(false);
+  const [nestedRecipe, setNestedRecipe] = useState<Recipe | null>(null);
   const [cookLog, setCookLog] = useState<Array<{ cooked_date: string; notes: string | null; rating: number | null; drink_name: string | null; drink_notes: string | null }>>([]);
 
   useEffect(() => {
@@ -263,6 +264,7 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
                 mealName={recipe.name}
                 description={recipe.description}
                 showGlossary
+                onViewRecipe={setNestedRecipe}
               />
             )}
 
@@ -318,6 +320,14 @@ export default function RecipeDetailModal({ recipe, onClose, onEdit, onDelete }:
         </View>
       </Modal>
 
+      {nestedRecipe && (
+        <RecipeDetailModal
+          recipe={nestedRecipe}
+          onClose={() => setNestedRecipe(null)}
+          onEdit={() => setNestedRecipe(null)}
+          onDelete={() => setNestedRecipe(null)}
+        />
+      )}
     </>
   );
 }

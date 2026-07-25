@@ -6,6 +6,7 @@ import { getWineMatch } from '../lib/claude';
 import type { WineMatchResult } from '../lib/claude';
 import { saveRecipe } from '../lib/data';
 import { useAppStore } from '../store/useAppStore';
+import type { Recipe } from '../types';
 import { colors } from '../constants/theme';
 import { shared } from '../constants/styles';
 import CookingGuideModal from './recipes/CookingGuideModal';
@@ -15,10 +16,11 @@ interface Props {
   description?: string | null;
   compact?: boolean;
   showGlossary?: boolean;
+  onViewRecipe?: (recipe: Recipe) => void;
 }
 
 export default function DrinkPairingSection({
-  mealName, description, compact, showGlossary,
+  mealName, description, compact, showGlossary, onViewRecipe,
 }: Props) {
   const { userId, recipes, addRecipe, inventoryItems, userPreferences } = useAppStore();
   const [result, setResult] = useState<WineMatchResult | null>(null);
@@ -131,7 +133,18 @@ export default function DrinkPairingSection({
                 <Text style={s.reason}>{result.cocktail.reason}</Text>
                 <TouchableOpacity
                   style={shared.ctaRow}
-                  onPress={() => setCocktailGuide(result.cocktail!)}
+                  onPress={() => {
+                    const name = result.cocktail!.name.toLowerCase().trim();
+                    const stashMatch = recipes.find((r) => {
+                      const rn = r.name.toLowerCase().trim();
+                      return rn === name || rn.includes(name) || name.includes(rn);
+                    });
+                    if (stashMatch && onViewRecipe) {
+                      onViewRecipe(stashMatch);
+                    } else {
+                      setCocktailGuide(result.cocktail!);
+                    }
+                  }}
                   hitSlop={{ top: 8, bottom: 8 }}
                 >
                   <Text style={base.cocktailCta}>How to make it</Text>
