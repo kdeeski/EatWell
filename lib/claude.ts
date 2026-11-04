@@ -34,6 +34,7 @@ export interface PinnedMeal {
 export interface MealPlanInput {
   fridgeItems: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[];
   freezerItems?: Pick<InventoryItem, 'name' | 'quantity' | 'unit'>[];
+  useUpItems?: string[]; // fridge/freezer items flagged "use up" — must appear in a meal this week
   gardenAvailable: string[];       // plant names available to harvest this week
   spontaneousAdditions: string[];  // market finds, neighbour gifts, etc.
   nightsAway: number[];            // day_of_week values (0=Mon) user is away

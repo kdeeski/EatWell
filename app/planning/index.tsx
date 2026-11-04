@@ -284,10 +284,14 @@ export default function PlanningFlow() {
       // Fridge and freezer are sent separately so the prompt can apply different urgency rules.
       const claudeFridgeItems = activeFridgeItems.filter((i) => !isStaple(i));
       const claudeFreezerItems = freezerItems.filter((i) => !isStaple(i));
+      const useUpItems = inventoryItems
+        .filter((i) => i.use_up && !i.depleted && (i.location === 'fridge' || i.location === 'freezer'))
+        .map((i) => i.name);
 
       const rawResult = await generateMealPlan({
         fridgeItems: claudeFridgeItems,
         freezerItems: claudeFreezerItems.length > 0 ? claudeFreezerItems : undefined,
+        useUpItems: useUpItems.length > 0 ? useUpItems : undefined,
         gardenAvailable: [
           ...gardenHarvesting,
           ...gardenExtras.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),

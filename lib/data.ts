@@ -56,7 +56,7 @@ export async function upsertInventoryItem(
 
 export async function updateInventoryItem(
   id: string,
-  updates: Partial<Pick<InventoryItem, 'name' | 'quantity' | 'unit' | 'min_quantity' | 'notes' | 'depleted' | 'category' | 'location' | 'is_staple'>>
+  updates: Partial<Pick<InventoryItem, 'name' | 'quantity' | 'unit' | 'min_quantity' | 'notes' | 'depleted' | 'category' | 'location' | 'is_staple' | 'use_up'>>
 ): Promise<InventoryItem> {
   const { data, error } = await supabase
     .from('inventory_items')

@@ -339,7 +339,10 @@ function InventoryRow({ item, onReplenish, onRemove, onEdit }: {
       <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
         <TouchableOpacity style={[styles.itemRow, isLowStock && styles.itemRowLowStock]} onPress={onEdit} activeOpacity={0.7}>
           <View style={styles.itemLeft}>
-            <Text style={styles.itemName}>{toTitleCase(item.name)}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.itemName}>{toTitleCase(item.name)}</Text>
+              {item.use_up && <View style={styles.useUpDot} />}
+            </View>
             {(isLowStock || !(['piece','each'].includes(item.unit) && item.quantity === 1)) && (
               <Text style={styles.itemMeta}>
                 {item.quantity} {item.unit}
@@ -395,6 +398,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
   const [minQty, setMinQty]       = useState(String(existingItem?.min_quantity ?? '0'));
   const [notes, setNotes]         = useState(existingItem?.notes ?? '');
   const [isStaple, setIsStaple]   = useState(existingItem?.is_staple ?? false);
+  const [useUp, setUseUp]         = useState(existingItem?.use_up ?? false);
   const [saving, setSaving]       = useState(false);
   const [catOpen, setCatOpen]     = useState(false);
   const [locOpen, setLocOpen]     = useState(false);
@@ -439,6 +443,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
           min_quantity: parseFloat(minQty) || 0,
           notes: notes.trim() || null,
           is_staple: isStaple,
+          use_up: useUp,
         });
       } else {
         saved = await upsertInventoryItem({
@@ -453,6 +458,7 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
           added_date: new Date().toISOString().split('T')[0],
           depleted: false,
           is_staple: isStaple,
+          use_up: useUp,
         });
       }
       onSaved(saved);
@@ -597,6 +603,22 @@ function AddEditModal({ visible, userId, existingItem, allItems, onClose, onSave
                 <View style={[styles.stapleThumb, isStaple && styles.stapleThumbOn]} />
               </View>
             </TouchableOpacity>
+
+            {(location === 'fridge' || location === 'freezer') && (
+              <TouchableOpacity
+                style={styles.stapleRow}
+                onPress={() => setUseUp((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.stapleTextBlock}>
+                  <Text style={styles.stapleLabel}>Use up soon</Text>
+                  <Text style={styles.stapleHint}>Meal planner will prioritise using this this week</Text>
+                </View>
+                <View style={[styles.stapleToggle, useUp && styles.useUpToggleOn]}>
+                  <View style={[styles.stapleThumb, useUp && styles.stapleThumbOn]} />
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -920,7 +942,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center', paddingHorizontal: 2,
   },
   stapleToggleOn: { backgroundColor: colors.brand.primary },
+  useUpToggleOn: { backgroundColor: colors.state.warning },
   stapleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.background.surface },
+  useUpDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.state.warning },
   stapleThumbOn: { alignSelf: 'flex-end' },
 
   // Bulk add
