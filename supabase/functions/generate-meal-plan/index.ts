@@ -207,7 +207,7 @@ Avoid boring defaults. Simple is fine if deliberate.
 
 At least 3 culinary traditions across the week, max 2 from the same tradition.
 
-At least 3 cooking approaches (braise, roast, sauté, grill, poach, steam, raw).
+At least 3 cooking approaches (braise, roast, sauté, grill, poach, steam, raw). Braises, slow roasts, and any method requiring 2+ hours cook time must only be scheduled on weekend days (Saturday or Sunday, where weekend: true). Weeknight meals must be achievable in under 60 minutes total.
 
 Avoid same protein on consecutive nights.
 
