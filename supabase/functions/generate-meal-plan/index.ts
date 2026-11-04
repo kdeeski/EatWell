@@ -102,6 +102,9 @@ ${JSON.stringify(days.pinned)}`);
     sections.push(`NIGHTS AWAY: ${days.away.map((d) => DAY_NAMES[d]).join(', ')}`);
   }
 
+  if ((input.useUpItems ?? []).length) {
+    sections.push(`USE UP THIS WEEK (user has flagged these as must-use — each one must appear in at least one meal): ${(input.useUpItems!).join(', ')}`);
+  }
   sections.push(`FRIDGE (use before they spoil): ${itemList(input.fridgeItems)}`);
   sections.push(`FREEZER (use where it fits, not urgent): ${itemList(input.freezerItems)}`);
   sections.push(`GARDEN: ${(input.gardenAvailable ?? []).join(', ') || 'None'}`);
@@ -507,9 +510,12 @@ RULES:
 
 Return only valid JSON.`;
 
+    const useUpLine = (input.useUpItems ?? []).length
+      ? `\nUSE UP THIS WEEK: ${input.useUpItems!.join(', ')}`
+      : '';
     const contextBlock = `FRIDGE (source: fridge): ${itemList(input.fridgeItems)}
 FREEZER (source: freezer): ${itemList(input.freezerItems)}
-GARDEN (source: garden): ${(input.gardenAvailable ?? []).join(', ') || 'None'}`;
+GARDEN (source: garden): ${(input.gardenAvailable ?? []).join(', ') || 'None'}${useUpLine}`;
 
     const haikuResults = await Promise.all(mealsArray.map(async (m: any) => {
       const mealInfo = {

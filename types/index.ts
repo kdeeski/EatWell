@@ -42,6 +42,7 @@ export interface InventoryItem {
   added_date: string; // ISO date
   depleted: boolean;
   is_staple: boolean;
+  use_up: boolean;
   created_at: string;
 }
 
